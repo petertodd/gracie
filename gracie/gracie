@@ -1,0 +1,79 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# gracie
+# Part of Gracie, an OpenID provider
+#
+# Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
+# This is free software; you may copy, modify and/or distribute this work
+# under the terms of the GNU General Public License, version 2 or later.
+# No warranty expressed or implied. See the file LICENSE for details.
+
+""" Application behaviour for Gracie
+"""
+
+import optparse
+
+__version__ = "0.0"
+
+
+class OptionParser(optparse.OptionParser):
+    """ Commandline option parser for this application """
+
+    def __init__(self):
+        """ Set up a new instance """
+        optparse.OptionParser.__init__(self)
+
+        self.version = __version__
+        self.init_options()
+
+    def init_options(self):
+        """ Set up options """
+
+        self.add_option('-V', '--version',
+            action='version',
+            help="Report version of program and exit",
+        )
+        self.add_option('--log-level',
+            action='store', type='string', default="WARN",
+            dest='loglevel', metavar='LEVEL',
+            help="Set logging verbosity level to LEVEL",
+        )
+
+
+class OpenIDServer(object):
+    """ Server for OpenID protocol requests """
+
+    def __init__(self, argv):
+        """ Set up a new instance """
+        self._process_commandline(argv)
+
+    def _process_commandline(self, argv):
+        """ Process command line to this application """
+        option_parser = OptionParser()
+        (self.opts, self.args) = option_parser.parse_args(argv)
+
+    def serve_forever(self):
+        """ Serve requests endlessly """
+
+
+def __main__(argv=None):
+    """ Mainline code for this program """
+
+    from sys import argv as sys_argv
+    if argv is None:
+        argv = sys_argv
+
+    server = OpenIDServer(argv)
+    exitcode = None
+    try:
+        server.serve_forever()
+    except SystemExit, e:
+        exitcode = e.code
+
+    return exitcode
+
+if __name__ == "__main__":
+    import sys
+    exitcode = __main__(argv=sys.argv)
+    sys.exit(exitcode)
