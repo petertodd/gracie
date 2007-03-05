@@ -20,7 +20,14 @@ __version__ = "0.0"
 logger_name = "gracie.server"
 
 
-class OpenIDRequestHandler(BaseHTTPRequestHandler, object):
+class HTTPServer(HTTPServer, object):
+    """ Shim to insert base object type into hierarchy """
+
+class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
+    """ Shim to insert base object type into hierarchy """
+
+
+class OpenIDRequestHandler(BaseHTTPRequestHandler):
     """ Handler for individual OpenID requests """
 
     server_version = "Gracie/%(__version__)s" % globals()
@@ -44,8 +51,9 @@ class OpenIDServer(HTTPServer):
     def __init__(self, server_address, RequestHandlerClass):
         """ Set up a new instance """
         self._setup_logging()
-        HTTPServer.__init__(self,
-            server_address, RequestHandlerClass)
+        super(OpenIDServer, self).__init__(
+            server_address, RequestHandlerClass
+        )
 
     def _setup_logging(self):
         """ Set up logging for this server """
