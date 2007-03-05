@@ -13,10 +13,14 @@
 """
 
 import optparse
+import logging
 
-from server import OpenIDServer
+from server import OpenIDServer, OpenIDRequestHandler
 
 __version__ = "0.0"
+
+# Default port to bind to server
+default_port = 8000
 
 
 class OptionParser(optparse.OptionParser):
@@ -49,15 +53,28 @@ class Gracie(object):
     def __init__(self, argv):
         """ Set up a new instance """
         self._process_commandline(argv)
-        self.server = OpenIDServer()
+        self._init_logging()
+        socket_params = self._get_socket_params()
+        self.server = OpenIDServer(socket_params, OpenIDRequestHandler)
 
     def _process_commandline(self, argv):
         """ Process command line to this application """
         option_parser = OptionParser()
         (self.opts, self.args) = option_parser.parse_args(argv)
 
+    def _init_logging(self):
+        """ Initialise the logging system """
+        logging.basicConfig()
+
+    def _get_socket_params(self):
+        """ Determine the server socket parameters """
+        host = ""
+        port = default_port
+        return (host, port)
+
     def run(self):
         """ Run the Gracie application """
+        self.server.serve_forever()
 
 
 def __main__(argv=None):

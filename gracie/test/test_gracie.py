@@ -28,6 +28,11 @@ gracie = scaffold.make_module_from_file(
 
 class Stub_OpenIDServer(object):
     """ Stub class for OpenIDServer """
+    def __init__(self, server_address, RequestHandlerClass):
+        """ Set up a new instance """
+
+class Stub_OpenIDRequestHandler(object):
+    """ Stub class for OpenIDRequestHandler """
 
 class Test_Gracie(scaffold.TestCase):
     """ Test cases for Gracie class """
@@ -46,6 +51,10 @@ class Test_Gracie(scaffold.TestCase):
 
         self.server_class_prev = gracie.OpenIDServer
         gracie.OpenIDServer = self.stub_server_class
+        self.handler_class_prev = gracie.OpenIDRequestHandler
+        gracie.RequestHandlerClass = Stub_OpenIDRequestHandler
+        self.default_port_prev = gracie.default_port
+        gracie.default_port = 7654
 
         self.valid_apps = {
             'simple': dict(
@@ -71,19 +80,33 @@ class Test_Gracie(scaffold.TestCase):
             default_params_dict = self.valid_apps
         )
 
-        self.test_stdout.flush()
-
     def tearDown(self):
         """ Tear down test fixtures """
-        self.test_stdout.flush()
         sys.stdout = self.stdout_prev
         gracie.OpenIDServer = self.server_class_prev
+        gracie.OpenIDRequestHandler = self.handler_class_prev
+        gracie.default_port = self.default_port_prev
 
     def test_instantiate(self):
         """ New Gracie instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
             self.failUnless(instance is not None)
+
+    def test_configures_logging(self):
+        """ New Gracie instance should configure logging """
+        params = self.valid_apps['simple']
+        args = params['args']
+        logging_prev = gracie.logging
+        gracie.logging = Mock('logging')
+        expect_stdout = """\
+           Called logging.basicConfig(...)
+           """
+        instance = self.app_class(**args)
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.test_stdout.getvalue()
+        )
+        gracie.logging = logging_prev
 
     def test_opts_version(self):
         """ Gracie instance should perform version action """
@@ -130,9 +153,10 @@ class Test_Gracie(scaffold.TestCase):
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """
         args = self.valid_apps['simple']['args']
+        port = gracie.default_port
         expect_stdout = """\
-            Called OpenIDServer_class(...)
-            ..."""
+            Called OpenIDServer_class((..., %(port)r), <class 'server.OpenIDRequestHandler'>)
+            ...""" % locals()
         gracie.OpenIDServer = self.mock_server_class
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
@@ -143,6 +167,21 @@ class Test_Gracie(scaffold.TestCase):
     def test_run_is_callable(self):
         """ Gracie.run should be callable """
         self.failUnless(callable(self.app_class.run))
+
+    def test_run_starts_server(self):
+        """ Gracie.run should start OpenIDServer """
+        args = self.valid_apps['simple']['args']
+        port = gracie.default_port
+        expect_stdout = """\
+            ...
+            Called OpenIDServer.serve_forever()
+            """
+        gracie.OpenIDServer = self.mock_server_class
+        instance = self.app_class(**args)
+        instance.run()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.test_stdout.getvalue()
+        )
 
 
 class Test_main(scaffold.TestCase):
