@@ -26,12 +26,26 @@ gracie = scaffold.make_module_from_file(
 )
 
 
+class Stub_OpenIDServer(object):
+    """ Stub class for OpenIDServer """
+
 class Test_Gracie(scaffold.TestCase):
     """ Test cases for Gracie class """
     def setUp(self):
         """ Set up test fixtures """
 
         self.app_class = gracie.Gracie
+
+        self.stdout_prev = sys.stdout
+        self.test_stdout = StringIO()
+        sys.stdout = self.test_stdout
+
+        self.stub_server_class = Stub_OpenIDServer
+        self.mock_server_class = Mock('OpenIDServer_class')
+        self.mock_server_class.mock_returns = Mock('OpenIDServer')
+
+        self.server_class_prev = gracie.OpenIDServer
+        gracie.OpenIDServer = self.stub_server_class
 
         self.valid_apps = {
             'simple': dict(
@@ -57,17 +71,11 @@ class Test_Gracie(scaffold.TestCase):
             default_params_dict = self.valid_apps
         )
 
-        self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
-
-        self.server_class_prev = gracie.OpenIDServer
-        mock_server_class = Mock('OpenIDServer_class')
-        mock_server_class.mock_returns = Mock('OpenIDServer')
-        gracie.OpenIDServer = mock_server_class
+        self.test_stdout.flush()
 
     def tearDown(self):
         """ Tear down test fixtures """
+        self.test_stdout.flush()
         sys.stdout = self.stdout_prev
         gracie.OpenIDServer = self.server_class_prev
 
@@ -102,6 +110,7 @@ class Test_Gracie(scaffold.TestCase):
         expect_stdout = """\
             usage: ...
             """
+        gracie.OpenIDServer = self.mock_server_class
         self.failUnlessRaises(SystemExit,
             self.app_class, argv=argv
         )
@@ -114,6 +123,7 @@ class Test_Gracie(scaffold.TestCase):
 
         want_loglevel = "DEBUG"
         argv = ["--log-level", want_loglevel]
+        gracie.OpenIDServer = self.mock_server_class
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
 
@@ -123,6 +133,7 @@ class Test_Gracie(scaffold.TestCase):
         expect_stdout = """\
             Called OpenIDServer_class(...)
             ..."""
+        gracie.OpenIDServer = self.mock_server_class
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.test_stdout.getvalue()

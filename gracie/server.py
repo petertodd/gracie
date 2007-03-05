@@ -11,12 +11,42 @@
 """ Behaviour for OpenID provider server
 """
 
+import logging
+from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
+
+__version__ = "0.0"
+
+# Name of the Python logging instance to use for this module
+logger_name = "gracie.server"
+
 
-class OpenIDServer(object):
+class OpenIDRequestHandler(BaseHTTPRequestHandler, object):
+    """ Handler for individual OpenID requests """
+
+    server_version = "Gracie/%(__version__)s" % globals()
+
+    def __init__(self, request, client_address, server):
+        """ Set up a new instance """
+        self._server = server
+        super(OpenIDRequestHandler, self).__init__(
+            request, client_address, server
+        )
+
+    def log_message(self, format, *args, **kwargs):
+        """ Log a message via the server's logger """
+        logger = self._server.logger
+        logger.log(format, *args, **kwargs)
+
+
+class OpenIDServer(HTTPServer):
     """ Server for OpenID protocol requests """
 
-    def __init__(self):
+    def __init__(self, server_address, RequestHandlerClass):
         """ Set up a new instance """
+        self._setup_logging()
+        HTTPServer.__init__(self,
+            server_address, RequestHandlerClass)
 
-    def serve_forever(self):
-        """ Serve requests endlessly """
+    def _setup_logging(self):
+        """ Set up logging for this server """
+        self.logger = logging.getLogger(logger_name)
