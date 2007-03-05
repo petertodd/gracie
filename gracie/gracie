@@ -16,11 +16,9 @@ import optparse
 import logging
 
 from server import OpenIDServer, OpenIDRequestHandler
+from server import default_host, default_port
 
 __version__ = "0.0"
-
-# Default port to bind to server
-default_port = 8000
 
 
 class OptionParser(optparse.OptionParser):
@@ -68,7 +66,7 @@ class Gracie(object):
 
     def _get_socket_params(self):
         """ Determine the server socket parameters """
-        host = ""
+        host = default_host
         port = default_port
         return (host, port)
 

@@ -153,9 +153,12 @@ class Test_Gracie(scaffold.TestCase):
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """
         args = self.valid_apps['simple']['args']
+        host = gracie.default_host
         port = gracie.default_port
         expect_stdout = """\
-            Called OpenIDServer_class((..., %(port)r), <class 'server.OpenIDRequestHandler'>)
+            Called OpenIDServer_class(
+                (%(host)r, %(port)r),
+                <class 'server.OpenIDRequestHandler'>)
             ...""" % locals()
         gracie.OpenIDServer = self.mock_server_class
         instance = self.app_class(**args)

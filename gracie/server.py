@@ -15,7 +15,7 @@ import sys
 import logging
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import urlparse
-import traceback
+import routes
 
 Page = object
 
@@ -32,6 +32,27 @@ class HTTPServer(HTTPServer, object):
 
 class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
     """ Shim to insert base object type into hierarchy """
+
+
+http_port = 80
+
+def net_location(host, port=None):
+    """ Construct a location string from host string and port number """
+    port_spec = ":%(port)s" % locals()
+    if port is None or port == http_port:
+        location_spec = "%(host)s"
+    else:
+        location_spec = "%(host)s:%(port)s"
+    location = location_spec % locals()
+    return location
+
+default_host = "localhost"
+default_port = 8000
+default_location = net_location(default_host, default_port)
+
+
+mapper = routes.Mapper()
+mapper.connect('identity', 'id/:name', controller='identity', action='view')
 
 
 class OpenIDRequestHandler(BaseHTTPRequestHandler):
@@ -52,32 +73,44 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         loglevel = logging.INFO
         logger.log(loglevel, format, *args, **kwargs)
 
-    def _get_url_params(self):
-        """ Get the component parameters from the requested URL """
-        keys = [
-            'scheme', 'location', 'path', 'query', 'fragment_id',
-        ]
-        values = urlparse.urlsplit(self.path)
-        params = dict(zip(keys, values))
-        return params
+    def _dispatch(self, route_map):
+        """ Dispatch to the appropriate controller """
+        controller_map = {
+            'identity': self._make_identity_page,
+        }
+        controller = controller_map[route_map['controller']]
+        response = controller(route_map)
+        return response
 
     def do_GET(self):
         """ Handle a GET command """
-        self.url_params = self._get_url_params()
-        path = self.url_params['path']
-        if path.startswith("/id/"):
-            identity = path[4:]
-            page_data = self._make_identity_page(identity)
-            self.send_response(HTTPCodes.ok)
-            self.end_headers()
-            self.wfile.write(page_data)
+        route_map = mapper.match(self.path)
+        if route_map:
+            response = self._dispatch(route_map)
+        else:
+            response = self._make_error_page(HTTPCodes.not_found)
 
-    def _make_identity_page(self, identity):
+        code, message = (response.get('code', HTTPCodes.ok),
+                         response.get('message'))
+        self.send_response(code, message)
+        self.end_headers()
+        self.wfile.write(response['data'])
+
+    def _make_error_page(self, code):
+        """ Construct an error page """
+        page = self.server.PageClass(title="Not found")
+        page_data = page.serialise()
+        response = dict(code=code, message="Not found", data=page_data)
+        return response
+
+    def _make_identity_page(self, route_map):
         """ Construct a page for an identity """
-        page_title = "Identity page for %(identity)s" % locals()
+        name = route_map['name']
+        page_title = "Identity page for %(name)s" % locals()
         page = self.server.PageClass(title=page_title)
         page_data = page.serialise()
-        return page_data
+        response = dict(data=page_data)
+        return response
 
 
 class OpenIDServer(HTTPServer):
