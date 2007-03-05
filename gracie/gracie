@@ -14,6 +14,8 @@
 
 import optparse
 
+from server import OpenIDServer
+
 __version__ = "0.0"
 
 
@@ -41,20 +43,21 @@ class OptionParser(optparse.OptionParser):
         )
 
 
-class OpenIDServer(object):
-    """ Server for OpenID protocol requests """
+class Gracie(object):
+    """ Behaviour for Gracie application """
 
     def __init__(self, argv):
         """ Set up a new instance """
         self._process_commandline(argv)
+        self.server = OpenIDServer()
 
     def _process_commandline(self, argv):
         """ Process command line to this application """
         option_parser = OptionParser()
         (self.opts, self.args) = option_parser.parse_args(argv)
 
-    def serve_forever(self):
-        """ Serve requests endlessly """
+    def run(self):
+        """ Run the Gracie application """
 
 
 def __main__(argv=None):
@@ -64,10 +67,10 @@ def __main__(argv=None):
     if argv is None:
         argv = sys_argv
 
-    server = OpenIDServer(argv)
+    app = Gracie(argv)
     exitcode = None
     try:
-        server.serve_forever()
+        app.run()
     except SystemExit, e:
         exitcode = e.code
 

@@ -26,11 +26,12 @@ gracie = scaffold.make_module_from_file(
 )
 
 
-class Test_OpenIDServer(scaffold.TestCase):
-    """ Test cases for OpenIDServer class """
-
+class Test_Gracie(scaffold.TestCase):
+    """ Test cases for Gracie class """
     def setUp(self):
         """ Set up test fixtures """
+
+        self.app_class = gracie.Gracie
 
         self.valid_apps = {
             'simple': dict(
@@ -49,7 +50,7 @@ class Test_OpenIDServer(scaffold.TestCase):
             if options:
                 argv.extend(options)
             args['argv'] = argv
-            instance = gracie.OpenIDServer(**args)
+            instance = self.app_class(**args)
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
@@ -60,19 +61,24 @@ class Test_OpenIDServer(scaffold.TestCase):
         self.test_stdout = StringIO()
         sys.stdout = self.test_stdout
 
+        self.server_class_prev = gracie.OpenIDServer
+        mock_server_class = Mock('OpenIDServer_class')
+        mock_server_class.mock_returns = Mock('OpenIDServer')
+        gracie.OpenIDServer = mock_server_class
+
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
+        gracie.OpenIDServer = self.server_class_prev
 
     def test_instantiate(self):
-        """ New OpenIDServer instance should be created """
-
+        """ New Gracie instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
             self.failUnless(instance is not None)
 
     def test_opts_version(self):
-        """ OpenIDServer instance should perform version action """
+        """ Gracie instance should perform version action """
 
         argv = ["--version"]
         version_prev = gracie.__version__
@@ -82,7 +88,7 @@ class Test_OpenIDServer(scaffold.TestCase):
             ...%(version)s...
             """ % dict(version=version_test)
         self.failUnlessRaises(SystemExit,
-            gracie.OpenIDServer, argv=argv
+            self.app_class, argv=argv
         )
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.test_stdout.getvalue()
@@ -90,29 +96,42 @@ class Test_OpenIDServer(scaffold.TestCase):
         gracie.__version__ = version_prev
 
     def test_opts_help(self):
-        """ OpenIDServer instance should perform help action """
+        """ Gracie instance should perform help action """
 
         argv = ["--help"]
         expect_stdout = """\
             usage: ...
             """
         self.failUnlessRaises(SystemExit,
-            gracie.OpenIDServer, argv=argv
+            self.app_class, argv=argv
         )
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.test_stdout.getvalue()
         )
 
     def test_opts_loglevel(self):
-        """ OpenIDServer instance should accept log-level setting """
+        """ Gracie instance should accept log-level setting """
+
         want_loglevel = "DEBUG"
         argv = ["--log-level", want_loglevel]
-        instance = gracie.OpenIDServer(argv=argv)
+        instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
 
-    def test_serve_forever_is_callable(self):
-        """ OpenIDServer.serve_forever should be callable """
-        self.failUnless(callable(gracie.OpenIDServer.serve_forever))
+    def test_instantiates_server(self):
+        """ Gracie instance should create a new server instance """
+        args = self.valid_apps['simple']['args']
+        expect_stdout = """\
+            Called OpenIDServer_class(...)
+            ..."""
+        instance = self.app_class(**args)
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.test_stdout.getvalue()
+        )
+        self.failUnless(instance.server is not None)
+
+    def test_run_is_callable(self):
+        """ Gracie.run should be callable """
+        self.failUnless(callable(self.app_class.run))
 
 
 class Test_main(scaffold.TestCase):
@@ -120,31 +139,31 @@ class Test_main(scaffold.TestCase):
 
     def setUp(self):
         """ Set up test fixtures """
-        mock_server_class = Mock('OpenIDServer_class')
-        mock_server_class.mock_returns = Mock('OpenIDServer')
+        mock_app_class = Mock('Gracie_class')
+        mock_app_class.mock_returns = Mock('Gracie')
         self.mainfunc = gracie.__main__
 
         self.stdout_prev = sys.stdout
         self.test_stdout = StringIO()
         sys.stdout = self.test_stdout
 
-        self.server_class_prev = gracie.OpenIDServer
-        gracie.OpenIDServer = mock_server_class
+        self.app_class_prev = gracie.Gracie
+        gracie.Gracie = mock_app_class
 
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        gracie.OpenIDServer = self.server_class_prev
+        gracie.Gracie = self.app_class_prev
 
     def test_is_callable(self):
         """ __main__ function should be callable """
         self.failUnless(callable(self.mainfunc))
 
-    def test_instantiates_server_class(self):
-        """ __main__() should instantiate the app server class """
+    def test_instantiates_app_class(self):
+        """ __main__() should instantiate the application class """
         args = dict()
         expect_stdout = """\
-            Called OpenIDServer_class(...)
+            Called Gracie_class(...)
             ..."""
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
@@ -155,7 +174,7 @@ class Test_main(scaffold.TestCase):
         """ __main__() should default commandline arguments to sys.argv """
         args = dict()
         expect_stdout = """\
-            Called OpenIDServer_class(%(argv)s)
+            Called Gracie_class(%(argv)s)
             ...""" % dict(argv=sys.argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
@@ -163,26 +182,26 @@ class Test_main(scaffold.TestCase):
         )
 
     def test_passes_argv_to_server(self):
-        """ __main__() should pass commandline arguments to server """
+        """ __main__() should pass commandline arguments to application """
         argv = ["foo"]
         args = dict(
             argv=argv,
         )
         expect_stdout = """\
-            Called OpenIDServer_class(%(argv)s)
+            Called Gracie_class(%(argv)s)
             ...""" % dict(argv=argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.test_stdout.getvalue()
         )
 
-    def test_invokes_serve_forever(self):
-        """ __main__() should invoke server's serve_forever() method """
+    def test_invokes_run(self):
+        """ __main__() should invoke app's run() method """
         argv = ["foo"]
         args = dict(argv=argv)
         expect_stdout = """\
-            Called OpenIDServer_class(%(argv)s)
-            Called OpenIDServer.serve_forever(...)
+            Called Gracie_class(%(argv)s)
+            Called Gracie.run(...)
         """ % dict(argv=argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
