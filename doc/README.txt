@@ -16,6 +16,15 @@ OpenID consumers.
 
 ..  _OpenID: http://openid.net/
 
+Requirements
+------------
+
+* Python >= 2.4
+
+* python-openid
+
+* Routes
+
 Copyright and License
 ---------------------
 
