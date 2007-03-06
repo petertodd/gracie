@@ -61,26 +61,33 @@ def make_url_not_found_page(url):
     title = "Resource Not Found"
     page = Page(title)
     page.content = """
-        The requested resource was not found: %(url)r
-        """ % locals()
+        The requested resource was not found: $want_url
+        """
+    page.values.update(dict(
+        want_url = url,
+    ))
     return page
 
 def make_identity_user_not_found_page(name):
     title = "User Not Found"
     page = Page(title)
     page.content = """
-        The requested user name does not exist: %(name)r
-        """ % locals()
+        The requested user name does not exist: $user_name
+        """
+    page.values.update(dict(
+        user_name = name,
+    ))
     return page
 
 def make_identity_view_user_page(entry):
     title = "Identity page for %(name)s" % entry
     page = Page(title)
     page.content = """
-        User ID: %(id)s
-        Name: %(name)s
-        Full name: %(fullname)s
-        """ % entry
+        User ID: $id
+        Name: $name
+        Full name: $fullname
+        """
+    page.values.update(entry)
     return page
 
 

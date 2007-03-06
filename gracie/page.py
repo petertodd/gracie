@@ -22,7 +22,7 @@ page_template = Template("""\
 <head>
     <meta http-equiv="Content-Type" content="text/xhtml; $character_encoding" />
 
-    <title>$title</title>
+    <title>$page_title</title>
 
     <style type="text/css">
 
@@ -33,15 +33,15 @@ page_template = Template("""\
     <link rel="openid.delegate" href="http://bignose.videntity.org/" />
 
 </head>
-$body
+$page_body
 </html>
 """)
 
 body_template = Template("""\
 <body>
 <div id="content">
-<h1 id="title">$title</h1>
-$content
+<h1 id="title">$page_title</h1>
+$page_content
 </div><!-- content -->
 </body>
 """)
@@ -52,17 +52,19 @@ class Page(object):
 
     def __init__(self, title=None):
         """ Set up a new instance """
+        self.character_encoding = "utf-8"
         self.title = title
         self.content = ""
-        self.character_encoding = "utf-8"
+        self.values = dict()
 
     def serialise(self):
         """ Generate a text stream for page data """
+        content_text = Template(self.content).substitute(self.values)
         body_text = body_template.substitute(
-            title=self.title, content=self.content,
+            page_title=self.title, page_content=content_text,
         )
         page_text = page_template.substitute(
-            title=self.title, body=body_text,
+            page_title=self.title, page_body=body_text,
             character_encoding=self.character_encoding,
         )
         return page_text

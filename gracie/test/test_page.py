@@ -33,16 +33,16 @@ class Test_Page(scaffold.TestCase):
             textwrap.dedent("""\
             Page {
                 Coding: $character_encoding
-                Title: $title
-                $body
+                Title: $page_title
+                $page_body
             }""")
         )
 
         page.body_template = Template(
             textwrap.dedent("""\
             Body {
-                Title: $title
-                Content: $content
+                Title: $page_title
+                Content: $page_content
             }""")
         )
 
@@ -52,6 +52,13 @@ class Test_Page(scaffold.TestCase):
             'welcome': dict(
                 title = "Welcome",
                 content = "Lorem ipsum dolor sic amet",
+            ),
+            'result': dict(
+                title = "Result",
+                content = "Here is your result: $result.",
+                values = dict(
+                    result = "thribble",
+                ),
             ),
         }
 
@@ -66,7 +73,10 @@ class Test_Page(scaffold.TestCase):
             instance = self.page_class(**args)
             content = params.get('content')
             if content is not None:
-                instance.content = params['content']
+                instance.content = content
+            values = params.get('values')
+            if values is not None:
+                instance.values = values
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
@@ -89,10 +99,10 @@ class Test_Page(scaffold.TestCase):
             self.failUnlessEqual(title, instance.title)
 
     def test_serialise_uses_template(self):
-        """ Page should serialise using provided template """
+        """ Page.serialise should use provided template """
         params = self.valid_pages['welcome']
         instance = params['instance']
-        expect_data = textwrap.dedent("""\
+        expect_data = """\
             Page {
                 Coding: utf-8
                 Title: %(title)s
@@ -100,7 +110,27 @@ class Test_Page(scaffold.TestCase):
                 Title: %(title)s
                 Content: %(content)s
             }
-            }""") % params
+            }""" % params
+        page_data = instance.serialise()
+        self.failUnlessOutputCheckerMatch(expect_data, page_data)
+
+    def test_serialise_substitutes_values(self):
+        """ Page.serialise should substitute values into template """
+        params = self.valid_pages['result']
+        instance = params['instance']
+        content = params['content']
+        values = params['values']
+        expect_content = Template(content).substitute(values)
+        params['expect_content'] = expect_content
+        expect_data = """\
+            Page {
+                Coding: utf-8
+                Title: %(title)s
+                Body {
+                Title: %(title)s
+                Content: %(expect_content)s
+            }
+            }""" % params
         page_data = instance.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
