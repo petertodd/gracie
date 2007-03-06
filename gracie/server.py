@@ -17,7 +17,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import urlparse
 import routes
 
-Page = object
+from page import Page
 
 __version__ = "0.0"
 
