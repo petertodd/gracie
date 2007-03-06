@@ -26,3 +26,26 @@ class HTTPResponseCodes(object):
     internal_server_error = 500
     not_implemented = 501
     service_unavailable = 503
+
+
+class ResponseHeader(object):
+    """ Encapsulation of an HTTP response header """
+
+    def __init__(self, code, message=None, protocol="HTTP/1.0"):
+        """ Set up a new instance """
+        self.code = code
+        self.message = message
+        self.protocol = protocol
+        self.fields = dict()
+
+        self.fields.update({
+            'Date': None,
+            'Content-Type': "text/html",
+        })
+
+class Response(object):
+    """ Encapsulation for an HTTP response """
+
+    def __init__(self, header):
+        """ Set up a new instance """
+        self.header = header
