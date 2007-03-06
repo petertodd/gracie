@@ -20,8 +20,10 @@ import logging
 import scaffold
 from scaffold import Mock
 from test_authservice import Stub_AuthService
+from test_httpresponse import Stub_ResponseHeader, Stub_Response
 
 import server
+import httpresponse
 
 
 class Test_net_location(scaffold.TestCase):
@@ -46,33 +48,13 @@ class Stub_Logger(object):
     def log(self, format, *args, **kwargs):
         """ Log a message """
 
-class Stub_Page(object):
-    """ Stub class for Page """
-    def __init__(self, title):
-        """ Set up a new instance """
-    def serialise(self):
-        """ Serialise the page content """
-
 class Stub_OpenIDServer(object):
     """ Stub class for OpenIDServer """
 
     def __init__(self):
         """ Set up a new instance """
         self.logger = Stub_Logger()
-        self.PageClass = Stub_Page
         self.authservice = Stub_AuthService()
-
-class Stub_EmptyFile(object):
-    """ Stub class for a null file
-
-    Always empty when read
-    """
-    def __init__(self): self.closed = False
-    def flush(self): pass
-    def close(self): self.closed = True
-    def next(self): raise StopIteration
-    def read(self, size=None): return ""
-    def readline(self, size=None): return ""
 
 class Stub_TCPConnection(object):
     """ Stub class for TCP connection """
@@ -91,20 +73,6 @@ class Stub_TCPConnection(object):
             conn_file = StringIO("")
         return conn_file
 
-class Mock_TCPConnection(object):
-    """ Allow writing to a mock connection """
-    def __init__(self, text):
-        self._text = text
-    def makefile(self, mode, bufsize):
-        """ Make a file handle to the connection stream """
-        conn_file = None
-        if mode.startswith('r'):
-            conn_file = StringIO(self._text)
-            conn_file.seek(0)
-        elif mode.startswith('w'):
-            conn_file = Mock('TCPConnection.wfile')
-        return conn_file
-
 class Test_OpenIDRequestHandler(scaffold.TestCase):
     """ Test cases for OpenIDRequestHandler class """
 
@@ -113,16 +81,26 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         self.handler_class = server.OpenIDRequestHandler
 
         self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
+
+        self.response_class_prev = server.Response
+        self.response_header_class_prev = server.ResponseHeader
+        self.page_class_prev = server.Page
+        server.Response = Mock('Response_class')
+        server.Response.mock_returns = Mock('Response')
+        server.ResponseHeader = Mock('ResponseHeader_class')
+        server.ResponseHeader.mock_returns = Mock('ResponseHeader')
+        server.Page = Mock('Page_class')
+        server.Page.mock_returns = Mock('Page')
 
         self.valid_requests = {
             'simple': dict(
             ),
-            'get-foo': dict(
-                request_text = "GET /foo HTTP/1.1",
+            'get-bogus': dict(
+                request_text = "GET /bogus HTTP/1.1",
                 command = "GET",
-                path = "/foo",
+                path = "/bogus",
                 version = "HTTP/1.1",
             ),
             'id-bogus': dict(
@@ -141,7 +119,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             ),
         }
 
-        logging.basicConfig(stream=self.test_stdout)
+        logging.basicConfig(stream=self.stdout_test)
         test_logger = logging.getLogger(server.logger_name)
 
         for key, params in self.valid_requests.items():
@@ -153,7 +131,6 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             http_server = params.setdefault('server',
                                             Stub_OpenIDServer())
             http_server.logger = test_logger
-            http_server.PageClass = Stub_Page
             if not args:
                 args = dict(
                     request = request,
@@ -180,6 +157,9 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
+        server.Response = self.response_class_prev
+        server.ResponseHeader = self.response_header_class_prev
+        server.Page = self.page_class_prev
 
     def test_instantiate(self):
         """ New OpenIDRequestHandler instance should be created """
@@ -226,7 +206,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             """ % locals()
         instance.log_message(msg_format, *msg_args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
     def test_command_from_request(self):
@@ -259,6 +239,54 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             instance = self.make_instance_from_args(params['args'])
             self.failUnlessEqual(request_version, instance.request_version)
 
+    def test_get_bogus_url_sends_not_found_response(self):
+        """ Request to GET unknown URL should send Not Found response """
+        params = self.valid_requests['get-bogus']
+        args = params['args']
+        instance = self.handler_class(**args)
+        path = params['path']
+        expect_stdout = """\
+            Called ResponseHeader_class(404, ...)
+            Called Page_class(...)
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_get_bogus_identity_sends_not_found_response(self):
+        """ Request to GET unknown user should send Not Found response """
+        params = self.valid_requests['id-bogus']
+        args = params['args']
+        identity_name = params['identity_name']
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called ResponseHeader_class(404, ...)
+            Called Page_class(...)
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_get_known_identity_sends_view_user_response(self):
+        """ Request to GET known user should send view user response """
+        params = self.valid_requests['id-fred']
+        args = params['args']
+        identity_name = params['identity_name']
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called ResponseHeader_class(200)
+            Called Page_class('...%(identity_name)s...')
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
 
 class Stub_OpenIDRequestHandler(object):
     """ Stub class for OpenIDRequestHandler """
@@ -283,8 +311,8 @@ class Test_OpenIDServer(scaffold.TestCase):
             setattr(server.HTTPServer, name, value)
 
         self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
 
         self.valid_servers = {
             'simple': dict(

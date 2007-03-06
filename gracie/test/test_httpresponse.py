@@ -12,12 +12,23 @@
 """ Unit test for httpresponse module
 """
 
+import sys
+from StringIO import StringIO
+
 import scaffold
 from scaffold import Mock
 
 import httpresponse
 
 
+class Stub_Response(object):
+    """ Stub class for Response """
+
+    def __init__(self, header, data=None):
+        """ Set up a new instance """
+        self.header = header
+        self.data = data
+
 class Test_ResponseHeader(scaffold.TestCase):
     """ Test cases for ResponseHeader class """
 
@@ -129,6 +140,14 @@ class Stub_ResponseHeader(object):
         self.protocol = protocol
         self.fields = dict()
 
+class Stub_RequestHandler(object):
+    """ Stub class for BaseHTTPRequestHandler """
+
+    def __init__(self):
+        self.wfile = StringIO("")
+    def send_response(self, code, message=None): pass
+    def end_headers(self): pass
+
 class Test_Response(scaffold.TestCase):
     """ Test cases for Response class """
 
@@ -141,12 +160,19 @@ class Test_Response(scaffold.TestCase):
             'simple': dict(
                 header = Stub_ResponseHeader(code = 200),
             ),
+            'payload': dict(
+                header = Stub_ResponseHeader(code = 200),
+                data = object(),
+            ),
         }
 
         for key, params in self.valid_responses.items():
             args = params.get('args', dict())
             header = params['header']
             args['header'] = header
+            data = params.get('data')
+            if data is not None:
+                args['data'] = data
             params['args'] = args
             instance = self.response_class(**args)
             params['instance'] = instance
@@ -167,6 +193,33 @@ class Test_Response(scaffold.TestCase):
             header = params['header']
             instance = params['instance']
             self.failUnlessEqual(header, instance.header)
+
+    def test_data_as_specified(self):
+        """ Response should have specified data """
+        params = self.valid_responses['payload']
+        data = params['data']
+        instance = params['instance']
+        self.failUnlessEqual(data, instance.data)
+
+    def test_send_to_handler_uses_handler(self):
+        """ Response.send_to_handler should use specified handler """
+        self.stdout_test = StringIO("")
+        stdout_prev = sys.stdout
+        sys.stdout = self.stdout_test
+        for key, params in self.iterate_params():
+            instance = params['instance']
+            handler = Mock('HTTPRequestHandler')
+            instance.send_to_handler(handler)
+            expect_stdout = """\
+                Called HTTPRequestHandler.send_response(...)
+                ...Called HTTPRequestHandler.end_headers()
+                Called HTTPRequestHandler.wfile.write(...)
+                Called HTTPRequestHandler.wfile.close()
+                """
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
+        sys.stdout = stdout_prev
 
 
 suite = scaffold.suite(__name__)

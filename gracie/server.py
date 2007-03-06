@@ -19,6 +19,7 @@ import routes
 
 from page import Page
 from authservice import PosixAuthService as AuthService
+from httpresponse import ResponseHeader, Response
 
 __version__ = "0.0"
 
@@ -56,6 +57,33 @@ mapper = routes.Mapper()
 mapper.connect('identity', 'id/:name', controller='identity', action='view')
 
 
+def make_url_not_found_page(url):
+    title = "Resource Not Found"
+    page = Page(title)
+    page.content = """
+        The requested resource was not found: %(url)r
+        """ % locals()
+    return page
+
+def make_identity_user_not_found_page(name):
+    title = "User Not Found"
+    page = Page(title)
+    page.content = """
+        The requested user name does not exist: %(name)r
+        """ % locals()
+    return page
+
+def make_identity_view_user_page(entry):
+    title = "Identity page for %(name)s" % entry
+    page = Page(title)
+    page.content = """
+        User ID: %(id)s
+        Name: %(name)s
+        Full name: %(fullname)s
+        """ % entry
+    return page
+
+
 class OpenIDRequestHandler(BaseHTTPRequestHandler):
     """ Handler for individual OpenID requests """
 
@@ -77,46 +105,48 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
     def _dispatch(self, route_map):
         """ Dispatch to the appropriate controller """
         controller_map = {
-            'identity': self._make_identity_page,
+            None: self._make_url_not_found_error_response,
+            'identity': self._make_identity_view_response,
         }
-        controller = controller_map[route_map['controller']]
+        controller_name = None
+        if route_map:
+            controller_name = route_map['controller']
+        controller = controller_map[controller_name]
+
         response = controller(route_map)
         return response
 
     def do_GET(self):
         """ Handle a GET command """
         route_map = mapper.match(self.path)
-        if route_map:
-            response = self._dispatch(route_map)
-        else:
-            response = self._make_error_page(HTTPCodes.not_found)
+        response = self._dispatch(route_map)
+        response.send_to_handler(self)
 
-        code, message = (response.get('code', HTTPCodes.ok),
-                         response.get('message'))
-        self.send_response(code, message)
-        self.end_headers()
-        self.wfile.write(response['data'])
-
-    def _make_error_page(self, code):
-        """ Construct an error page """
-        page = self.server.PageClass(title="Not found")
-        page_data = page.serialise()
-        response = dict(code=code, message="Not found", data=page_data)
+    def _make_url_not_found_error_response(self, route_map):
+        """ Construct a Not Found error response """
+        header = ResponseHeader(HTTPCodes.not_found, "Not Found")
+        page = make_url_not_found_page(self.path)
+        data = page.serialise()
+        response = Response(header, data)
         return response
 
-    def _make_identity_page(self, route_map):
-        """ Construct a page for an identity """
+    def _make_identity_view_response(self, route_map):
+        """ Construct a response for an identity view """
         name = route_map['name']
         try:
             entry = self._server.authservice.get_entry(name)
         except KeyError, e:
-            response = self._make_error_page(HTTPCodes.not_found)
-            return response
+            entry = None
 
-        page_title = "Identity page for %(name)s" % locals()
-        page = self.server.PageClass(title=page_title)
-        page_data = page.serialise()
-        response = dict(data=page_data)
+        if entry is None:
+            header = ResponseHeader(HTTPCodes.not_found, "Not Found")
+            page = make_identity_user_not_found_page(name)
+        else:
+            header = ResponseHeader(HTTPCodes.ok)
+            page = make_identity_view_user_page(entry)
+
+        data = page.serialise()
+        response = Response(header, data)
         return response
 
 
@@ -129,7 +159,6 @@ class OpenIDServer(HTTPServer):
         super(OpenIDServer, self).__init__(
             server_address, RequestHandlerClass
         )
-        self.PageClass = Page
         self.authservice = AuthService()
 
     def _setup_logging(self):

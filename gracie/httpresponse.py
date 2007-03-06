@@ -46,6 +46,16 @@ class ResponseHeader(object):
 class Response(object):
     """ Encapsulation for an HTTP response """
 
-    def __init__(self, header):
+    def __init__(self, header, data=None):
         """ Set up a new instance """
         self.header = header
+        self.data = data
+
+    def send_to_handler(self, handler):
+        """ Send this response via a request handler """
+        handler.send_response(self.header.code, self.header.message)
+        for key, value in self.header.fields.items():
+            handler.send_header(key, value)
+        handler.end_headers()
+        handler.wfile.write(self.data)
+        handler.wfile.close()
