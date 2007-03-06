@@ -18,6 +18,7 @@ import urlparse
 import routes
 
 from page import Page
+from authservice import PosixAuthService as AuthService
 
 __version__ = "0.0"
 
@@ -106,6 +107,12 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
     def _make_identity_page(self, route_map):
         """ Construct a page for an identity """
         name = route_map['name']
+        try:
+            entry = self._server.authservice.get_entry(name)
+        except KeyError, e:
+            response = self._make_error_page(HTTPCodes.not_found)
+            return response
+
         page_title = "Identity page for %(name)s" % locals()
         page = self.server.PageClass(title=page_title)
         page_data = page.serialise()
@@ -123,6 +130,7 @@ class OpenIDServer(HTTPServer):
             server_address, RequestHandlerClass
         )
         self.PageClass = Page
+        self.authservice = AuthService()
 
     def _setup_logging(self):
         """ Set up logging for this server """

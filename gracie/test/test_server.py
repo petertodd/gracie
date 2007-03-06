@@ -19,6 +19,7 @@ import logging
 
 import scaffold
 from scaffold import Mock
+from test_authservice import Stub_AuthService
 
 import server
 
@@ -59,6 +60,7 @@ class Stub_OpenIDServer(object):
         """ Set up a new instance """
         self.logger = Stub_Logger()
         self.PageClass = Stub_Page
+        self.authservice = Stub_AuthService()
 
 class Stub_EmptyFile(object):
     """ Stub class for a null file
@@ -123,7 +125,15 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
                 path = "/foo",
                 version = "HTTP/1.1",
             ),
+            'id-bogus': dict(
+                identity_name = "bogus",
+                request_text = "GET /id/bogus HTTP/1.1",
+                command = "GET",
+                path = "/id/bogus",
+                version = "HTTP/1.1",
+            ),
             'id-fred': dict(
+                identity_name = "fred",
                 request_text = "GET /id/fred HTTP/1.1",
                 command = "GET",
                 path = "/id/fred",
@@ -248,56 +258,6 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             request_version = params['version']
             instance = self.make_instance_from_args(params['args'])
             self.failUnlessEqual(request_version, instance.request_version)
-
-    def _make_http_server_with_mocked_page_class(self):
-        Page = Mock('Page')
-        Page.serialise.mock_returns = "mock_page_content"
-        http_server = Mock('OpenIDServer')
-        http_server.PageClass = Mock('PageClass')
-        http_server.PageClass.mock_returns = Page
-        return http_server
-
-    def test_bogus_request_returns_not_found(self):
-        """ Request for a bogus URL should return Not Found response """
-        params = self.valid_requests['get-foo']
-        args = params['args']
-        request = Mock_TCPConnection(params['request_text'])
-        args['request'] = request
-        http_server = self._make_http_server_with_mocked_page_class()
-        args['server'] = http_server
-        instance = self.make_instance_from_args(args)
-        expect_stdout = """\
-            Called PageClass(title='Not found')
-            ...
-            Called TCPConnection.wfile.write('HTTP/1.0 404 Not found\\r\\n')
-            ...
-            """ % locals()
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
-        )
-
-    def test_request_get_id_returns_user_page(self):
-        """ Request for user ID should return identity page """                
-        params = self.valid_requests['id-fred']
-        args = params['args']
-        request = Mock_TCPConnection(params['request_text'])
-        args['request'] = request
-        http_server = self._make_http_server_with_mocked_page_class()
-        args['server'] = http_server
-        instance = self.make_instance_from_args(args)
-        identity = "fred"
-        expect_stdout = """\
-           Called PageClass(title='...%(identity)s...')
-           ...
-           Called TCPConnection.wfile.write('HTTP/1.0 200 OK\\r\\n')
-           ...
-           Called TCPConnection.wfile.write('\\r\\n')
-           Called TCPConnection.wfile.write('mock_page_content')
-           Called TCPConnection.wfile.close()
-           """ % locals()
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
-        )
 
 
 class Stub_OpenIDRequestHandler(object):
