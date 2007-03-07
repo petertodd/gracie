@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# test_page.py
+# test_pagetemplate.py
 # Part of Gracie, an OpenID provider
 #
 # Copyright © 2007 Ben Finney <ben@benfinney.id.au>
@@ -9,7 +9,7 @@
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
-""" Unit test for page module
+""" Unit test for pagetemplate module
 """
 
 from string import Template
@@ -18,18 +18,16 @@ import textwrap
 import scaffold
 from scaffold import Mock
 
-import page
+import pagetemplate
 
 
-class Test_Page(scaffold.TestCase):
-    """ Test cases for Page class """
+class Mixin_PageTemplateFixture(object):
+    """ Mix-in class for page template fixtures """
 
     def setUp(self):
         """ Set up test fixtures """
 
-        self.page_class = page.Page
-
-        page.page_template = Template(
+        pagetemplate.page_template = Template(
             textwrap.dedent("""\
             Page {
                 Coding: $character_encoding
@@ -38,13 +36,28 @@ class Test_Page(scaffold.TestCase):
             }""")
         )
 
-        page.body_template = Template(
+        pagetemplate.body_template = Template(
             textwrap.dedent("""\
             Body {
                 Title: $page_title
                 Content: $page_content
             }""")
         )
+
+    def tearDown(self):
+        """ Tear down test fixtures """
+
+
+class Test_Page(scaffold.TestCase,
+                Mixin_PageTemplateFixture):
+    """ Test cases for Page class """
+
+    def setUp(self):
+        """ Set up test fixtures """
+
+        self.page_class = pagetemplate.Page
+
+        Mixin_PageTemplateFixture.setUp(self)
 
         self.valid_pages = {
             'simple': dict(
@@ -133,6 +146,45 @@ class Test_Page(scaffold.TestCase):
             }""" % params
         page_data = instance.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
+
+
+class Test_PageTemplates(scaffold.TestCase):
+    """ Test cases for individual page templates """
+
+    def test_url_not_found_page_contains_url(self):
+        """ Resulting page should contain the referent URL """
+        url = "/flim/flam/flom"
+        page = pagetemplate.url_not_found_page(url)
+        expect_data = "...%(url)s..." % locals()
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(expect_data, page_data)
+
+    def test_identity_user_not_found_page_contains_name(self):
+        """ Resulting page should contain the referent user name """
+        name = "fred"
+        page = pagetemplate.identity_user_not_found_page(name)
+        expect_data = "...%(name)s..." % locals()
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(expect_data, page_data)
+
+    def test_identity_view_user_page_contains_name(self):
+        """ Resulting page should contain the referent user name """
+        entry = dict(
+            id = 9999,
+            name = "fred",
+            fullname = "Fred Nurk",
+        )
+        page = pagetemplate.identity_view_user_page(entry)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "...%(id)s..." % entry, page_data
+        )
+        self.failUnlessOutputCheckerMatch(
+            "...%(name)s..." % entry, page_data
+        )
+        self.failUnlessOutputCheckerMatch(
+            "...%(fullname)s..." % entry, page_data
+        )
 
 
 suite = scaffold.suite(__name__)

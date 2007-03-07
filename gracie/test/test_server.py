@@ -86,13 +86,13 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
 
         self.response_class_prev = server.Response
         self.response_header_class_prev = server.ResponseHeader
-        self.page_class_prev = server.Page
+        self.page_class_prev = server.pagetemplate.Page
         server.Response = Mock('Response_class')
         server.Response.mock_returns = Mock('Response')
         server.ResponseHeader = Mock('ResponseHeader_class')
         server.ResponseHeader.mock_returns = Mock('ResponseHeader')
-        server.Page = Mock('Page_class')
-        server.Page.mock_returns = Mock('Page')
+        server.pagetemplate.Page = Mock('Page_class')
+        server.pagetemplate.Page.mock_returns = Mock('Page')
 
         self.valid_requests = {
             'simple': dict(
@@ -159,7 +159,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         sys.stdout = self.stdout_prev
         server.Response = self.response_class_prev
         server.ResponseHeader = self.response_header_class_prev
-        server.Page = self.page_class_prev
+        server.pagetemplate.Page = self.page_class_prev
 
     def test_instantiate(self):
         """ New OpenIDRequestHandler instance should be created """

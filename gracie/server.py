@@ -17,7 +17,7 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import urlparse
 import routes
 
-from page import Page
+import pagetemplate
 from authservice import PosixAuthService as AuthService
 from httpresponse import ResponseHeader, Response
 
@@ -26,7 +26,7 @@ __version__ = "0.0"
 # Name of the Python logging instance to use for this module
 logger_name = "gracie.server"
 
-from http_response import HTTPResponseCodes as HTTPCodes
+from httpresponse import HTTPResponseCodes as HTTPCodes
 
 
 class HTTPServer(HTTPServer, object):
@@ -55,40 +55,6 @@ default_location = net_location(default_host, default_port)
 
 mapper = routes.Mapper()
 mapper.connect('identity', 'id/:name', controller='identity', action='view')
-
-
-def make_url_not_found_page(url):
-    title = "Resource Not Found"
-    page = Page(title)
-    page.content = """
-        The requested resource was not found: $want_url
-        """
-    page.values.update(dict(
-        want_url = url,
-    ))
-    return page
-
-def make_identity_user_not_found_page(name):
-    title = "User Not Found"
-    page = Page(title)
-    page.content = """
-        The requested user name does not exist: $user_name
-        """
-    page.values.update(dict(
-        user_name = name,
-    ))
-    return page
-
-def make_identity_view_user_page(entry):
-    title = "Identity page for %(name)s" % entry
-    page = Page(title)
-    page.content = """
-        User ID: $id
-        Name: $name
-        Full name: $fullname
-        """
-    page.values.update(entry)
-    return page
 
 
 class OpenIDRequestHandler(BaseHTTPRequestHandler):
@@ -132,7 +98,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
     def _make_url_not_found_error_response(self, route_map):
         """ Construct a Not Found error response """
         header = ResponseHeader(HTTPCodes.not_found, "Not Found")
-        page = make_url_not_found_page(self.path)
+        page = pagetemplate.url_not_found_page(self.path)
         data = page.serialise()
         response = Response(header, data)
         return response
@@ -147,10 +113,10 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
         if entry is None:
             header = ResponseHeader(HTTPCodes.not_found, "Not Found")
-            page = make_identity_user_not_found_page(name)
+            page = pagetemplate.identity_user_not_found_page(name)
         else:
             header = ResponseHeader(HTTPCodes.ok)
-            page = make_identity_view_user_page(entry)
+            page = pagetemplate.identity_view_user_page(entry)
 
         data = page.serialise()
         response = Response(header, data)
