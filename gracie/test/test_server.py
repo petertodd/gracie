@@ -177,6 +177,26 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
                     ),
                 ),
             ),
+            'login-fred-wrong': dict(
+                identity_name = "fred",
+                request = Stub_Request("POST", "/login",
+                    data = dict(
+                        username="fred",
+                        password="password23",
+                        submit="Sign in",
+                    ),
+                ),
+            ),
+            'login-fred-okay': dict(
+                identity_name = "fred",
+                request = Stub_Request("POST", "/login",
+                    data = dict(
+                        username="fred",
+                        password="password1",
+                        submit="Sign in",
+                    ),
+                ),
+            ),
         }
 
         logging.basicConfig(stream=self.stdout_test)
@@ -369,6 +389,36 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         expect_stdout = """\
             Called ResponseHeader_class(200)
             Called Page_class('Login Failed')
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_login_wrong_password_sends_failure_response(self):
+        """ POST login with wrong password should send failure response """
+        params = self.valid_requests['login-fred-wrong']
+        identity_name = params['identity_name']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(200)
+            Called Page_class('Login Failed')
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_login_auth_correct_sends_success_response(self):
+        """ POST login with correct details should send success """
+        params = self.valid_requests['login-fred-okay']
+        identity_name = params['identity_name']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(200)
+            Called Page_class('Login Succeeded')
             ...
             Called Response.send_to_handler(...)
             """ % locals()

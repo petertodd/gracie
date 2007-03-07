@@ -224,6 +224,15 @@ class Test_PageTemplates(scaffold.TestCase):
             "...%(name)s..." % locals(), page_data
         )
 
+    def test_login_auth_success_page_contains_name(self):
+        """ Resulting page should contain the referent user name """
+        name = "fred"
+        page = pagetemplate.login_auth_succeeded_page(name)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "...%(name)s..." % locals(), page_data
+        )
+
 
 suite = scaffold.suite(__name__)
 

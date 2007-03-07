@@ -19,7 +19,8 @@ import urlparse
 import routes
 
 import pagetemplate
-from authservice import PosixAuthService as AuthService
+from authservice import PamAuthService as AuthService
+from authservice import AuthenticationError
 from httpresponse import ResponseHeader, Response
 from httpresponse import response_codes as http_codes
 
@@ -182,10 +183,38 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def _make_login_authenticate_response(self):
         """ Construct a response for a login authenticate request """
+        want_username = self.query.get('username')
+        password = self.query.get('password')
+        credentials = dict(
+            username=want_username,
+            password=password
+        )
+        authenticate = self._server.authservice.authenticate
+        try:
+            self.username = authenticate(credentials)
+            authenticated = True
+        except AuthenticationError, e:
+            authenticated = False
+        if authenticated:
+            response = self._make_login_succeeded_response()
+        else:
+            response = self._make_login_failed_response()
+        return response
+
+    def _make_login_failed_response(self):
+        """ Construct a response for a failed login request """
         name = self.query.get('username')
         message = "The login details were incorrect."
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.login_submit_failed_page(message, name)
+        data = page.serialise()
+        response = Response(header, data)
+        return response
+
+    def _make_login_succeeded_response(self):
+        """ Construct a response for a successful login request """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.login_auth_succeeded_page(self.username)
         data = page.serialise()
         response = Response(header, data)
         return response

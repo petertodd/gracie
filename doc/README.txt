@@ -23,7 +23,21 @@ Requirements
 
 * python-openid
 
+* python-pam
+  (for systems using PAM for authentication)
+
 * Routes
+
+PAM configuration
+-----------------
+
+For systems authenticating using PAM, you will need to define a PAM
+configuration for the service `gracie` (for example, in the file
+`/etc/pam.d/gracie`). This should have the following PAM
+configuration::
+
+    auth    required    pam_unix.so
+    account required    pam_access.so
 
 Copyright and License
 ---------------------

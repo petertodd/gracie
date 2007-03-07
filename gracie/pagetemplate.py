@@ -157,3 +157,12 @@ def login_submit_failed_page(message, name):
         $form
     """
     return page
+
+def login_auth_succeeded_page(name):
+    title = "Login Succeeded"
+    page = Page(title)
+    page.values.update(dict(name=name))
+    page.content = """
+        You can <a href="/id/$name">view your identity page</a>.
+    """
+    return page
