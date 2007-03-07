@@ -164,6 +164,24 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def _make_login_submit_response(self):
         """ Construct a response for a login submit request """
+        if 'cancel' in self.query:
+            response = self._make_login_cancelled_response()
+        elif 'submit' in self.query:
+            response = self._make_login_authenticate_response()
+        else:
+            response = self._make_url_not_found_error_response()
+        return response
+
+    def _make_login_cancelled_response(self):
+        """ Construct a response for a login cancel request """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.login_cancelled_page()
+        data = page.serialise()
+        response = Response(header, data)
+        return response
+
+    def _make_login_authenticate_response(self):
+        """ Construct a response for a login authenticate request """
         name = self.query.get('username')
         message = "The login details were incorrect."
         header = ResponseHeader(http_codes['ok'])

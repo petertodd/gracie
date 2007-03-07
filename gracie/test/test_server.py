@@ -150,12 +150,30 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             'login': dict(
                 request = Stub_Request("GET", "/login"),
             ),
+            'nobutton-login': dict(
+                request = Stub_Request("POST", "/login",
+                    data = dict(
+                        username="bogus",
+                        password="bogus",
+                    ),
+                ),
+            ),
+            'cancel-login': dict(
+                request = Stub_Request("POST", "/login",
+                    data = dict(
+                        username="bogus",
+                        password="bogus",
+                        cancel="Cancel",
+                    ),
+                ),
+            ),
             'login-bogus': dict(
                 identity_name = "bogus",
                 request = Stub_Request("POST", "/login",
                     data = dict(
                         username="bogus",
                         password="bogus",
+                        submit="Sign in",
                     ),
                 ),
             ),
@@ -309,6 +327,33 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         expect_stdout = """\
             Called ResponseHeader_class(200)
             Called Page_class(...)
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_nobutton_login_sends_not_found_response(self):
+        """ POST login with no button should send Not Found response """
+        params = self.valid_requests['nobutton-login']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(404)
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_login_cancel_sends_cancelled_response(self):
+        """ POST login cancel should send cancelled response """
+        params = self.valid_requests['cancel-login']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(200)
+            Called Page_class('Login Cancelled')
             ...
             Called Response.send_to_handler(...)
             """ % locals()

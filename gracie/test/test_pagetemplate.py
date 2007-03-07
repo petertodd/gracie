@@ -203,6 +203,14 @@ class Test_PageTemplates(scaffold.TestCase):
             "Page {...}", page_data
         )
 
+    def test_login_cancel_returns_page(self):
+        """ Cancel login should return page """
+        page = pagetemplate.login_cancelled_page()
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "Page {...}", page_data
+        )
+
     def test_login_submit_failed_page_contains_details(self):
         """ Resulting page should contain specified details """
         message = "Did gyre and gimble in the wabe"

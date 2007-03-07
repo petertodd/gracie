@@ -28,10 +28,6 @@ page_template = Template("""\
 
     </style>
 
-    <!-- OpenID data -->
-    <link rel="openid.server" href="http://videntity.org/server" />
-    <link rel="openid.delegate" href="http://bignose.videntity.org/" />
-
 </head>
 $page_body
 </html>
@@ -124,7 +120,8 @@ def _login_form(message="", name=""):
         <input name="password" type="password" />
         </p>
         <p>
-        <input type="submit" value="Sign in" />
+        <input type="submit" name="submit" value="Sign in" />
+        <input type="submit" name="cancel" value="Cancel" />
         </p>
         </form>
     """
@@ -139,6 +136,15 @@ def login_view_page():
     page.values.update(dict(form=form_text))
     page.content = """
         $form
+    """
+    return page
+
+def login_cancelled_page():
+    title = "Login Cancelled"
+    page = Page(title)
+    page.content = """
+        The login was cancelled.
+        You can <a href="/login">log in now</a> if you want.
     """
     return page
 
