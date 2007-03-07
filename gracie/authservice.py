@@ -30,7 +30,8 @@ class PosixAuthService(BaseAuthService):
 
     def _pwd_entry_to_auth_entry(self, pwd_entry):
         """ Construct an auth entry from a pwd entry """
-        (name, _, uid, _, fullname, _, _) = pwd_entry
+        (name, _, uid, _, comment, _, _) = pwd_entry
+        fullname = comment.split(",")[0]
         entry = dict(
             id=uid,
             name=name,

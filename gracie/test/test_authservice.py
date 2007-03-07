@@ -46,7 +46,10 @@ class Test_BaseAuthService(scaffold.TestCase):
 
 
 stub_entries = [
-    dict(id=1000, name="fred", fullname="Fred Nurk"),
+    dict(id=1000, name="fred",
+         fullname="Fred Nurk", comment="Fred Nurk"),
+    dict(id=1010, name="bill",
+         fullname="William Fosdycke", comment="William Fosdycke,,,"),
 ]
 
 class Stub_AuthService(object):
@@ -63,7 +66,7 @@ class Stub_AuthService(object):
 class Stub_PwdModule(object):
     """ Stub class for a pwd module """
 
-    _entries = [(e['name'], "*", e['id'], 500, e['fullname'],
+    _entries = [(e['name'], "*", e['id'], 500, e['comment'],
                  "/home/"+e['name'], "/bin/sh")
                 for e in stub_entries]
 
@@ -94,6 +97,14 @@ class Test_PosixAuthService(scaffold.TestCase):
 
         self.service_class = authservice.PosixAuthService
 
+        self.pwd_module_prev = authservice.pwd
+        self.pwd_module = Stub_PwdModule()
+        authservice.pwd = self.pwd_module
+
+    def teatDown(self):
+        """ Tear down test fixtures """
+        authservice.pwd = self.pwd_module_prev
+
     def test_instantiate(self):
         """ New PosixAuthService instance should be created """
         instance = self.service_class()
@@ -101,23 +112,16 @@ class Test_PosixAuthService(scaffold.TestCase):
 
     def test_get_entry_name_unknown_raises_keyerror(self):
         """ get_entry for a bogus name should raise KeyError """
-        pwd_module_prev = authservice.pwd
-        pwd_module = Stub_PwdModule()
-        authservice.pwd = pwd_module
         instance = self.service_class()
         name = "nosuchuser"
         self.failUnlessRaises(KeyError,
             instance.get_entry, name
         )
-        authservice.pwd = pwd_module_prev
 
     def test_get_entry_name_known_returns_entry(self):
         """ get_entry for a known name should return an auth entry """
-        pwd_module_prev = authservice.pwd
-        pwd_module = Stub_PwdModule()
-        authservice.pwd = pwd_module
         instance = self.service_class()
-        pwd_entry = pwd_module.getpwnam("fred")
+        pwd_entry = self.pwd_module.getpwnam("fred")
         (name, _, uid, _, fullname, _, _) = pwd_entry
         expect_entry = dict(
             id = uid,
@@ -126,7 +130,20 @@ class Test_PosixAuthService(scaffold.TestCase):
         )
         entry = instance.get_entry(name)
         self.failUnlessEqual(expect_entry, entry)
-        authservice.pwd = pwd_module_prev
+
+    def test_get_entry_strips_extra_info_from_comment(self):
+        """ get_entry should strip extra info to get the fullname """
+        instance = self.service_class()
+        pwd_entry = self.pwd_module.getpwnam("bill")
+        (name, _, uid, _, comment, _, _) = pwd_entry
+        fullname = comment.split(",")[0]
+        expect_entry = dict(
+            id = uid,
+            name = name,
+            fullname = fullname,
+        )
+        entry = instance.get_entry(name)
+        self.failUnlessEqual(expect_entry, entry)
 
 
 suite = scaffold.suite(__name__)
