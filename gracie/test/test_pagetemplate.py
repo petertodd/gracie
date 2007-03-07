@@ -186,6 +186,36 @@ class Test_PageTemplates(scaffold.TestCase):
             "...%(fullname)s..." % entry, page_data
         )
 
+    def test_login_user_not_found_page_contains_name(self):
+        """ Resulting page should contain the referent user name """
+        name = "bogus"
+        page = pagetemplate.login_user_not_found_page(name)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "...%(name)s..." % locals(), page_data
+        )
+
+    def test_login_view_page_returns_page(self):
+        """ View login should return page """
+        page = pagetemplate.login_view_page()
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "Page {...}", page_data
+        )
+
+    def test_login_submit_failed_page_contains_details(self):
+        """ Resulting page should contain specified details """
+        message = "Did gyre and gimble in the wabe"
+        name = "fred"
+        page = pagetemplate.login_submit_failed_page(message, name)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "...%(message)s..." % locals(), page_data
+        )
+        self.failUnlessOutputCheckerMatch(
+            "...%(name)s..." % locals(), page_data
+        )
+
 
 suite = scaffold.suite(__name__)
 

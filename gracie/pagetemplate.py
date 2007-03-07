@@ -75,21 +75,25 @@ def url_not_found_page(url):
     page = Page(title)
     page.content = """
         The requested resource was not found: $want_url
-        """
+    """
     page.values.update(dict(
         want_url = url,
     ))
     return page
 
-def identity_user_not_found_page(name):
+def user_not_found_page(name):
     title = "User Not Found"
     page = Page(title)
     page.content = """
         The requested user name does not exist: $user_name
-        """
+    """
     page.values.update(dict(
         user_name = name,
     ))
+    return page
+
+def identity_user_not_found_page(name):
+    page = user_not_found_page(name)
     return page
 
 def identity_view_user_page(entry):
@@ -99,6 +103,51 @@ def identity_view_user_page(entry):
         User ID: $id
         Name: $name
         Full name: $fullname
-        """
+    """
     page.values.update(entry)
+    return page
+
+def login_user_not_found_page(name):
+    page = user_not_found_page(name)
+    return page
+
+def _login_form(message="", name=""):
+    form_text = """
+        <p class="message">$message</p>
+        <form id="login" action="/login" method="POST">
+        <p>
+        <label for="username">Username</label>
+        <input name="username" type="text" value="$username" />
+        </p>
+        <p>
+        <label for="password">Password</label>
+        <input name="password" type="password" />
+        </p>
+        <p>
+        <input type="submit" value="Sign in" />
+        </p>
+        </form>
+    """
+    values = dict(message=message, username=name)
+    form_text = Template(form_text).substitute(values)
+    return form_text
+
+def login_view_page():
+    title = "Login"
+    form_text = _login_form()
+    page = Page(title)
+    page.values.update(dict(form=form_text))
+    page.content = """
+        $form
+    """
+    return page
+
+def login_submit_failed_page(message, name):
+    title = "Login Failed"
+    form_text = _login_form(message, name)
+    page = Page(title)
+    page.values.update(dict(form=form_text))
+    page.content = """
+        $form
+    """
     return page

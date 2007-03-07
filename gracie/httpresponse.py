@@ -12,29 +12,21 @@
 """
 
 
-class HTTPResponseCodes(object):
-    ok = 200
-    
-    moved_permanently = 301
-    found = 302
-    
-    bad_request = 400
-    unauthorized = 401
-    forbidden = 403
-    not_found = 404
+from BaseHTTPServer import BaseHTTPRequestHandler
+response_map = BaseHTTPRequestHandler.responses
 
-    internal_server_error = 500
-    not_implemented = 501
-    service_unavailable = 503
+response_codes = dict()
+for code, (reason, explain) in response_map.items():
+    key = reason.lower().replace(" ", "_")
+    response_codes[key] = code
 
 
 class ResponseHeader(object):
     """ Encapsulation of an HTTP response header """
 
-    def __init__(self, code, message=None, protocol="HTTP/1.0"):
+    def __init__(self, code, protocol="HTTP/1.0"):
         """ Set up a new instance """
         self.code = code
-        self.message = message
         self.protocol = protocol
         self.fields = dict()
 
@@ -53,7 +45,7 @@ class Response(object):
 
     def send_to_handler(self, handler):
         """ Send this response via a request handler """
-        handler.send_response(self.header.code, self.header.message)
+        handler.send_response(self.header.code)
         for key, value in self.header.fields.items():
             handler.send_header(key, value)
         handler.end_headers()

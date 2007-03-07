@@ -41,9 +41,8 @@ class Test_ResponseHeader(scaffold.TestCase):
             'simple': dict(
                 code = 200,
             ),
-            'ok-message': dict(
+            'ok': dict(
                 code = 200,
-                message = "Daijoubu",
             ),
             'ok-protocol': dict(
                 code = 200,
@@ -55,9 +54,6 @@ class Test_ResponseHeader(scaffold.TestCase):
             args = params.get('args', dict())
             code = params['code']
             args['code'] = code
-            message = params.get('message')
-            if message is not None:
-                args['message'] = message
             protocol = params.get('protocol')
             if protocol is not None:
                 args['protocol'] = protocol
@@ -81,15 +77,6 @@ class Test_ResponseHeader(scaffold.TestCase):
             code = params['code']
             instance = params['instance']
             self.failUnlessEqual(code, instance.code)
-
-    def test_message_as_specified(self):
-        """ ResponseHeader should have specified status message """
-        for key, params in self.iterate_params():
-            message = params.get('message')
-            if message is None:
-                continue
-            instance = params['instance']
-            self.failUnlessEqual(message, instance.message)
 
     def test_protocol_default_http_1_0(self):
         """ ResponseHeader protocol should default to HTTP/1.0 """
@@ -134,9 +121,8 @@ class Test_ResponseHeader(scaffold.TestCase):
 class Stub_ResponseHeader(object):
     """ Stub class for response header """
 
-    def __init__(self, code, message=None, protocol=None):
+    def __init__(self, code, protocol=None):
         self.code = code
-        self.message = message
         self.protocol = protocol
         self.fields = dict()
 
