@@ -191,6 +191,9 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
                 identity_name = "fred",
                 request = Stub_Request("GET", "/id/fred"),
             ),
+            'logout': dict(
+                request = Stub_Request("GET", "/logout"),
+            ),
             'login': dict(
                 request = Stub_Request("GET", "/login"),
             ),
@@ -465,6 +468,23 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
+    def get_logout_resets_session_and_redirects(self):
+        """ Request to logout should reset session and logout """
+        params = self.valid_requests['logout']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(302)
+            Called Response.header.fields.append('Location', ...)
+            Called Response.header.fields.append(
+                ('Set-Cookie', 'TEST_username=;Expires=...'))
+            Called Response.header.fields.append(
+                ('Set-Cookie', 'TEST_session=;Expires=...'))
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
     def test_get_login_sends_login_form_response(self):
         """ Request to GET login should send login form as response """
         params = self.valid_requests['login']
@@ -536,13 +556,14 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_post_login_auth_correct_sends_success_response(self):
-        """ POST login with correct details should send success """
+    def test_post_login_auth_correct_sends_redirect_response(self):
+        """ POST login with correct details should send redirect """
         params = self.valid_requests['login-fred-okay']
         identity_name = params['identity_name']
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
-            Called ResponseHeader_class(200)
+            Called ResponseHeader_class(302)
+            Called ResponseHeader.fields.append(('Location', ...))
             Called Page_class('Login Succeeded')
             ...
             Called Response.send_to_handler(...)

@@ -40,6 +40,7 @@ class Mixin_PageTemplateFixture(object):
             textwrap.dedent("""\
             Body {
                 Title: $page_title
+                Auth entry: $auth_entry
                 Content: $page_content
             }""")
         )
@@ -73,6 +74,15 @@ class Test_Page(scaffold.TestCase,
                     result = "thribble",
                 ),
             ),
+            'authenticated': dict(
+                title = "Logged in",
+                content = "Lorem ipsum dolor sic amet",
+                auth_entry = dict(
+                    id = 1010,
+                    name = "fred",
+                    fullname = "Fred Nurk",
+                ),
+            ),
         }
 
         for key, params in self.valid_pages.items():
@@ -87,9 +97,14 @@ class Test_Page(scaffold.TestCase,
             content = params.get('content')
             if content is not None:
                 instance.content = content
-            values = params.get('values')
-            if values is not None:
-                instance.values = values
+            values = params.get('values', dict())
+            if 'auth_entry' not in values:
+                values.update({'auth_entry': None})
+            values.update(dict(
+                login_url = "/login",
+                logout_url = "/logout",
+            ))
+            instance.values.update(values)
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
@@ -111,19 +126,29 @@ class Test_Page(scaffold.TestCase,
             instance = params['instance']
             self.failUnlessEqual(title, instance.title)
 
+    def test_values_as_specified(self):
+        """ Page values should be as specified """
+        for key, params in self.iterate_params():
+            values = params.get('values')
+            if not values:
+                continue
+            instance = params['instance']
+            self.failUnlessEqual(values, instance.values)
+
     def test_serialise_uses_template(self):
         """ Page.serialise should use provided template """
         params = self.valid_pages['welcome']
         instance = params['instance']
         expect_data = """\
             Page {
-                Coding: utf-8
-                Title: %(title)s
+                Coding: ...
+                Title: ...
                 Body {
-                Title: %(title)s
-                Content: %(content)s
+                Title: ...
+                Auth entry: ...
+                Content: ...
             }
-            }""" % params
+            }"""
         page_data = instance.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
@@ -131,19 +156,21 @@ class Test_Page(scaffold.TestCase,
         """ Page.serialise should substitute values into template """
         params = self.valid_pages['result']
         instance = params['instance']
+        title = params['title']
         content = params['content']
         values = params['values']
+        auth_entry = values['auth_entry']
         expect_content = Template(content).substitute(values)
-        params['expect_content'] = expect_content
         expect_data = """\
             Page {
                 Coding: utf-8
                 Title: %(title)s
                 Body {
                 Title: %(title)s
+                Auth entry: %(auth_entry)s
                 Content: %(expect_content)s
             }
-            }""" % params
+            }""" % locals()
         page_data = instance.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 

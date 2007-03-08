@@ -63,7 +63,8 @@ default_location = net_location(default_host, default_port)
 mapper = routes.Mapper()
 mapper.connect('root', '', controller='about', action='view')
 mapper.connect('identity', 'id/:name', controller='identity', action='view')
-mapper.connect('login', 'login', controller='login')
+mapper.connect('login', 'login', controller='login', action='view')
+mapper.connect('logout', 'logout', controller='logout', action='view')
 
 class OpenIDRequestHandler(BaseHTTPRequestHandler):
     """ Handler for individual OpenID requests """
@@ -87,6 +88,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Set up the authentication session """
         self.username = None
         self.session_id = None
+        self.auth_entry = None
         (username, session) = self._get_auth_cookie()
         try:
             session_id = self._server.get_auth_session(username)
@@ -96,6 +98,22 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
             if session == session_id:
                 self.username = username
                 self.session_id = session_id
+                auth_service = self._server.authservice
+                self.auth_entry = auth_service.get_entry(username)
+
+    def _remove_auth_session(self):
+        """ Remove the authentication session """
+        if self.username:
+            self._server.remove_auth_session(self.username)
+        self.username = None
+        self.session_id = None
+        self.auth_entry = None
+
+    def _get_openid_url(self, username):
+        """ Generate the OpenID URL for a username """
+        url = mapper.generate(controller='identity', action='view',
+                              name=username)
+        return url
 
     def _get_cookie(self, name):
         """ Get a cookie from the request """
@@ -153,6 +171,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
             None: self._make_url_not_found_error_response,
             'about': self._make_about_site_view_response,
             'identity': self._make_identity_view_response,
+            'logout': self._make_logout_response,
             'login': self._make_login_response,
         }
         controller_name = None
@@ -194,11 +213,28 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         self._parse_query()
         self._dispatch()
 
+    def _get_page_data(self, page):
+        """ Get the actual data to be used from a page """
+        if self.username:
+            page.values.update(dict(
+                openid_url = self._get_openid_url(self.username),
+            ))
+        page.values.update(dict(
+            auth_entry = self.auth_entry,
+            login_url = mapper.generate(
+                controller='login', action='view'
+            ),
+            logout_url = mapper.generate(
+                controller='logout', action='view'
+            ),
+        ))
+        return page.serialise()
+
     def _make_url_not_found_error_response(self):
         """ Construct a Not Found error response """
         header = ResponseHeader(http_codes['not_found'])
         page = pagetemplate.url_not_found_page(self.path)
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
@@ -206,7 +242,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for the about-this-site view """
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.about_site_view_page()
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
@@ -225,7 +261,18 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
             header = ResponseHeader(http_codes['ok'])
             page = pagetemplate.identity_view_user_page(entry)
 
-        data = page.serialise()
+        data = self._get_page_data(page)
+        response = Response(header, data)
+        return response
+
+    def _make_logout_response(self):
+        """ Construct a response for a logout request """
+        self._remove_auth_session()
+        header = ResponseHeader(http_codes['found'])
+        about_url = mapper.generate(controller='about', action='view')
+        header.fields.append(("Location", about_url))
+        page = pagetemplate.about_site_view_page()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
@@ -242,7 +289,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for a login view request """
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.login_view_page()
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
@@ -260,7 +307,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for a login cancel request """
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.login_cancelled_page()
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
@@ -293,15 +340,17 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         message = "The login details were incorrect."
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.login_submit_failed_page(message, name)
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 
     def _make_login_succeeded_response(self):
         """ Construct a response for a successful login request """
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes['found'])
+        about_url = mapper.generate(controller='about', action='view')
+        header.fields.append(("Location", about_url))
         page = pagetemplate.login_auth_succeeded_page(self.username)
-        data = page.serialise()
+        data = self._get_page_data(page)
         response = Response(header, data)
         return response
 

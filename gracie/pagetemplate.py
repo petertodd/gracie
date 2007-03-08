@@ -36,11 +36,22 @@ $page_body
 body_template = Template("""\
 <body>
 <div id="content">
+$auth_section
 <h1 id="title">$page_title</h1>
 $page_content
 </div><!-- content -->
 </body>
 """)
+
+auth_section_template = Template("""\
+<div id="auth-info">
+<p>$logged_in_as
+$change_status
+</p>
+</div><!-- auth-info -->
+""")
+
+openid_url_prefix = "http://localhost:8000/id/"
 
 
 class Page(object):
@@ -51,13 +62,46 @@ class Page(object):
         self.character_encoding = "utf-8"
         self.title = title
         self.content = ""
-        self.values = dict()
+        self.values = dict(
+            auth_entry = None,
+            login_url = None,
+            logout_url = None,
+        )
+
+    def _get_auth_section(self, auth_entry):
+        """ Get the authentication info section """
+        login_url = self.values['login_url']
+        logout_url = self.values['logout_url']
+        logged_in_as = "You are not logged in."
+        change_status = (
+            """You may <a href="%(login_url)s">log in now</a>."""
+            % locals()
+        )
+        if auth_entry:
+            fullname = auth_entry['fullname']
+            openid_url = self.values['openid_url']
+            login_url = self.values['login_url']
+            logged_in_as = ("""\
+                Logged in as <a href="%(openid_url)s">%(openid_url)s</a>
+                (%(fullname)s)
+                """ % locals()
+            )
+            change_status = (
+                """You may <a href="%(logout_url)s">log out now</a>."""
+                % locals()
+            )
+        auth_section_text = auth_section_template.substitute(locals())
+        return auth_section_text
 
     def serialise(self):
         """ Generate a text stream for page data """
+        auth_section_text = self._get_auth_section(
+            self.values['auth_entry'])
         content_text = Template(self.content).substitute(self.values)
-        body_text = body_template.substitute(
-            page_title=self.title, page_content=content_text,
+        body_text = body_template.substitute(self.values,
+            page_title=self.title,
+            auth_section=auth_section_text,
+            page_content=content_text,
         )
         page_text = page_template.substitute(
             page_title=self.title, page_body=body_text,
