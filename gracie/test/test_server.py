@@ -48,26 +48,33 @@ class Stub_Logger(object):
     def log(self, format, *args, **kwargs):
         """ Log a message """
 
+class Stub_SessionManager(object):
+    """ Stub class for SessionManager """
+
+    def __init__(self):
+        """ Set up a new instance """
+        self._sessions = dict()
+        self.create_session("fred")
+
+    def create_session(self, username):
+        session_id = "DEADBEEF-%(username)s" % locals()
+        self._sessions[session_id] = username
+        return session_id
+
+    def get_session(self, session_id):
+        return self._sessions[session_id]
+
+    def remove_session(self, session_id):
+        del self._sessions[session_id]
+
 class Stub_OpenIDServer(object):
     """ Stub class for OpenIDServer """
 
     def __init__(self):
         """ Set up a new instance """
         self.logger = Stub_Logger()
-        self.authservice = Stub_AuthService()
-        self._auth_sessions = dict()
-        self.create_auth_session("fred")
-
-    def create_auth_session(self, username):
-        session_id = "DEADBEEF-%(username)s" % locals()
-        self._auth_sessions[session_id] = username
-        return session_id
-
-    def get_auth_session(self, session_id):
-        return self._auth_sessions[session_id]
-
-    def remove_auth_session(self, session_id):
-        del self._auth_sessions[session_id]
+        self.auth_service = Stub_AuthService()
+        self.sess_manager = Stub_SessionManager()
 
 class Stub_TCPConnection(object):
     """ Stub class for TCP connection """
@@ -541,6 +548,81 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         )
 
 
+class Test_SessionManager(scaffold.TestCase):
+    """ Test cases for SessionManager class """
+
+    def setUp(self):
+        """ Set up test fixtures """
+
+        self.manager_class = server.SessionManager
+
+    def test_create_session_should_return_session_id(self):
+        """ Creating a session should return session ID """
+        instance = self.manager_class()
+        identity_name = "fred"
+        session_id = instance.create_session(identity_name)
+        self.failUnless(session_id is not None)
+
+    def test_get_session_unknown_id_raises_keyerror(self):
+        """ Getting an unknown session ID should raise KeyError """
+        instance = self.manager_class()
+        session_id = "DECAFBAD"
+        self.failUnlessRaises(KeyError,
+            instance.get_session, session_id
+        )
+
+    def test_get_session_returns_same_username(self):
+        """ Getting a session by ID should return same username """
+        instance = self.manager_class()
+        identity_name = "fred"
+        session_id = instance.create_session(identity_name)
+        got_name = instance.get_session(session_id)
+        self.failUnlessEqual(identity_name, got_name)
+
+    def test_create_session_should_create_unique_id(self):
+        """ Creating a session should create unique ID each time """
+        instance = self.manager_class()
+        usernames = ["larry", "curly", "moe"]
+        sessions = dict()
+        for username in usernames:
+            session_id = instance.create_session(username)
+            self.failIf(session_id in sessions,
+                "Session ID %(session_id)r already exists"
+                " in %(sessions)r" % locals()
+            )
+
+    def test_create_multiple_session_for_same_username(self):
+        """ Creating multiple sessions for same username should succeed """
+        instance = self.manager_class()
+        usernames = ["larry", "curly", "moe"]
+        sessions = dict()
+        for username in usernames:
+            for _ in range(10):
+                session_id = instance.create_session(username)
+                sessions[session_id] = username
+        for session_id, username in sessions.items():
+            got_username = instance.get_session(session_id)
+            self.failUnlessEqual(username, got_username)
+
+    def test_remove_session_unknown_should_raise_keyerror(self):
+        """ Removing an unknown session ID should raise KeyError """
+        instance = self.manager_class()
+        session_id = "DECAFBAD"
+        self.failUnlessRaises(KeyError,
+            instance.remove_session, session_id
+        )
+
+    def test_remove_session_should_cause_get_session_failure(self):
+        """ Removing a session should result in failure to get session """
+        instance = self.manager_class()
+        identity_name = "fred"
+        session_id = instance.create_session(identity_name)
+        instance.remove_session(session_id)
+        self.failUnlessRaises(KeyError,
+            instance.get_session, session_id
+        )
+
+
 class Stub_OpenIDRequestHandler(object):
     """ Stub class for OpenIDRequestHandler """
 
@@ -621,79 +703,6 @@ class Test_OpenIDServer(scaffold.TestCase):
             handler_class = params['handler_class']
             self.failUnlessEqual(handler_class,
                                  instance.RequestHandlerClass)
-
-    def test_create_auth_session_should_return_session_id(self):
-        """ Creating an authentication session should return session ID """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        identity_name = "fred"
-        session_id = instance.create_auth_session(identity_name)
-        self.failUnless(session_id is not None)
-
-    def test_get_session_unknown_id_raises_keyerror(self):
-        """ Getting an unknown session ID should raise KeyError """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
-            instance.get_auth_session, session_id
-        )
-
-    def test_get_session_returns_same_username(self):
-        """ Getting a session by ID should return same username """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        identity_name = "fred"
-        session_id = instance.create_auth_session(identity_name)
-        got_name = instance.get_auth_session(session_id)
-        self.failUnlessEqual(identity_name, got_name)
-
-    def test_create_session_should_create_unique_id(self):
-        """ Creating a session should create unique ID each time """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        usernames = ["larry", "curly", "moe"]
-        sessions = dict()
-        for username in usernames:
-            session_id = instance.create_auth_session(username)
-            self.failIf(session_id in sessions,
-                "Session ID %(session_id)r already exists"
-                " in %(sessions)r" % locals()
-            )
-
-    def test_create_multiple_session_for_same_username(self):
-        """ Creating multiple sessions for same username should succeed """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        usernames = ["larry", "curly", "moe"]
-        sessions = dict()
-        for username in usernames:
-            for _ in range(10):
-                session_id = instance.create_auth_session(username)
-                sessions[session_id] = username
-        for session_id, username in sessions.items():
-            got_username = instance.get_auth_session(session_id)
-            self.failUnlessEqual(username, got_username)
-
-    def test_remove_session_unknown_should_raise_keyerror(self):
-        """ Removing an unknown session ID should raise KeyError """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
-            instance.remove_auth_session, session_id
-        )
-
-    def test_remove_session_should_cause_get_session_failure(self):
-        """ Removing a session should result in failure to get session """
-        params = self.valid_servers['simple']
-        instance = params['instance']
-        identity_name = "fred"
-        session_id = instance.create_auth_session(identity_name)
-        instance.remove_auth_session(session_id)
-        self.failUnlessRaises(KeyError,
-            instance.get_auth_session, session_id
-        )
 
     def test_serve_forever_is_callable(self):
         """ OpenIDServer.serve_forever should be callable """

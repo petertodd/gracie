@@ -90,20 +90,22 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         self.username = None
         self.auth_entry = None
         session_id = self._get_auth_cookie()
+        sess_manager = self._server.sess_manager
         try:
-            username = self._server.get_auth_session(session_id)
+            username = sess_manager.get_session(session_id)
         except KeyError:
             pass
         else:
             self.username = username
             self.session_id = session_id
-            auth_service = self._server.authservice
+            auth_service = self._server.auth_service
             self.auth_entry = auth_service.get_entry(username)
 
     def _remove_auth_session(self):
         """ Remove the authentication session """
+        sess_manager = self._server.sess_manager
         if self.session_id:
-            self._server.remove_auth_session(self.session_id)
+            sess_manager.remove_session(self.session_id)
         self.session_id = None
         self.username = None
         self.auth_entry = None
@@ -242,7 +244,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for an identity view """
         name = self.route_map['name']
         try:
-            entry = self._server.authservice.get_entry(name)
+            entry = self._server.auth_service.get_entry(name)
         except KeyError, e:
             entry = None
 
@@ -311,10 +313,11 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
             username=want_username,
             password=password
         )
-        authenticate = self._server.authservice.authenticate
+        auth_service = self._server.auth_service
+        sess_manager = self._server.sess_manager
         try:
-            username = authenticate(credentials)
-            session_id = self._server.create_auth_session(username)
+            username = auth_service.authenticate(credentials)
+            session_id = sess_manager.create_session(username)
             authenticated = True
         except AuthenticationError, e:
             authenticated = False
@@ -347,27 +350,18 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         return response
 
 
-class OpenIDServer(HTTPServer):
-    """ Server for OpenID protocol requests """
+class SessionManager(object):
+    """ Manage user sessions across transactions """
 
-    def __init__(self, server_address, RequestHandlerClass):
+    def __init__(self):
         """ Set up a new instance """
-        self._setup_logging()
-        super(OpenIDServer, self).__init__(
-            server_address, RequestHandlerClass
-        )
-        self.authservice = AuthService()
         self._init_session_generator()
-        self._auth_sessions = dict()
-
-    def _setup_logging(self):
-        """ Set up logging for this server """
-        self.logger = logging.getLogger(logger_name)
 
     def _init_session_generator(self):
         """ Initialise the session ID generator """
         self._rng = random.Random()
         self._rng.seed()
+        self._sessions = dict()
 
     def _generate_session_id(self, username):
         """ Generate a session ID for the specified username """
@@ -377,17 +371,34 @@ class OpenIDServer(HTTPServer):
         session_id = message_hash.hexdigest()
         return session_id
 
-    def create_auth_session(self, username):
-        """ Create a new authentication session """
+    def create_session(self, username):
+        """ Create a new session for username """
         session_id = self._generate_session_id(username)
-        self._auth_sessions[session_id] = username
+        self._sessions[session_id] = username
         return session_id
 
-    def get_auth_session(self, session_id):
-        """ Get the session ID for specified username """
-        username = self._auth_sessions[session_id]
+    def get_session(self, session_id):
+        """ Get the username for specified session ID """
+        username = self._sessions[session_id]
         return username
 
-    def remove_auth_session(self, username):
-        """ Get the session ID for specified username """
-        del self._auth_sessions[username]
+    def remove_session(self, session_id):
+        """ Remove the specified session """
+        del self._sessions[session_id]
+
+
+class OpenIDServer(HTTPServer):
+    """ Server for OpenID protocol requests """
+
+    def __init__(self, server_address, RequestHandlerClass):
+        """ Set up a new instance """
+        self._setup_logging()
+        super(OpenIDServer, self).__init__(
+            server_address, RequestHandlerClass
+        )
+        self.auth_service = AuthService()
+        self.sess_manager = SessionManager()
+
+    def _setup_logging(self):
+        """ Set up logging for this server """
+        self.logger = logging.getLogger(logger_name)
