@@ -15,11 +15,10 @@
 import optparse
 import logging
 
-from server import OpenIDServer
-from httprequest import OpenIDRequestHandler
+from server import HTTPServer
+from httprequest import HTTPRequestHandler
 from server import default_host, default_port
-
-__version__ = "0.0"
+from server import __version__
 
 
 class OptionParser(optparse.OptionParser):
@@ -54,7 +53,7 @@ class Gracie(object):
         self._process_commandline(argv)
         self._init_logging()
         socket_params = self._get_socket_params()
-        self.server = OpenIDServer(socket_params, OpenIDRequestHandler)
+        self.server = HTTPServer(socket_params, HTTPRequestHandler)
 
     def _process_commandline(self, argv):
         """ Process command line to this application """

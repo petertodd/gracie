@@ -50,8 +50,8 @@ class Stub_SessionManager(object):
     def remove_session(self, session_id):
         del self._sessions[session_id]
 
-class Stub_OpenIDServer(object):
-    """ Stub class for OpenIDServer """
+class Stub_HTTPServer(object):
+    """ Stub class for HTTPServer """
 
     def __init__(self):
         """ Set up a new instance """
@@ -117,12 +117,12 @@ class Stub_Request(object):
         return Stub_TCPConnection(str(self))
 
 
-class Test_OpenIDRequestHandler(scaffold.TestCase):
-    """ Test cases for OpenIDRequestHandler class """
+class Test_HTTPRequestHandler(scaffold.TestCase):
+    """ Test cases for HTTPRequestHandler class """
 
     def setUp(self):
         """ Set up test fixtures """
-        self.handler_class = httprequest.OpenIDRequestHandler
+        self.handler_class = httprequest.HTTPRequestHandler
 
         self.stdout_prev = sys.stdout
         self.stdout_test = StringIO()
@@ -235,7 +235,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             request = params['request']
             address = params.setdefault('address', ("", 0))
             http_server = params.setdefault('server',
-                                            Stub_OpenIDServer())
+                                            Stub_HTTPServer())
             if not args:
                 args = dict(
                     request = request.connection(),
@@ -262,25 +262,25 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         httprequest.cookie_name_prefix = self.cookie_name_prefix_prev
 
     def test_instantiate(self):
-        """ New OpenIDRequestHandler instance should be created """
+        """ New HTTPRequestHandler instance should be created """
         for key, params in self.iterate_params():
             instance = self.handler_class(**params['args'])
             self.failUnless(instance is not None)
 
     def test_server_as_specified(self):
-        """ OpenIDRequestHandler should have specified server attribute """
+        """ HTTPRequestHandler should have specified server attribute """
         for key, params in self.iterate_params():
             instance = self.handler_class(**params['args'])
             http_server = params['server']
             self.failUnlessEqual(http_server, instance.server)
 
     def test_server_version_as_specified(self):
-        """ OpenIDRequestHandler should report module version """
+        """ HTTPRequestHandler should report module version """
         server_version = self.handler_class.server_version
         self.failUnlessEqual(self.expect_server_version, server_version)
 
     def test_version_string_as_specified(self):
-        """ OpenIDRequestHandler should report expected version string """
+        """ HTTPRequestHandler should report expected version string """
         params = self.valid_requests['get-bogus']
         instance = self.handler_class(**params['args'])
         expect_sys_version = self.expect_sys_version

@@ -23,8 +23,7 @@ import pagetemplate
 from httpresponse import ResponseHeader, Response
 from httpresponse import response_codes as http_codes
 from authservice import AuthenticationError
-
-__version__ = "0.0"
+from server import __version__
 
 cookie_name_prefix = "gracie_"
 
@@ -39,15 +38,15 @@ mapper.connect('identity', 'id/:name', controller='identity', action='view')
 mapper.connect('login', 'login', controller='login', action='view')
 mapper.connect('logout', 'logout', controller='logout', action='view')
 
-class OpenIDRequestHandler(BaseHTTPRequestHandler):
-    """ Handler for individual OpenID requests """
+class HTTPRequestHandler(BaseHTTPRequestHandler):
+    """ Handler for individual HTTP requests """
 
     server_version = "Gracie/%(__version__)s" % globals()
 
     def __init__(self, request, client_address, server):
         """ Set up a new instance """
         self._server = server
-        super(OpenIDRequestHandler, self).__init__(
+        super(HTTPRequestHandler, self).__init__(
             request, client_address, server
         )
 

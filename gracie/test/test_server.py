@@ -116,18 +116,18 @@ class Test_SessionManager(scaffold.TestCase):
         )
 
 
-class Stub_OpenIDRequestHandler(object):
-    """ Stub class for OpenIDRequestHandler """
+class Stub_HTTPRequestHandler(object):
+    """ Stub class for HTTPRequestHandler """
 
-class Test_OpenIDServer(scaffold.TestCase):
-    """ Test cases for OpenIDServer class """
+class Test_HTTPServer(scaffold.TestCase):
+    """ Test cases for HTTPServer class """
 
     def setUp(self):
         """ Set up test fixtures """
 
-        self.server_class = server.OpenIDServer
-        self.stub_handler_class = Stub_OpenIDRequestHandler
-        self.mock_handler_class = Mock('OpenIDRequestHandler')
+        self.server_class = server.HTTPServer
+        self.stub_handler_class = Stub_HTTPRequestHandler
+        self.mock_handler_class = Mock('HTTPRequestHandler')
 
         self.http_server_mock_methods = dict(
             server_bind = Mock('HTTPServer.server_bind'),
@@ -173,13 +173,13 @@ class Test_OpenIDServer(scaffold.TestCase):
             setattr(server.HTTPServer, name, value)
 
     def test_instantiate(self):
-        """ New OpenIDServer instance should be created """
+        """ New HTTPServer instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
             self.failUnless(instance is not None)
 
     def test_logger_name_as_specified(self):
-        """ OpenIDServer should have logger of specified name """
+        """ HTTPServer should have logger of specified name """
         params = self.valid_servers['simple']
         logger_name_prev = server.logger_name
         logger_name_test = "Foo.Bar"
@@ -190,15 +190,29 @@ class Test_OpenIDServer(scaffold.TestCase):
         server.logger_name = logger_name_prev
 
     def test_request_handler_class_as_specified(self):
-        """ OpenIDServer should have specified RequestHandlerClass """
+        """ HTTPServer should have specified RequestHandlerClass """
         for key, params in self.iterate_params():
             instance = params['instance']
             handler_class = params['handler_class']
             self.failUnlessEqual(handler_class,
                                  instance.RequestHandlerClass)
 
+    def test_server_has_auth_service(self):
+        """ HTTPServer should have an auth_service attribute """
+        params = self.valid_servers['simple']
+        instance = params['instance']
+        auth_service = instance.auth_service
+        self.failUnless(auth_service is not None)
+
+    def test_server_has_session_manager(self):
+        """ HTTPServer should have a sess_manager attribute """
+        params = self.valid_servers['simple']
+        instance = params['instance']
+        sess_manager = instance.sess_manager
+        self.failUnless(sess_manager is not None)
+
     def test_serve_forever_is_callable(self):
-        """ OpenIDServer.serve_forever should be callable """
+        """ HTTPServer.serve_forever should be callable """
         self.failUnless(callable(self.server_class.serve_forever))
 
 

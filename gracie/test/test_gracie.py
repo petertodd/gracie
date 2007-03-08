@@ -26,13 +26,13 @@ gracie = scaffold.make_module_from_file(
 )
 
 
-class Stub_OpenIDServer(object):
-    """ Stub class for OpenIDServer """
+class Stub_HTTPServer(object):
+    """ Stub class for HTTPServer """
     def __init__(self, server_address, RequestHandlerClass):
         """ Set up a new instance """
 
-class Stub_OpenIDRequestHandler(object):
-    """ Stub class for OpenIDRequestHandler """
+class Stub_HTTPRequestHandler(object):
+    """ Stub class for HTTPRequestHandler """
 
 class Test_Gracie(scaffold.TestCase):
     """ Test cases for Gracie class """
@@ -45,14 +45,14 @@ class Test_Gracie(scaffold.TestCase):
         self.test_stdout = StringIO()
         sys.stdout = self.test_stdout
 
-        self.stub_server_class = Stub_OpenIDServer
-        self.mock_server_class = Mock('OpenIDServer_class')
-        self.mock_server_class.mock_returns = Mock('OpenIDServer')
+        self.stub_server_class = Stub_HTTPServer
+        self.mock_server_class = Mock('HTTPServer_class')
+        self.mock_server_class.mock_returns = Mock('HTTPServer')
 
-        self.server_class_prev = gracie.OpenIDServer
-        gracie.OpenIDServer = self.stub_server_class
-        self.handler_class_prev = gracie.OpenIDRequestHandler
-        gracie.RequestHandlerClass = Stub_OpenIDRequestHandler
+        self.server_class_prev = gracie.HTTPServer
+        gracie.HTTPServer = self.stub_server_class
+        self.handler_class_prev = gracie.HTTPRequestHandler
+        gracie.RequestHandlerClass = Stub_HTTPRequestHandler
         self.default_port_prev = gracie.default_port
         gracie.default_port = 7654
 
@@ -83,8 +83,8 @@ class Test_Gracie(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        gracie.OpenIDServer = self.server_class_prev
-        gracie.OpenIDRequestHandler = self.handler_class_prev
+        gracie.HTTPServer = self.server_class_prev
+        gracie.HTTPRequestHandler = self.handler_class_prev
         gracie.default_port = self.default_port_prev
 
     def test_instantiate(self):
@@ -133,7 +133,7 @@ class Test_Gracie(scaffold.TestCase):
         expect_stdout = """\
             usage: ...
             """
-        gracie.OpenIDServer = self.mock_server_class
+        gracie.HTTPServer = self.mock_server_class
         self.failUnlessRaises(SystemExit,
             self.app_class, argv=argv
         )
@@ -146,7 +146,7 @@ class Test_Gracie(scaffold.TestCase):
 
         want_loglevel = "DEBUG"
         argv = ["--log-level", want_loglevel]
-        gracie.OpenIDServer = self.mock_server_class
+        gracie.HTTPServer = self.mock_server_class
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
 
@@ -156,11 +156,11 @@ class Test_Gracie(scaffold.TestCase):
         host = gracie.default_host
         port = gracie.default_port
         expect_stdout = """\
-            Called OpenIDServer_class(
+            Called HTTPServer_class(
                 (%(host)r, %(port)r),
-                <class 'httprequest.OpenIDRequestHandler'>)
+                <class 'httprequest.HTTPRequestHandler'>)
             ...""" % locals()
-        gracie.OpenIDServer = self.mock_server_class
+        gracie.HTTPServer = self.mock_server_class
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.test_stdout.getvalue()
@@ -172,14 +172,14 @@ class Test_Gracie(scaffold.TestCase):
         self.failUnless(callable(self.app_class.run))
 
     def test_run_starts_server(self):
-        """ Gracie.run should start OpenIDServer """
+        """ Gracie.run should start HTTPServer """
         args = self.valid_apps['simple']['args']
         port = gracie.default_port
         expect_stdout = """\
             ...
-            Called OpenIDServer.serve_forever()
+            Called HTTPServer.serve_forever()
             """
-        gracie.OpenIDServer = self.mock_server_class
+        gracie.HTTPServer = self.mock_server_class
         instance = self.app_class(**args)
         instance.run()
         self.failUnlessOutputCheckerMatch(

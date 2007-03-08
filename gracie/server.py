@@ -13,17 +13,19 @@
 
 import sys
 import logging
-from BaseHTTPServer import HTTPServer
+from BaseHTTPServer import HTTPServer as BaseHTTPServer
 import random
 import sha
 
 from authservice import PamAuthService as AuthService
 
+__version__ = "0.0"
+
 # Name of the Python logging instance to use for this module
 logger_name = "gracie.server"
 
 
-class HTTPServer(HTTPServer, object):
+class BaseHTTPServer(BaseHTTPServer, object):
     """ Shim to insert base object type into hierarchy """
 
 
@@ -81,13 +83,13 @@ class SessionManager(object):
         del self._sessions[session_id]
 
 
-class OpenIDServer(HTTPServer):
-    """ Server for OpenID protocol requests """
+class HTTPServer(BaseHTTPServer):
+    """ Server for HTTP protocol requests """
 
     def __init__(self, server_address, RequestHandlerClass):
         """ Set up a new instance """
         self._setup_logging()
-        super(OpenIDServer, self).__init__(
+        super(HTTPServer, self).__init__(
             server_address, RequestHandlerClass
         )
         self.auth_service = AuthService()
