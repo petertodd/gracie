@@ -159,6 +159,14 @@ class Test_PageTemplates(scaffold.TestCase):
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
+    def test_about_site_page_returns_page(self):
+        """ About Site page should return page """
+        page = pagetemplate.about_site_view_page()
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "Page {...}", page_data
+        )
+
     def test_identity_user_not_found_page_contains_name(self):
         """ Resulting page should contain the referent user name """
         name = "fred"

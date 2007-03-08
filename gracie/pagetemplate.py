@@ -77,6 +77,14 @@ def url_not_found_page(url):
     ))
     return page
 
+def about_site_view_page():
+    title = "About this site"
+    page = Page(title)
+    page.content = """
+        This is Gracie, an OpenID provider.
+    """
+    return page
+
 def user_not_found_page(name):
     title = "User Not Found"
     page = Page(title)

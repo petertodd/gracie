@@ -28,12 +28,7 @@ class ResponseHeader(object):
         """ Set up a new instance """
         self.code = code
         self.protocol = protocol
-        self.fields = dict()
-
-        self.fields.update({
-            'Date': None,
-            'Content-Type': "text/html",
-        })
+        self.fields = []
 
 class Response(object):
     """ Encapsulation for an HTTP response """
@@ -46,7 +41,7 @@ class Response(object):
     def send_to_handler(self, handler):
         """ Send this response via a request handler """
         handler.send_response(self.header.code)
-        for key, value in self.header.fields.items():
+        for key, value in self.header.fields:
             handler.send_header(key, value)
         handler.end_headers()
         handler.wfile.write(self.data)

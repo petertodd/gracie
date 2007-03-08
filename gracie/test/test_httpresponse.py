@@ -94,29 +94,6 @@ class Test_ResponseHeader(scaffold.TestCase):
             instance = params['instance']
             self.failUnlessEqual(protocol, instance.protocol)
 
-    def test_fields_should_be_populated(self):
-        """ New ResponseHeader fields should be populated """
-        expect_fields = {
-            'Content-Type': "text/html",
-            'Date': None,
-        }
-        for key, params in self.iterate_params():
-            instance = params['instance']
-            for field_key, field_value in expect_fields.items():
-                if field_value is None:
-                    self.failUnless(field_key in instance.fields,
-                        "Expected field %(field_key)r not in header"
-                            % locals()
-                    )
-                else:
-                    fields = instance.fields
-                    value = fields[field_key]
-                    self.failUnlessEqual(
-                        field_value, instance.fields[field_key],
-                        "Header field %(field_key)r should have value"
-                        " %(field_value)r, not %(value)r" % locals()
-                    )
-
 
 class Stub_ResponseHeader(object):
     """ Stub class for response header """

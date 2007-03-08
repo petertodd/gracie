@@ -15,8 +15,12 @@ import sys
 import logging
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 import cgi
+import Cookie
 import urlparse
 import routes
+import time
+import random
+import sha
 
 import pagetemplate
 from authservice import PamAuthService as AuthService
@@ -28,6 +32,8 @@ __version__ = "0.0"
 
 # Name of the Python logging instance to use for this module
 logger_name = "gracie.server"
+
+cookie_name_prefix = "gracie_"
 
 
 class HTTPServer(HTTPServer, object):
@@ -55,6 +61,7 @@ default_location = net_location(default_host, default_port)
 
 
 mapper = routes.Mapper()
+mapper.connect('root', '', controller='about', action='view')
 mapper.connect('identity', 'id/:name', controller='identity', action='view')
 mapper.connect('login', 'login', controller='login')
 
@@ -76,10 +83,75 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         loglevel = logging.INFO
         logger.log(loglevel, format, *args, **kwargs)
 
+    def _setup_auth_session(self):
+        """ Set up the authentication session """
+        self.username = None
+        self.session_id = None
+        (username, session) = self._get_auth_cookie()
+        try:
+            session_id = self._server.get_auth_session(username)
+        except KeyError:
+            pass
+        else:
+            if session == session_id:
+                self.username = username
+                self.session_id = session_id
+
+    def _get_cookie(self, name):
+        """ Get a cookie from the request """
+        value = None
+        prefix = cookie_name_prefix
+        cookie_string = ";".join(self.headers.getheaders('Cookie'))
+        cookies = Cookie.BaseCookie(cookie_string)
+        if cookies:
+            cookie_name = "%(prefix)s%(name)s" % locals()
+            if cookie_name in cookies:
+                value = cookies.get(cookie_name).value
+        return value
+
+    def _get_auth_cookie(self):
+        """ Get the authentication cookie from the request """
+        username = self._get_cookie('username')
+        session_id = self._get_cookie('session')
+        return (username, session_id)
+
+    def _set_cookie(self, response, name, value, expire=None):
+        """ Set a cookie in the response header """
+        prefix = cookie_name_prefix
+        cookie_name = "%(prefix)s%(name)s" % locals()
+        field_name = "Set-Cookie"
+        field_value = "%(cookie_name)s=%(value)s" % locals()
+        if expire:
+            field_value = (
+                "%(field_value)s;Expires=%(expire)s" % locals())
+        field = (field_name, field_value)
+        response.header.fields.append(field)
+
+    def _set_auth_cookie(self, response):
+        """ Set the authentication cookie in the response """
+        field_name = "Set-Cookie"
+        epoch = time.gmtime(0)
+        expire_immediately = time.strftime(
+            '%a, %d-%b-%y %H:%M:%S GMT', epoch)
+        prefix = cookie_name_prefix
+
+        username = self.username
+        if username:
+            self._set_cookie(response, 'username', username)
+        else:
+            self._set_cookie(response, 'username', "", expire_immediately)
+
+        session_id = self.session_id
+        if session_id:
+            self._set_cookie(response, 'session', session_id)
+        else:
+            self._set_cookie(response, 'session', "", expire_immediately)
+
     def _dispatch(self):
         """ Dispatch to the appropriate controller """
         controller_map = {
             None: self._make_url_not_found_error_response,
+            'about': self._make_about_site_view_response,
             'identity': self._make_identity_view_response,
             'login': self._make_login_response,
         }
@@ -89,6 +161,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         controller = controller_map[controller_name]
 
         response = controller()
+        self._set_auth_cookie(response)
         response.send_to_handler(self)
 
     def _parse_path(self):
@@ -106,6 +179,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """ Handle a GET request """
+        self._setup_auth_session()
         self._parse_path()
         self.query_data = self.parsed_url['query']
         self._parse_query()
@@ -113,6 +187,7 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """ Handle a POST request """
+        self._setup_auth_session()
         self.route_map = mapper.match(self.path)
         content_length = int(self.headers['Content-Length'])
         self.query_data = self.rfile.read(content_length)
@@ -123,6 +198,14 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         """ Construct a Not Found error response """
         header = ResponseHeader(http_codes['not_found'])
         page = pagetemplate.url_not_found_page(self.path)
+        data = page.serialise()
+        response = Response(header, data)
+        return response
+
+    def _make_about_site_view_response(self):
+        """ Construct a response for the about-this-site view """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.about_site_view_page()
         data = page.serialise()
         response = Response(header, data)
         return response
@@ -191,11 +274,14 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         )
         authenticate = self._server.authservice.authenticate
         try:
-            self.username = authenticate(credentials)
+            username = authenticate(credentials)
+            session_id = self._server.create_auth_session(username)
             authenticated = True
         except AuthenticationError, e:
             authenticated = False
         if authenticated:
+            self.username = username
+            self.session_id = session_id
             response = self._make_login_succeeded_response()
         else:
             response = self._make_login_failed_response()
@@ -230,7 +316,37 @@ class OpenIDServer(HTTPServer):
             server_address, RequestHandlerClass
         )
         self.authservice = AuthService()
+        self._init_session_generator()
+        self._auth_sessions = dict()
 
     def _setup_logging(self):
         """ Set up logging for this server """
         self.logger = logging.getLogger(logger_name)
+
+    def _init_session_generator(self):
+        """ Initialise the session ID generator """
+        self._rng = random.Random()
+        self._rng.seed()
+
+    def _generate_session_id(self, username):
+        """ Generate a session ID for the specified username """
+        randnum = self._rng.random()
+        message = "%(username)s:%(randnum)s" % locals()
+        message_hash = sha.sha(message)
+        session_id = message_hash.hexdigest()
+        return session_id
+
+    def create_auth_session(self, username):
+        """ Create a new authentication session """
+        session_id = self._generate_session_id(username)
+        self._auth_sessions[username] = session_id
+        return session_id
+
+    def get_auth_session(self, username):
+        """ Get the session ID for specified username """
+        session_id = self._auth_sessions[username]
+        return session_id
+
+    def remove_auth_session(self, username):
+        """ Get the session ID for specified username """
+        del self._auth_sessions[username]
