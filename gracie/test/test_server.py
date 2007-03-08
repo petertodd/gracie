@@ -60,13 +60,15 @@ class Stub_OpenIDServer(object):
         self.create_auth_session("fred")
 
     def create_auth_session(self, username):
-        self._auth_sessions[username] = "DEADBEEF"
+        session_id = "DEADBEEF-%(username)s" % locals()
+        self._auth_sessions[session_id] = username
+        return session_id
 
-    def get_auth_session(self, username):
-        return self._auth_sessions[username]
+    def get_auth_session(self, session_id):
+        return self._auth_sessions[session_id]
 
-    def remove_auth_session(self, username):
-        del self._auth_sessions[username]
+    def remove_auth_session(self, session_id):
+        del self._auth_sessions[session_id]
 
 class Stub_TCPConnection(object):
     """ Stub class for TCP connection """
@@ -161,16 +163,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             'unknown-cookie': dict(
                 request = Stub_Request("GET", "/",
                     header = {
-                        "Cookie":
-                            "TEST_username=bogus; TEST_session=DECAFBAD",
-                    },
-                ),
-            ),
-            'bad-cookie': dict(
-                request = Stub_Request("GET", "/",
-                    header = {
-                        "Cookie":
-                            "TEST_username=fred; TEST_session=DECAFBAD",
+                        "Cookie": "TEST_session=DECAFBAD",
                     },
                 ),
             ),
@@ -178,8 +171,7 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
                 identity_name = "fred",
                 request = Stub_Request("GET", "/",
                     header = {
-                        "Cookie":
-                            "TEST_username=fred; TEST_session=DEADBEEF",
+                        "Cookie": "TEST_session=DEADBEEF-fred",
                     },
                 ),
             ),
@@ -352,8 +344,6 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
             Called ResponseHeader_class(200)
             ...
             Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_username=;Expires=...'))
-            Called Response.header.fields.append(
                 ('Set-Cookie', 'TEST_session=;Expires=...'))
             Called Response.send_to_handler(...)
             """
@@ -368,25 +358,6 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         expect_stdout = """\
             Called ResponseHeader_class(200)
             ...
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_username=;Expires=...'))
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_session=;Expires=...'))
-            Called Response.send_to_handler(...)
-            """
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_request_with_bad_cookie_response_not_logged_in(self):
-        """ With bad session cookie, response should send Not Logged In """
-        params = self.valid_requests['bad-cookie']
-        instance = self.handler_class(**params['args'])
-        expect_stdout = """\
-            Called ResponseHeader_class(200)
-            ...
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_username=;Expires=...'))
             Called Response.header.fields.append(
                 ('Set-Cookie', 'TEST_session=;Expires=...'))
             Called Response.send_to_handler(...)
@@ -403,8 +374,8 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         expect_stdout = """\
             Called ResponseHeader_class(200)
             ...
-            Called Response.header.fields.append(('Set-Cookie', 'TEST_username=%(identity_name)s...'))
-            Called Response.header.fields.append(('Set-Cookie', 'TEST_session=...'))
+            Called Response.header.fields.append(
+                ('Set-Cookie', 'TEST_session=DEADBEEF-%(identity_name)s'))
             Called Response.send_to_handler(...)
             """ % locals()
         self.failUnlessOutputCheckerMatch(
@@ -475,8 +446,6 @@ class Test_OpenIDRequestHandler(scaffold.TestCase):
         expect_stdout = """\
             Called ResponseHeader_class(302)
             Called Response.header.fields.append('Location', ...)
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_username=;Expires=...'))
             Called Response.header.fields.append(
                 ('Set-Cookie', 'TEST_session=;Expires=...'))
             Called Response.send_to_handler(...)
@@ -662,23 +631,23 @@ class Test_OpenIDServer(scaffold.TestCase):
         session_id = instance.create_auth_session(identity_name)
         self.failUnless(session_id is not None)
 
-    def test_get_session_unknown_username_raises_keyerror(self):
-        """ Getting an unknown username's session should raise KeyError """
+    def test_get_session_unknown_id_raises_keyerror(self):
+        """ Getting an unknown session ID should raise KeyError """
         params = self.valid_servers['simple']
         instance = params['instance']
-        identity_name = "bogus"
+        session_id = "DECAFBAD"
         self.failUnlessRaises(KeyError,
-            instance.get_auth_session, identity_name
+            instance.get_auth_session, session_id
         )
 
-    def test_get_session_returns_same_session_id(self):
-        """ Getting a session ID should return same ID as when created """
+    def test_get_session_returns_same_username(self):
+        """ Getting a session by ID should return same username """
         params = self.valid_servers['simple']
         instance = params['instance']
         identity_name = "fred"
-        created_session_id = instance.create_auth_session(identity_name)
-        session_id = instance.get_auth_session(identity_name)
-        self.failUnlessEqual(created_session_id, session_id)
+        session_id = instance.create_auth_session(identity_name)
+        got_name = instance.get_auth_session(session_id)
+        self.failUnlessEqual(identity_name, got_name)
 
     def test_create_session_should_create_unique_id(self):
         """ Creating a session should create unique ID each time """
@@ -688,22 +657,32 @@ class Test_OpenIDServer(scaffold.TestCase):
         sessions = dict()
         for username in usernames:
             session_id = instance.create_auth_session(username)
-            sessions[username] = session_id
-            equal_sessions = [n for (n, s) in sessions.items()
-                              if s == session_id and n != username]
-            self.failIf(equal_sessions,
-                "Created session for %(username)r,"
-                " other sessions have same ID:"
-                " %(equal_sessions)r (all: %(sessions)r)" % locals()
+            self.failIf(session_id in sessions,
+                "Session ID %(session_id)r already exists"
+                " in %(sessions)r" % locals()
             )
 
-    def test_remove_session_unknown_username_should_raise_keyerror(self):
-        """ Removing an unknown username's session should raise KeyError """
+    def test_create_multiple_session_for_same_username(self):
+        """ Creating multiple sessions for same username should succeed """
         params = self.valid_servers['simple']
         instance = params['instance']
-        identity_name = "bogus"
+        usernames = ["larry", "curly", "moe"]
+        sessions = dict()
+        for username in usernames:
+            for _ in range(10):
+                session_id = instance.create_auth_session(username)
+                sessions[session_id] = username
+        for session_id, username in sessions.items():
+            got_username = instance.get_auth_session(session_id)
+            self.failUnlessEqual(username, got_username)
+
+    def test_remove_session_unknown_should_raise_keyerror(self):
+        """ Removing an unknown session ID should raise KeyError """
+        params = self.valid_servers['simple']
+        instance = params['instance']
+        session_id = "DECAFBAD"
         self.failUnlessRaises(KeyError,
-            instance.remove_auth_session, identity_name
+            instance.remove_auth_session, session_id
         )
 
     def test_remove_session_should_cause_get_session_failure(self):
@@ -712,9 +691,9 @@ class Test_OpenIDServer(scaffold.TestCase):
         instance = params['instance']
         identity_name = "fred"
         session_id = instance.create_auth_session(identity_name)
-        instance.remove_auth_session(identity_name)
+        instance.remove_auth_session(session_id)
         self.failUnlessRaises(KeyError,
-            instance.get_auth_session, identity_name
+            instance.get_auth_session, session_id
         )
 
     def test_serve_forever_is_callable(self):

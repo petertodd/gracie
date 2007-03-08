@@ -86,27 +86,26 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def _setup_auth_session(self):
         """ Set up the authentication session """
-        self.username = None
         self.session_id = None
+        self.username = None
         self.auth_entry = None
-        (username, session) = self._get_auth_cookie()
+        session_id = self._get_auth_cookie()
         try:
-            session_id = self._server.get_auth_session(username)
+            username = self._server.get_auth_session(session_id)
         except KeyError:
             pass
         else:
-            if session == session_id:
-                self.username = username
-                self.session_id = session_id
-                auth_service = self._server.authservice
-                self.auth_entry = auth_service.get_entry(username)
+            self.username = username
+            self.session_id = session_id
+            auth_service = self._server.authservice
+            self.auth_entry = auth_service.get_entry(username)
 
     def _remove_auth_session(self):
         """ Remove the authentication session """
-        if self.username:
-            self._server.remove_auth_session(self.username)
-        self.username = None
+        if self.session_id:
+            self._server.remove_auth_session(self.session_id)
         self.session_id = None
+        self.username = None
         self.auth_entry = None
 
     def _get_openid_url(self, username):
@@ -129,9 +128,8 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
 
     def _get_auth_cookie(self):
         """ Get the authentication cookie from the request """
-        username = self._get_cookie('username')
         session_id = self._get_cookie('session')
-        return (username, session_id)
+        return session_id
 
     def _set_cookie(self, response, name, value, expire=None):
         """ Set a cookie in the response header """
@@ -152,12 +150,6 @@ class OpenIDRequestHandler(BaseHTTPRequestHandler):
         expire_immediately = time.strftime(
             '%a, %d-%b-%y %H:%M:%S GMT', epoch)
         prefix = cookie_name_prefix
-
-        username = self.username
-        if username:
-            self._set_cookie(response, 'username', username)
-        else:
-            self._set_cookie(response, 'username', "", expire_immediately)
 
         session_id = self.session_id
         if session_id:
@@ -388,13 +380,13 @@ class OpenIDServer(HTTPServer):
     def create_auth_session(self, username):
         """ Create a new authentication session """
         session_id = self._generate_session_id(username)
-        self._auth_sessions[username] = session_id
+        self._auth_sessions[session_id] = username
         return session_id
 
-    def get_auth_session(self, username):
+    def get_auth_session(self, session_id):
         """ Get the session ID for specified username """
-        session_id = self._auth_sessions[username]
-        return session_id
+        username = self._auth_sessions[session_id]
+        return username
 
     def remove_auth_session(self, username):
         """ Get the session ID for specified username """
