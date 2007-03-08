@@ -158,7 +158,7 @@ class Test_Gracie(scaffold.TestCase):
         expect_stdout = """\
             Called OpenIDServer_class(
                 (%(host)r, %(port)r),
-                <class 'server.OpenIDRequestHandler'>)
+                <class 'httprequest.OpenIDRequestHandler'>)
             ...""" % locals()
         gracie.OpenIDServer = self.mock_server_class
         instance = self.app_class(**args)

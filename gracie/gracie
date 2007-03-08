@@ -15,7 +15,8 @@
 import optparse
 import logging
 
-from server import OpenIDServer, OpenIDRequestHandler
+from server import OpenIDServer
+from httprequest import OpenIDRequestHandler
 from server import default_host, default_port
 
 __version__ = "0.0"
