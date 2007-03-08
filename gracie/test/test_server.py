@@ -24,7 +24,6 @@ from test_authservice import Stub_AuthService
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 
 import server
-import httpresponse
 
 
 class Test_net_location(scaffold.TestCase):
