@@ -16,6 +16,8 @@ import logging
 from BaseHTTPServer import HTTPServer as BaseHTTPServer
 import random
 import sha
+from openid.server.server import Server as OpenIDServer
+from openid.store.dumbstore import DumbStore as OpenIDStore
 
 from authservice import PamAuthService as AuthService
 
@@ -92,10 +94,22 @@ class HTTPServer(BaseHTTPServer):
         super(HTTPServer, self).__init__(
             server_address, RequestHandlerClass
         )
-        self.openid_server = object()
+        secret = "gracie"
+        store = OpenIDStore(secret)
+        self.openid_server = OpenIDServer(store)
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
+
+    def __del__(self):
+        self.logger.info(
+            "Exiting Gracie server"
+        )
 
     def _setup_logging(self):
         """ Set up logging for this server """
         self.logger = logging.getLogger(logger_name)
+        server_version = __version__
+        self.logger.info(
+            "Starting Gracie server, version %(server_version)s"
+            % locals()
+        )

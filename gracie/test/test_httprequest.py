@@ -21,6 +21,10 @@ import scaffold
 from scaffold import Mock
 from test_authservice import Stub_AuthService
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
+from test_server import (
+    Stub_OpenIDStore, Stub_OpenIDServer,
+    Stub_OpenIDError, Stub_OpenIDResponse,
+)
 
 import httprequest
 
@@ -54,27 +58,14 @@ class Stub_SessionManager(object):
     def remove_session(self, session_id):
         del self._sessions[session_id]
 
-class Stub_OpenIDError(Exception):
-    """ Stub error class for openid module """
-
-class Stub_OpenIDServer(object):
-    """ Stub class for an OpenID protocol server """
-
-class Stub_OpenIDResponse(object):
-    """ Stub class for an OpenID protocol response """
-
-    def __init__(self):
-        self.code = 200
-        self.headers = [("openid", "yes")]
-        self.body = "OpenID response"
-
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
 
     def __init__(self):
         """ Set up a new instance """
         self.logger = Stub_Logger()
-        self.openid_server = Stub_OpenIDServer()
+        store = Stub_OpenIDStore(None)
+        self.openid_server = Stub_OpenIDServer(store)
         self.auth_service = Stub_AuthService()
         self.sess_manager = Stub_SessionManager()
 

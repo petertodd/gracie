@@ -119,6 +119,33 @@ class Test_SessionManager(scaffold.TestCase):
 class Stub_HTTPRequestHandler(object):
     """ Stub class for HTTPRequestHandler """
 
+class Stub_OpenIDError(Exception):
+    """ Stub error class for openid module """
+
+class Stub_OpenIDStore(object):
+    """ Stub class for openid backing store """
+
+    def __init__(self, _, *args, **kwargs):
+        """ Set up a new instance """
+
+class Stub_OpenIDServer(object):
+    """ Stub class for an OpenID protocol server """
+
+    def __init__(self, store):
+        """ Set up a new instance """
+        if not isinstance(
+            store, (Stub_OpenIDStore, server.OpenIDStore)):
+            raise ValueError("store must be an OpenIDStore instance")
+
+class Stub_OpenIDResponse(object):
+    """ Stub class for an OpenID protocol response """
+
+    def __init__(self):
+        self.code = 200
+        self.headers = [("openid", "yes")]
+        self.body = "OpenID response"
+
+
 class Test_HTTPServer(scaffold.TestCase):
     """ Test cases for HTTPServer class """
 
@@ -128,6 +155,11 @@ class Test_HTTPServer(scaffold.TestCase):
         self.server_class = server.HTTPServer
         self.stub_handler_class = Stub_HTTPRequestHandler
         self.mock_handler_class = Mock('HTTPRequestHandler')
+
+        self.openid_server_prev = server.OpenIDServer
+        self.openid_store_prev = server.OpenIDStore
+        server.OpenIDServer = Stub_OpenIDServer
+        server.OpenIDStore = Stub_OpenIDStore
 
         self.http_server_mock_methods = dict(
             server_bind = Mock('HTTPServer.server_bind'),
@@ -171,6 +203,8 @@ class Test_HTTPServer(scaffold.TestCase):
         sys.stdout = self.stdout_prev
         for name, value in self.http_server_prev_methods.items():
             setattr(server.HTTPServer, name, value)
+        server.OpenIDServer = self.openid_server_prev
+        server.OpenIDStore = self.openid_store_prev
 
     def test_instantiate(self):
         """ New HTTPServer instance should be created """
@@ -202,7 +236,7 @@ class Test_HTTPServer(scaffold.TestCase):
         params = self.valid_servers['simple']
         instance = params['instance']
         openid_server = instance.openid_server
-        self.failUnless(openid_server is not None)
+        self.failUnless(isinstance(openid_server, Stub_OpenIDServer))
 
     def test_server_has_auth_service(self):
         """ HTTPServer should have an auth_service attribute """
