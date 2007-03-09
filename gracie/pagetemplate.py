@@ -25,7 +25,7 @@ page_template = Template("""\
     <title>$page_title</title>
 
     <style type="text/css">
-
+    $css_sheet
     </style>
 
 </head>
@@ -35,21 +35,82 @@ $page_body
 
 body_template = Template("""\
 <body>
+$page_header
 <div id="content">
-$auth_section
 <h1 id="title">$page_title</h1>
 $page_content
 </div><!-- content -->
+$page_footer
 </body>
+""")
+
+header_template = Template("""\
+<div id="header">
+<p id="banner"><a href="/">Gracie</a></p>
+$auth_section
+</div><!-- banner -->
+""")
+
+footer_template = Template("""\
+<div id="footer">
+</div><!-- footer -->
 """)
 
 auth_section_template = Template("""\
 <div id="auth-info">
-<p>$logged_in_as
-$change_status
-</p>
+<p>$logged_in_as</p>
+<p>$change_status</p>
 </div><!-- auth-info -->
 """)
+
+css_sheet = """\
+body {
+    width: 100%;
+    height: auto;
+    margin: 0.0em;
+    color: black;
+    background-color: #FFB;
+}
+
+div#header {
+    color: black;
+    background-color: #FFC;
+    height: 3.0em;
+    margin: 0.0em;
+    border: 0;
+    border-bottom: 2px solid black;
+    padding: 0.2em;
+    padding-left: 1.0em;
+}
+
+div#footer {
+    border: 0;
+    border-top: 1px solid black;
+}
+
+p#banner {
+    width: 60%;
+    float: left;
+}
+
+div#auth-info {
+    float: right;
+    color: black;
+    background-color: #BCF;
+    margin: 0.0em;
+    border: 1px solid #88A;
+    padding: 0.3em 0.5em;
+    width: 30%;
+    font-family: sans-serif;
+    font-size: 70%;
+    text-align: right;
+}
+
+div#content {
+    margin: 0.0em;
+    padding: 0.5em;
+}
+"""
 
 openid_url_prefix = "http://localhost:8000/id/"
 
@@ -61,6 +122,7 @@ class Page(object):
         """ Set up a new instance """
         self.character_encoding = "utf-8"
         self.title = title
+        self.css_sheet = css_sheet,
         self.content = ""
         self.values = dict(
             auth_entry = None,
@@ -90,21 +152,37 @@ class Page(object):
                 """You may <a href="%(logout_url)s">log out now</a>."""
                 % locals()
             )
-        auth_section_text = auth_section_template.substitute(locals())
-        return auth_section_text
+        text = auth_section_template.substitute(locals())
+        return text
+
+    def _get_header(self):
+        """ Get the page header """
+        auth_section_text = self._get_auth_section(
+            self.values['auth_entry'])
+        text = header_template.substitute(self.values,
+            auth_section=auth_section_text,
+        )
+        return text
+
+    def _get_footer(self):
+        """ Get the page footer """
+        text = footer_template.substitute(self.values,
+        )
+        return text
 
     def serialise(self):
         """ Generate a text stream for page data """
-        auth_section_text = self._get_auth_section(
-            self.values['auth_entry'])
+        header_text = self._get_header()
         content_text = Template(self.content).substitute(self.values)
+        footer_text = self._get_footer()
         body_text = body_template.substitute(self.values,
             page_title=self.title,
-            auth_section=auth_section_text,
+            page_header=header_text, page_footer=footer_text,
             page_content=content_text,
         )
         page_text = page_template.substitute(
             page_title=self.title, page_body=body_text,
+            css_sheet=self.css_sheet,
             character_encoding=self.character_encoding,
         )
         return page_text
@@ -160,9 +238,13 @@ def identity_view_user_page(entry):
     title = "Identity page for %(name)s" % entry
     page = Page(title)
     page.content = """
-        User ID: $id
-        Name: $name
-        Full name: $fullname
+        <div id="identity-info">
+        <table>
+        <tr><th>User ID</th><td>$id</td></tr>
+        <tr><th>Name</th><td>$name</td></tr>
+        <tr><th>Full name</th><td>$fullname</td></tr>
+        </table>
+        </div><!-- identity-info -->
     """
     page.values.update(entry)
     return page
