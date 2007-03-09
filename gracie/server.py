@@ -92,6 +92,7 @@ class HTTPServer(BaseHTTPServer):
         super(HTTPServer, self).__init__(
             server_address, RequestHandlerClass
         )
+        self.openid_server = object()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
 

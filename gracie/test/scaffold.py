@@ -83,7 +83,9 @@ class TestCase(unittest.TestCase):
         want = textwrap.dedent(want)
         self.failUnlessEqual(True,
             checker.check_output(want, got, doctest.ELLIPSIS),
-            "Expected %(want)r, got %(got)r:\n%(got)s" % locals()
+            "Expected %(want)r, got %(got)r:"
+            "\n--- want: ---\n%(want)s"
+            "\n--- got: ---\n%(got)s" % locals()
         )
 
 

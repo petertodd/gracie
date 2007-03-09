@@ -197,6 +197,13 @@ class Test_HTTPServer(scaffold.TestCase):
             self.failUnlessEqual(handler_class,
                                  instance.RequestHandlerClass)
 
+    def test_server_has_openid_server(self):
+        """ HTTPServer should have an openid_server attribute """
+        params = self.valid_servers['simple']
+        instance = params['instance']
+        openid_server = instance.openid_server
+        self.failUnless(openid_server is not None)
+
     def test_server_has_auth_service(self):
         """ HTTPServer should have an auth_service attribute """
         params = self.valid_servers['simple']

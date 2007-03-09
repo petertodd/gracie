@@ -110,6 +110,18 @@ class Page(object):
         return page_text
 
 
+def internal_error_page(message):
+    title = "Internal Server Error"
+    page = Page(title)
+    page.content = """
+        The server encountered an error trying to serve the request.
+        The message was: $message
+    """
+    page.values.update(dict(
+        message = message,
+    ))
+    return page
+
 def url_not_found_page(url):
     title = "Resource Not Found"
     page = Page(title)

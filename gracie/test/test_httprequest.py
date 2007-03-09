@@ -31,6 +31,10 @@ class Stub_Logger(object):
     def log(self, format, *args, **kwargs):
         """ Log a message """
 
+    error = log
+    warn = log
+    info = log
+
 class Stub_SessionManager(object):
     """ Stub class for SessionManager """
 
@@ -50,15 +54,31 @@ class Stub_SessionManager(object):
     def remove_session(self, session_id):
         del self._sessions[session_id]
 
+class Stub_OpenIDError(Exception):
+    """ Stub error class for openid module """
+
+class Stub_OpenIDServer(object):
+    """ Stub class for an OpenID protocol server """
+
+class Stub_OpenIDResponse(object):
+    """ Stub class for an OpenID protocol response """
+
+    def __init__(self):
+        self.code = 200
+        self.headers = [("openid", "yes")]
+        self.body = "OpenID response"
+
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
 
     def __init__(self):
         """ Set up a new instance """
         self.logger = Stub_Logger()
+        self.openid_server = Stub_OpenIDServer()
         self.auth_service = Stub_AuthService()
         self.sess_manager = Stub_SessionManager()
 
+
 class Stub_TCPConnection(object):
     """ Stub class for TCP connection """
 
@@ -80,34 +100,46 @@ class Stub_Request(object):
     """ Stub class for HTTP request encapsulation """
 
     def __init__(self, method, path,
-        version="HTTP/1.1", header=None, data=None,
+        version="HTTP/1.1", header=None, query=None,
     ):
         """ Set up a new instance """
-        self.method = method
+        self.method = method.upper()
         self.path = path
         self.version = version
         if header is None:
-            header = dict()
+            header = []
         self.header = header
-        if data is None:
-            data = dict()
-        self.data = data
+        if query is None:
+            query = dict()
+        self.query = query
+        self.data = ""
+
+    def _encode_query(self):
+        if self.query:
+            query_text = urllib.urlencode(self.query)
+
+            if self.method in ["POST", "PUT"]:
+                self.header.append(
+                    ("Content-Length", str(len(query_text)))
+                )
+                self.data += query_text
+            elif self.method in ["GET", "HEAD"]:
+                path = self.path
+                self.path = "%(path)s?%(query_text)s" % locals()
 
     def __str__(self):
+        self._encode_query()
         command_text = "%(method)s %(path)s %(version)s" % self.__dict__
-        if self.data:
-            data_text = urllib.urlencode(self.data)
-            self.header['Content-Length'] = len(data_text)
         header_text = "\n".join(["%s: %s" % (name, val)
-                                 for name, val in self.header.items()])
+                                 for name, val in self.header])
 
         lines = []
         lines.append(command_text)
-        if self.header:
+        if header_text:
             lines.append(header_text)
         lines.append("")
         if self.data:
-            lines.append(data_text)
+            lines.append(self.data)
 
         text = "\n".join(lines)
         return text
@@ -139,6 +171,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         httprequest.pagetemplate.Page = Mock('Page_class')
         httprequest.pagetemplate.Page.mock_returns = Mock('Page')
         httprequest.cookie_name_prefix = "TEST_"
+        mock_openid_server = Mock('openid_server')
 
         self.valid_requests = {
             'get-bogus': dict(
@@ -152,17 +185,17 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             ),
             'unknown-cookie': dict(
                 request = Stub_Request("GET", "/",
-                    header = {
-                        "Cookie": "TEST_session=DECAFBAD",
-                    },
+                    header = [
+                        ("Cookie", "TEST_session=DECAFBAD"),
+                    ],
                 ),
             ),
             'good-cookie': dict(
                 identity_name = "fred",
                 request = Stub_Request("GET", "/",
-                    header = {
-                        "Cookie": "TEST_session=DEADBEEF-fred",
-                    },
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
                 ),
             ),
             'id-bogus': dict(
@@ -181,7 +214,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             ),
             'nobutton-login': dict(
                 request = Stub_Request("POST", "/login",
-                    data = dict(
+                    query = dict(
                         username="bogus",
                         password="bogus",
                     ),
@@ -189,7 +222,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             ),
             'cancel-login': dict(
                 request = Stub_Request("POST", "/login",
-                    data = dict(
+                    query = dict(
                         username="bogus",
                         password="bogus",
                         cancel="Cancel",
@@ -199,7 +232,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             'login-bogus': dict(
                 identity_name = "bogus",
                 request = Stub_Request("POST", "/login",
-                    data = dict(
+                    query = dict(
                         username="bogus",
                         password="bogus",
                         submit="Sign in",
@@ -209,7 +242,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             'login-fred-wrong': dict(
                 identity_name = "fred",
                 request = Stub_Request("POST", "/login",
-                    data = dict(
+                    query = dict(
                         username="fred",
                         password="password23",
                         submit="Sign in",
@@ -219,11 +252,40 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             'login-fred-okay': dict(
                 identity_name = "fred",
                 request = Stub_Request("POST", "/login",
-                    data = dict(
+                    query = dict(
                         username="fred",
                         password="password1",
                         submit="Sign in",
                     ),
+                ),
+            ),
+            'openid-no-query': dict(
+                request = Stub_Request("GET", "/openidserver"),
+            ),
+            'openid-bogus-query': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    query = {
+                        "foo.bar": "spam",
+                        "flim.flam": "",
+                        "wibble.wobble": "eggs",
+                    },
+                ),
+            ),
+            'openid-query-associate': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    query = {
+                        "openid.mode": "associate",
+                        "openid.session_type": "",
+                    },
+                ),
+            ),
+            'openid-query-checkid': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    query = {
+                        "openid.mode": "checkid_immediate",
+                        "openid.identity": "http://example.com/fred",
+                        "openid.return_to": "http://example.org/",
+                    },
                 ),
             ),
         }
@@ -236,6 +298,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             address = params.setdefault('address', ("", 0))
             http_server = params.setdefault('server',
                                             Stub_HTTPServer())
+            http_server.openid_server = mock_openid_server
             if not args:
                 args = dict(
                     request = request.connection(),
@@ -323,6 +386,25 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             request = params['request']
             instance = self.handler_class(**params['args'])
             self.failUnlessEqual(request.path, instance.path)
+
+    def test_internal_error_sends_server_error_response(self):
+        """ When an error condition is raised, should send Server Error """
+        def raise_Error(_):
+            raise StandardError("Testing error")
+        dispatch_method_prev = self.handler_class._dispatch
+        self.handler_class._dispatch = raise_Error
+
+        params = self.valid_requests['get-root']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(500)
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+        self.handler_class._dispatch = dispatch_method_prev
 
     def test_request_with_no_cookie_response_not_logged_in(self):
         """ With no session cookie, response should send Not Logged In """
@@ -525,6 +607,62 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             ...
             Called Response.send_to_handler(...)
             """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_get_server_no_query_sends_about_site_response(self):
+        """ GET to server without query should send About page """
+        params = self.valid_requests['openid-no-query']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called openid_server.decodeRequest(...)
+            Called ResponseHeader_class(200)
+            Called Page_class('About this site')
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_get_server_bogus_query_sends_server_error_response(self):
+        """ GET to server with bogus query should send Server Error """
+        def raise_ProtocolError(_):
+            raise Stub_OpenIDError("Testing error")
+
+        params = self.valid_requests['openid-bogus-query']
+        args = params['args']
+        http_server = args['server']
+        http_server.openid_server.decodeRequest = raise_ProtocolError
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called ResponseHeader_class(500)
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_get_server_assoc_query_delegates_to_openid(self):
+        """ OpenID associate query should be passed to openid server """
+        params = self.valid_requests['openid-query-associate']
+        args = params['args']
+        http_server = args['server']
+        openid_server = http_server.openid_server
+        openid_server.decodeRequest.mock_returns = object()
+        openid_server.encodeResponse.mock_returns = Stub_OpenIDResponse()
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called openid_server.decodeRequest(...)
+            Called openid_server.handleRequest(...)
+            Called openid_server.encodeResponse(...)
+            Called ResponseHeader_class(200)
+            Called ResponseHeader.fields.extend([('openid', 'yes')])
+            Called Response_class(..., 'OpenID response')
+            Called Response.send_to_handler(...)
+            """
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )

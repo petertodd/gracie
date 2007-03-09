@@ -33,6 +33,7 @@ class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
 
 
 mapper = routes.Mapper()
+mapper.connect('openid', 'openidserver', controller='openid')
 mapper.connect('root', '', controller='about', action='view')
 mapper.connect('identity', 'id/:name', controller='identity', action='view')
 mapper.connect('login', 'login', controller='login', action='view')
@@ -133,8 +134,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _dispatch(self):
         """ Dispatch to the appropriate controller """
+        self.openid_request = None
         controller_map = {
             None: self._make_url_not_found_error_response,
+            'openid': self._handle_openid_request,
             'about': self._make_about_site_view_response,
             'identity': self._make_identity_view_response,
             'logout': self._make_logout_response,
@@ -146,7 +149,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         controller = controller_map[controller_name]
 
         response = controller()
+        if self.openid_request:
+            self._send_openid_response(response)
+        else:
+            self._send_http_response(response)
+
+    def _send_http_response(self, response):
+        """ Send an HTTP response to the user agent """
         self._set_auth_cookie(response)
+        response.send_to_handler(self)
+
+    def _send_openid_response(self, response):
+        """ Send an OpenID response to the consumer """
         response.send_to_handler(self)
 
     def _parse_path(self):
@@ -154,13 +168,26 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         keys = ('scheme', 'location', 'path', 'query', 'fragment')
         values = urlparse.urlsplit(self.path)
         self.parsed_url = dict(zip(keys, values))
-        self.route_map = mapper.match(self.path)
+        self.route_map = mapper.match(self.parsed_url['path'])
 
     def _parse_query(self):
         """ Parse query fields from the request data """
         self.query = {}
         for key, value in cgi.parse_qsl(self.query_data):
             self.query[key] = value
+
+    def handle(self):
+        """ Handle the requests """
+        try:
+            super(HTTPRequestHandler, self).handle()
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except Exception, e:
+            message = "%s: %s" % (e.__class__.__name__, e)
+            self.log_message(message)
+            self._server.logger.error(message)
+            response = self._make_internal_error_response(message)
+            self._send_http_response(response)
 
     def do_GET(self):
         """ Handle a GET request """
@@ -179,6 +206,30 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self._parse_query()
         self._dispatch()
 
+    def _handle_openid_request(self):
+        """ Handle a request to the OpenID server URL """
+        openid_server = self._server.openid_server
+        self.openid_request = openid_server.decodeRequest(self.query)
+        if self.openid_request is None:
+            response = self._make_about_site_view_response()
+        else:
+            response = self._make_openid_response()
+            
+        return response
+
+    def _make_openid_response(self):
+        """ Construct a response to a request to the OpenID server """
+        openid_server = self._server.openid_server
+        openid_response = openid_server.handleRequest(
+            self.openid_request)
+        web_response = openid_server.encodeResponse(
+            openid_response)
+        header = ResponseHeader(web_response.code)
+        header.fields.extend(web_response.headers)
+        response = Response(header, web_response.body)
+
+        return response
+
     def _get_page_data(self, page):
         """ Get the actual data to be used from a page """
         if self.username:
@@ -195,6 +246,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             ),
         ))
         return page.serialise()
+
+    def _make_internal_error_response(self, message):
+        """ Construct an Internal Error error response """
+        header = ResponseHeader(http_codes['internal_error'])
+        page = pagetemplate.internal_error_page(message)
+        data = self._get_page_data(page)
+        response = Response(header, data)
+        return response
 
     def _make_url_not_found_error_response(self):
         """ Construct a Not Found error response """

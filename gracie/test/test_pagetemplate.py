@@ -178,6 +178,15 @@ class Test_Page(scaffold.TestCase,
 class Test_PageTemplates(scaffold.TestCase):
     """ Test cases for individual page templates """
 
+    def test_internal_error_page_returns_page(self):
+        """ Internal Error page should return page """
+        message = "Bad stuff happened"
+        page = pagetemplate.internal_error_page(message)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "Page {...}", page_data
+        )
+
     def test_url_not_found_page_contains_url(self):
         """ Resulting page should contain the referent URL """
         url = "/flim/flam/flom"
