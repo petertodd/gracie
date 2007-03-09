@@ -46,14 +46,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(self, request, client_address, server):
         """ Set up a new instance """
-        self._server = server
+        self.server = server
         super(HTTPRequestHandler, self).__init__(
             request, client_address, server
         )
 
     def log_message(self, format, *args, **kwargs):
         """ Log a message via the server's logger """
-        logger = self._server.logger
+        logger = self.server.logger
         loglevel = logging.INFO
         logger.log(loglevel, format, *args, **kwargs)
 
@@ -63,7 +63,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.username = None
         self.auth_entry = None
         session_id = self._get_auth_cookie()
-        sess_manager = self._server.sess_manager
+        sess_manager = self.server.sess_manager
         try:
             username = sess_manager.get_session(session_id)
         except KeyError:
@@ -71,26 +71,26 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         else:
             self.username = username
             self.session_id = session_id
-            auth_service = self._server.auth_service
+            auth_service = self.server.auth_service
             self.auth_entry = auth_service.get_entry(username)
 
         if self.username:
-            self._server.logger.info(
+            self.server.logger.info(
                 "Authenticated as %s" % self.username
             )
         else:
-            self._server.logger.info("Not currently authenticated")
+            self.server.logger.info("Not currently authenticated")
 
     def _remove_auth_session(self):
         """ Remove the authentication session """
-        sess_manager = self._server.sess_manager
+        sess_manager = self.server.sess_manager
         if self.session_id:
             sess_manager.remove_session(self.session_id)
         self.session_id = None
         self.username = None
         self.auth_entry = None
 
-        self._server.logger.info("Removed authentication session")
+        self.server.logger.info("Removed authentication session")
 
     def _get_openid_url(self, username):
         """ Generate the OpenID URL for a username """
@@ -157,7 +157,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             controller_name = self.route_map['controller']
         controller = controller_map[controller_name]
 
-        self._server.logger.info(
+        self.server.logger.info(
             "Dispatching to controller %(controller_name)r" % locals()
         )
 
@@ -172,13 +172,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self._set_auth_cookie(response)
         response.send_to_handler(self)
 
-        self._server.logger.info("Sent HTTP response")
+        self.server.logger.info("Sent HTTP response")
 
     def _send_openid_response(self, response):
         """ Send an OpenID response to the consumer """
         response.send_to_handler(self)
 
-        self._server.logger.info("Sent OpenID protocol response")
+        self.server.logger.info("Sent OpenID protocol response")
 
     def _parse_path(self):
         """ Parse the request path """
@@ -201,7 +201,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             raise
         except Exception, e:
             message = str(e)
-            self._server.logger.error(message)
+            self.server.logger.error(message)
             response = self._make_internal_error_response(message)
             self._send_http_response(response)
 
@@ -224,7 +224,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_openid_request(self):
         """ Handle a request to the OpenID server URL """
-        openid_server = self._server.openid_server
+        openid_server = self.server.openid_server
         self.openid_request = openid_server.decodeRequest(self.query)
         if self.openid_request is None:
             response = self._make_about_site_view_response()
@@ -235,8 +235,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_openid_response(self):
         """ Construct a response to a request to the OpenID server """
-        self._server.logger.info("Delegating request to OpenID library")
-        openid_server = self._server.openid_server
+        self.server.logger.info("Delegating request to OpenID library")
+        openid_server = self.server.openid_server
         openid_response = openid_server.handleRequest(
             self.openid_request)
         web_response = openid_server.encodeResponse(
@@ -292,7 +292,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for an identity view """
         name = self.route_map['name']
         try:
-            entry = self._server.auth_service.get_entry(name)
+            entry = self.server.auth_service.get_entry(name)
         except KeyError, e:
             entry = None
 
@@ -361,8 +361,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             username=want_username,
             password=password
         )
-        auth_service = self._server.auth_service
-        sess_manager = self._server.sess_manager
+        auth_service = self.server.auth_service
+        sess_manager = self.server.sess_manager
         try:
             username = auth_service.authenticate(credentials)
             session_id = sess_manager.create_session(username)

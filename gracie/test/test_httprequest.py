@@ -287,14 +287,14 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             args = params.get('args')
             request = params['request']
             address = params.setdefault('address', ("", 0))
-            http_server = params.setdefault('server',
+            server = params.setdefault('server',
                                             Stub_HTTPServer())
-            http_server.openid_server = mock_openid_server
+            server.openid_server = mock_openid_server
             if not args:
                 args = dict(
                     request = request.connection(),
                     client_address = address,
-                    server = http_server,
+                    server = server,
                 )
             params['args'] = args
 
@@ -325,8 +325,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         """ HTTPRequestHandler should have specified server attribute """
         for key, params in self.iterate_params():
             instance = self.handler_class(**params['args'])
-            http_server = params['server']
-            self.failUnlessEqual(http_server, instance.server)
+            server = params['server']
+            self.failUnlessEqual(server, instance.server)
 
     def test_server_version_as_specified(self):
         """ HTTPRequestHandler should report module version """
@@ -349,9 +349,9 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         """ Request should log messages using server's logger """
         params = self.valid_requests['get-bogus']
         instance = self.handler_class(**params['args'])
-        http_server = params['server']
-        http_server.logger = Mock("logger")
-        http_server.logger.log = Mock("logger.log")
+        server = params['server']
+        server.logger = Mock("logger")
+        server.logger.log = Mock("logger.log")
         msg_format = "Foo"
         msg_level = logging.INFO
         msg_args = ("spam", "eggs")
@@ -624,8 +624,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
 
         params = self.valid_requests['openid-bogus-query']
         args = params['args']
-        http_server = args['server']
-        http_server.openid_server.decodeRequest = raise_ProtocolError
+        server = args['server']
+        server.openid_server.decodeRequest = raise_ProtocolError
         instance = self.handler_class(**args)
         expect_stdout = """\
             Called ResponseHeader_class(500)
@@ -640,8 +640,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         """ OpenID associate query should be passed to openid server """
         params = self.valid_requests['openid-query-associate']
         args = params['args']
-        http_server = args['server']
-        openid_server = http_server.openid_server
+        server = args['server']
+        openid_server = server.openid_server
         openid_server.decodeRequest.mock_returns = object()
         openid_server.encodeResponse.mock_returns = Stub_OpenIDResponse()
         instance = self.handler_class(**args)
