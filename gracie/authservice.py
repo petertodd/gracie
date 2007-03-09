@@ -81,6 +81,9 @@ class _PamConversation(object):
             PAM.PAM_ERROR_MSG: ('', 0),
             PAM.PAM_TEXT_INFO: ('', 0),
         }
+        pam_password_prompts = [
+            PAM.PAM_PROMPT_ECHO_ON, PAM.PAM_PROMPT_ECHO_OFF,
+        ]
 
         response_list = []
         for query, qtype in query_list:
@@ -88,13 +91,18 @@ class _PamConversation(object):
                 "PAM query: type %(qtype)r, %(query)r" % locals())
             response = response_map.get(qtype)
             if response is None:
-                _logger.info(
+                _logger.warn(
                     "PAM: unknown query type %(qtype)r" % locals())
                 response_list = None
                 break
             else:
+                sanitised_response = response
+                if qtype in pam_password_prompts:
+                    sanitised_response = ("<password>", 0)
                 _logger.info(
-                    "PAM response: sending %(response)r" % locals())
+                    "PAM response: sending %(sanitised_response)r"
+                    % locals()
+                )
                 response_list.append(response)
         return response_list
 

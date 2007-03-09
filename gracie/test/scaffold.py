@@ -13,6 +13,7 @@
 
 import unittest
 import doctest
+import logging
 import os
 import sys
 import textwrap
@@ -24,6 +25,9 @@ if not test_dir in sys.path:
     sys.path.insert(1, test_dir)
 if not code_dir in sys.path:
     sys.path.insert(1, code_dir)
+
+# Disable all but the most critical logging messages
+logging.disable(logging.CRITICAL)
 
 
 def suite(module_name):

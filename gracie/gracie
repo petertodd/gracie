@@ -62,7 +62,13 @@ class Gracie(object):
 
     def _init_logging(self):
         """ Initialise the logging system """
-        logging.basicConfig()
+        level = getattr(logging, self.opts.loglevel, None)
+        format =  "%(asctime)s %(name)s: %(levelname)s: %(message)s"
+        time_format = "%F %T"
+        logging.basicConfig(
+            level = level,
+            format = format, datefmt = time_format,
+        )
 
     def _get_socket_params(self):
         """ Determine the server socket parameters """

@@ -74,6 +74,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             auth_service = self._server.auth_service
             self.auth_entry = auth_service.get_entry(username)
 
+        if self.username:
+            self._server.logger.info(
+                "Authenticated as %s" % self.username
+            )
+        else:
+            self._server.logger.info("Not currently authenticated")
+
     def _remove_auth_session(self):
         """ Remove the authentication session """
         sess_manager = self._server.sess_manager
@@ -82,6 +89,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self.session_id = None
         self.username = None
         self.auth_entry = None
+
+        self._server.logger.info("Removed authentication session")
 
     def _get_openid_url(self, username):
         """ Generate the OpenID URL for a username """
@@ -148,6 +157,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             controller_name = self.route_map['controller']
         controller = controller_map[controller_name]
 
+        self._server.logger.info(
+            "Dispatching to controller %(controller_name)r" % locals()
+        )
+
         response = controller()
         if self.openid_request:
             self._send_openid_response(response)
@@ -159,9 +172,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self._set_auth_cookie(response)
         response.send_to_handler(self)
 
+        self._server.logger.info("Sent HTTP response")
+
     def _send_openid_response(self, response):
         """ Send an OpenID response to the consumer """
         response.send_to_handler(self)
+
+        self._server.logger.info("Sent OpenID protocol response")
 
     def _parse_path(self):
         """ Parse the request path """
@@ -183,8 +200,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         except (KeyboardInterrupt, SystemExit):
             raise
         except Exception, e:
-            message = "%s: %s" % (e.__class__.__name__, e)
-            self.log_message(message)
+            message = str(e)
             self._server.logger.error(message)
             response = self._make_internal_error_response(message)
             self._send_http_response(response)
@@ -219,6 +235,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_openid_response(self):
         """ Construct a response to a request to the OpenID server """
+        self._server.logger.info("Delegating request to OpenID library")
         openid_server = self._server.openid_server
         openid_response = openid_server.handleRequest(
             self.openid_request)
