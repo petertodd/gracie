@@ -146,6 +146,11 @@ class Stub_OpenIDResponse(object):
         self.body = "OpenID response"
 
 
+def stub_server_bind(server):
+    """ Stub method to get server location """
+    (host, port) = server.server_address
+    (server.server_name, server.server_port) = (host, port)
+
 class Test_HTTPServer(scaffold.TestCase):
     """ Test cases for HTTPServer class """
 
@@ -153,6 +158,7 @@ class Test_HTTPServer(scaffold.TestCase):
         """ Set up test fixtures """
 
         self.server_class = server.HTTPServer
+
         self.stub_handler_class = Stub_HTTPRequestHandler
         self.mock_handler_class = Mock('HTTPRequestHandler')
 
@@ -161,14 +167,8 @@ class Test_HTTPServer(scaffold.TestCase):
         server.OpenIDServer = Stub_OpenIDServer
         server.OpenIDStore = Stub_OpenIDStore
 
-        self.http_server_mock_methods = dict(
-            server_bind = Mock('HTTPServer.server_bind'),
-        )
-        self.http_server_prev_methods = dict()
-        for name, value in self.http_server_mock_methods.items():
-            self.http_server_prev_methods[name] = getattr(
-                server.HTTPServer, name)
-            setattr(server.HTTPServer, name, value)
+        self.server_bind_prev = server.BaseHTTPServer.server_bind
+        server.BaseHTTPServer.server_bind = stub_server_bind
 
         self.stdout_prev = sys.stdout
         self.stdout_test = StringIO()
@@ -201,10 +201,9 @@ class Test_HTTPServer(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        for name, value in self.http_server_prev_methods.items():
-            setattr(server.HTTPServer, name, value)
         server.OpenIDServer = self.openid_server_prev
         server.OpenIDStore = self.openid_store_prev
+        server.BaseHTTPServer.server_bind = self.server_bind_prev
 
     def test_instantiate(self):
         """ New HTTPServer instance should be created """

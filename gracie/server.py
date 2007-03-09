@@ -35,7 +35,6 @@ http_port = 80
 
 def net_location(host, port=None):
     """ Construct a location string from host string and port number """
-    port_spec = ":%(port)s" % locals()
     if port is None or port == http_port:
         location_spec = "%(host)s"
     else:
@@ -94,22 +93,45 @@ class HTTPServer(BaseHTTPServer):
         super(HTTPServer, self).__init__(
             server_address, RequestHandlerClass
         )
-        secret = "gracie"
-        store = OpenIDStore(secret)
-        self.openid_server = OpenIDServer(store)
+        self._setup_openid()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
 
-    def __del__(self):
-        self.logger.info(
-            "Exiting Gracie server"
+    def server_bind(self):
+        """ Bind and name the server """
+        super(HTTPServer, self).server_bind()
+        self.server_location = net_location(
+            self.server_name, self.server_port
         )
+
+    def _setup_openid(self):
+        """ Set up OpenID parameters """
+        secret = "gracie"
+        store = OpenIDStore(secret)
+        self.openid_server = OpenIDServer(store)
+
+    def __del__(self):
+        self.logger.info("Exiting Gracie server")
 
     def _setup_logging(self):
         """ Set up logging for this server """
         self.logger = logging.getLogger(logger_name)
         server_version = __version__
         self.logger.info(
-            "Starting Gracie server, version %(server_version)s"
+            "Starting Gracie server (version %(server_version)s)"
             % locals()
         )
+
+    def handle_request(self):
+        """ Handle a single request """
+        try:
+            super(HTTPServer, self).handle_request()
+        except (KeyboardInterrupt, SystemExit), e:
+            exc_name = e.__class__.__name__
+            message = "Received %(exc_name)s" % locals()
+            self.logger.warn(message)
+            raise
+        except Exception, e:
+            message = str(e)
+            self.logger.error(message)
+            raise

@@ -61,8 +61,9 @@ class Stub_SessionManager(object):
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
 
-    def __init__(self):
+    def __init__(self, server_address, handler_class):
         """ Set up a new instance """
+        self.server_location = "%s:%s" % server_address
         self.logger = Stub_Logger()
         store = Stub_OpenIDStore(None)
         self.openid_server = Stub_OpenIDServer(store)
@@ -286,9 +287,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         for key, params in self.valid_requests.items():
             args = params.get('args')
             request = params['request']
-            address = params.setdefault('address', ("", 0))
+            address = params.setdefault('address',
+                ("foo.example.org", 0))
             server = params.setdefault('server',
-                                            Stub_HTTPServer())
+                Stub_HTTPServer(address, object()))
             server.openid_server = mock_openid_server
             if not args:
                 args = dict(
@@ -593,10 +595,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(302)
-            Called ResponseHeader.fields.append(('Location', ...))
-            Called Page_class('Login Succeeded')
+            Called ResponseHeader.fields.append(('Location', '...'))
             ...
-            Called Response.send_to_handler(...)
+            Called Response.send_to_handler(
+                ...)
             """ % locals()
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()

@@ -94,8 +94,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _get_openid_url(self, username):
         """ Generate the OpenID URL for a username """
-        url = mapper.generate(controller='identity', action='view',
-                              name=username)
+        path = "id/%(username)s" % locals()
+        url = self._make_server_url(path)
         return url
 
     def _get_cookie(self, name):
@@ -233,6 +233,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             
         return response
 
+    def _make_server_url(self, path):
+        """ Construct a URL to a path on this server """
+        protocol = "http"
+        location = self.server.server_location
+        path = path.lstrip("/")
+        url = "%(protocol)s://%(location)s/%(path)s" % locals()
+        return url
+
     def _make_openid_response(self):
         """ Construct a response to a request to the OpenID server """
         self.server.logger.info("Delegating request to OpenID library")
@@ -247,6 +255,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         return response
 
+    def _make_redirect_response(self, url):
+        """ Construct a response for a redirect """
+        header = ResponseHeader(http_codes['found'])
+        header.fields.append(("Location", url))
+        data = ""
+        response = Response(header, data)
+        return response
+
     def _get_page_data(self, page):
         """ Get the actual data to be used from a page """
         if self.username:
@@ -255,12 +271,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             ))
         page.values.update(dict(
             auth_entry = self.auth_entry,
-            login_url = mapper.generate(
-                controller='login', action='view'
-            ),
-            logout_url = mapper.generate(
-                controller='logout', action='view'
-            ),
+            root_url = self._make_server_url(""),
+            login_url = self._make_server_url("login"),
+            logout_url = self._make_server_url("logout"),
         ))
         return page.serialise()
 
@@ -310,12 +323,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _make_logout_response(self):
         """ Construct a response for a logout request """
         self._remove_auth_session()
-        header = ResponseHeader(http_codes['found'])
-        about_url = mapper.generate(controller='about', action='view')
-        header.fields.append(("Location", about_url))
-        page = pagetemplate.about_site_view_page()
-        data = self._get_page_data(page)
-        response = Response(header, data)
+
+        root_url = self._make_server_url("")
+        response = self._make_redirect_response(root_url)
         return response
 
     def _make_login_response(self):
@@ -389,10 +399,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_login_succeeded_response(self):
         """ Construct a response for a successful login request """
-        header = ResponseHeader(http_codes['found'])
-        about_url = mapper.generate(controller='about', action='view')
-        header.fields.append(("Location", about_url))
-        page = pagetemplate.login_auth_succeeded_page(self.username)
-        data = self._get_page_data(page)
-        response = Response(header, data)
+        root_url = self._make_server_url("")
+        response = self._make_redirect_response(root_url)
         return response
