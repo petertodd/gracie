@@ -76,10 +76,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         if self.username:
             self.server.logger.info(
-                "Authenticated as %s" % self.username
+                "Session authenticated as %r" % self.username
             )
         else:
-            self.server.logger.info("Not currently authenticated")
+            self.server.logger.info("Session not authenticated")
 
     def _remove_auth_session(self):
         """ Remove the authentication session """
@@ -162,23 +162,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         )
 
         response = controller()
-        if self.openid_request:
-            self._send_openid_response(response)
-        else:
-            self._send_http_response(response)
-
-    def _send_http_response(self, response):
-        """ Send an HTTP response to the user agent """
         self._set_auth_cookie(response)
+        self._send_response(response)
+
+    def _send_response(self, response):
+        """ Send an HTTP response to the user agent """
         response.send_to_handler(self)
 
         self.server.logger.info("Sent HTTP response")
-
-    def _send_openid_response(self, response):
-        """ Send an OpenID response to the consumer """
-        response.send_to_handler(self)
-
-        self.server.logger.info("Sent OpenID protocol response")
 
     def _parse_path(self):
         """ Parse the request path """
@@ -203,7 +194,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             message = str(e)
             self.server.logger.error(message)
             response = self._make_internal_error_response(message)
-            self._send_http_response(response)
+            self._send_response(response)
 
     def do_GET(self):
         """ Handle a GET request """
@@ -272,6 +263,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         page.values.update(dict(
             auth_entry = self.auth_entry,
             root_url = self._make_server_url(""),
+            server_url = self._make_server_url("openidserver"),
             login_url = self._make_server_url("login"),
             logout_url = self._make_server_url("logout"),
         ))

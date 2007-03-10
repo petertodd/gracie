@@ -46,7 +46,7 @@ $page_footer
 
 header_template = Template("""\
 <div id="header">
-<p id="banner"><a href="/">Gracie</a></p>
+<p id="banner"><a href="$root_url">Gracie</a></p>
 $auth_section
 </div><!-- banner -->
 """)
@@ -58,7 +58,8 @@ footer_template = Template("""\
 
 auth_section_template = Template("""\
 <div id="auth-info">
-<p>$logged_in_as</p>
+<p><em>Status:</em> $login_status</p>
+$logged_in_as
 <p>$change_status</p>
 </div><!-- auth-info -->
 """)
@@ -112,8 +113,6 @@ div#content {
 }
 """
 
-openid_url_prefix = "http://localhost:8000/id/"
-
 
 class Page(object):
     """ Web page """
@@ -122,10 +121,13 @@ class Page(object):
         """ Set up a new instance """
         self.character_encoding = "utf-8"
         self.title = title
-        self.css_sheet = css_sheet,
+        self.css_sheet = css_sheet
+        self.openid_metadata = ""
         self.content = ""
         self.values = dict(
             auth_entry = None,
+            root_url = None,
+            server_url = None,
             login_url = None,
             logout_url = None,
         )
@@ -134,7 +136,8 @@ class Page(object):
         """ Get the authentication info section """
         login_url = self.values['login_url']
         logout_url = self.values['logout_url']
-        logged_in_as = "You are not logged in."
+        login_status = "You are not logged in."
+        logged_in_as = ""
         change_status = (
             """You may <a href="%(login_url)s">log in now</a>."""
             % locals()
@@ -143,8 +146,9 @@ class Page(object):
             fullname = auth_entry['fullname']
             openid_url = self.values['openid_url']
             login_url = self.values['login_url']
+            login_status = "You are logged in."
             logged_in_as = ("""\
-                Logged in as <a href="%(openid_url)s">%(openid_url)s</a>
+                <a href="%(openid_url)s">%(openid_url)s</a>
                 (%(fullname)s)
                 """ % locals()
             )
@@ -290,7 +294,7 @@ def login_cancelled_page():
     page = Page(title)
     page.content = """
         The login was cancelled.
-        You can <a href="/login">log in now</a> if you want.
+        You can <a href="$login_url">log in now</a> if you want.
     """
     return page
 

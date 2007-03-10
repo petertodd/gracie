@@ -288,7 +288,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             args = params.get('args')
             request = params['request']
             address = params.setdefault('address',
-                ("foo.example.org", 0))
+                ("example.org", 0))
             server = params.setdefault('server',
                 Stub_HTTPServer(address, object()))
             server.openid_server = mock_openid_server
@@ -523,7 +523,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(200)
-            Called Page_class(...)
+            Called Page_class('Login')
             ...
             Called Response.send_to_handler(...)
             """ % locals()
@@ -654,6 +654,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             Called ResponseHeader_class(200)
             Called ResponseHeader.fields.extend([('openid', 'yes')])
             Called Response_class(..., 'OpenID response')
+            ...
             Called Response.send_to_handler(...)
             """
         self.failUnlessOutputCheckerMatch(

@@ -101,6 +101,8 @@ class Test_Page(scaffold.TestCase,
             if 'auth_entry' not in values:
                 values.update({'auth_entry': None})
             values.update(dict(
+                root_url = "/",
+                server_url = "/openidserver",
                 login_url = "/login",
                 logout_url = "/logout",
             ))
