@@ -116,6 +116,77 @@ class Test_SessionManager(scaffold.TestCase):
         )
 
 
+class Stub_ConsumerAuthStore(object):
+    """ Stub class for ConsumerAuthStore """
+
+    def is_authorised(self, auth_tuple):
+        return None
+
+class Stub_ConsumerAuthStore_always_auth(Stub_ConsumerAuthStore):
+    """ ConsumerAuthStore stub that always authorises """
+
+    def is_authorised(self, auth_tuple):
+        return True
+
+class Stub_ConsumerAuthStore_never_auth(Stub_ConsumerAuthStore):
+    """ ConsumerAuthStore stub that never authorises """
+
+    def is_authorised(self, auth_tuple):
+        return False
+
+
+class Test_ConsumerAuthStore(scaffold.TestCase):
+    """ Test cases for ConsumerAuthStore class """
+
+    def setUp(self):
+        """ Set up test fixtures """
+
+        self.store_class = server.ConsumerAuthStore
+
+    def test_instantiate(self):
+        """ New ConsumerAuthStore instance should be created """
+        instance = self.store_class()
+        self.failUnless(instance is not None)
+
+    def test_is_authorised_unknown_returns_false(self):
+        """ is_authorised for unknown args should return False """
+        instance = self.store_class()
+        auth_tuple = ("bogus", "bogus")
+        is_authorised = instance.is_authorised(auth_tuple)
+        self.failUnlessEqual(False, is_authorised)
+
+    def test_store_authorisation_result_in_authorisation(self):
+        """ store_authorisation should let is_authorised succeed """
+        instance = self.store_class()
+        identity = "/id/fred"
+        trust_root = "http://example.com/"
+        auth_tuple = (identity, trust_root)
+        status = True
+        instance.store_authorisation(auth_tuple, status)
+        got_status = instance.is_authorised(auth_tuple)
+        self.failUnlessEqual(True, got_status)
+
+    def test_remove_authorisation_unknown_should_succeed(self):
+        """ remove_authorisation for unknown args should succeed """
+        instance = self.store_class()
+        auth_tuple = ("bogus", "bogus")
+        instance.remove_authorisation(auth_tuple)
+        is_authorised = instance.is_authorised(auth_tuple)
+        self.failUnlessEqual(False, is_authorised)
+
+    def test_remove_authorisation_result_in_no_authorisation(self):
+        """ remove_authorisation should make is_authorised return False """
+        instance = self.store_class()
+        identity = "/id/fred"
+        trust_root = "http://example.com/"
+        auth_tuple = (identity, trust_root)
+        status = True
+        instance.store_authorisation(auth_tuple, status)
+        instance.remove_authorisation(auth_tuple)
+        got_status = instance.is_authorised(auth_tuple)
+        self.failUnlessEqual(False, got_status)
+
+
 class Stub_HTTPRequestHandler(object):
     """ Stub class for HTTPRequestHandler """
 
@@ -137,10 +208,28 @@ class Stub_OpenIDServer(object):
             store, (Stub_OpenIDStore, server.OpenIDStore)):
             raise ValueError("store must be an OpenIDStore instance")
 
+class Stub_OpenIDRequest(object):
+    """ Stub class for an OpenID protocol request """
+
+    def __init__(self, http_request, params=None):
+        """ Set up a new instance """
+        def send_openid_answer(request, *args, **kwargs):
+            pass
+
+        self.mode = http_request.query.get('openid.mode')
+        keys = ('identity', 'trust_root', 'answer', 'immediate')
+        if params is None:
+            params = dict()
+        for key in keys:
+            setattr(self, key, None)
+            if key in params:
+                setattr(self, key, params[key])
+
 class Stub_OpenIDResponse(object):
     """ Stub class for an OpenID protocol response """
 
     def __init__(self):
+        """ Set up a new instance """
         self.code = 200
         self.headers = [("openid", "yes")]
         self.body = "OpenID response"
@@ -164,8 +253,10 @@ class Test_HTTPServer(scaffold.TestCase):
 
         self.openid_server_prev = server.OpenIDServer
         self.openid_store_prev = server.OpenIDStore
+        self.consumer_store_prev = server.ConsumerAuthStore
         server.OpenIDServer = Stub_OpenIDServer
         server.OpenIDStore = Stub_OpenIDStore
+        server.ConsumerAuthStore = Stub_ConsumerAuthStore
 
         self.server_bind_prev = server.BaseHTTPServer.server_bind
         server.BaseHTTPServer.server_bind = stub_server_bind
@@ -203,6 +294,7 @@ class Test_HTTPServer(scaffold.TestCase):
         sys.stdout = self.stdout_prev
         server.OpenIDServer = self.openid_server_prev
         server.OpenIDStore = self.openid_store_prev
+        server.ConsumerAuthStore = self.consumer_store_prev
         server.BaseHTTPServer.server_bind = self.server_bind_prev
 
     def test_instantiate(self):
@@ -250,6 +342,13 @@ class Test_HTTPServer(scaffold.TestCase):
         instance = params['instance']
         sess_manager = instance.sess_manager
         self.failUnless(sess_manager is not None)
+
+    def test_server_has_authorisation_store(self):
+        """ HTTPServer should have a consumer_auth_store attribute """
+        params = self.valid_servers['simple']
+        instance = params['instance']
+        consumer_auth_store = instance.consumer_auth_store
+        self.failUnless(consumer_auth_store is not None)
 
     def test_serve_forever_is_callable(self):
         """ HTTPServer.serve_forever should be callable """

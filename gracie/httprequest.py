@@ -18,6 +18,7 @@ import cgi
 import Cookie
 import urlparse
 import routes
+from openid.server.server import BROWSER_REQUEST_MODES
 
 import pagetemplate
 from httpresponse import ResponseHeader, Response
@@ -56,6 +57,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         logger = self.server.logger
         loglevel = logging.INFO
         logger.log(loglevel, format, *args, **kwargs)
+
+    def _make_server_url(self, path):
+        """ Construct a URL to a path on this server """
+        protocol = "http"
+        location = self.server.server_location
+        path = path.lstrip("/")
+        url = "%(protocol)s://%(location)s/%(path)s" % locals()
+        return url
 
     def _setup_auth_session(self):
         """ Set up the authentication session """
@@ -220,24 +229,85 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if self.openid_request is None:
             response = self._make_about_site_view_response()
         else:
-            response = self._make_openid_response()
-            
+            if self.openid_request.mode in BROWSER_REQUEST_MODES:
+                response = self._handle_openid_browser_request()
+            else:
+                openid_response = openid_server.handleRequest(
+                    self.openid_request)
+                response = self._make_response_from_openid_response(
+                    openid_response)
+
         return response
 
-    def _make_server_url(self, path):
-        """ Construct a URL to a path on this server """
-        protocol = "http"
-        location = self.server.server_location
-        path = path.lstrip("/")
-        url = "%(protocol)s://%(location)s/%(path)s" % locals()
-        return url
+    def _handle_openid_browser_request(self):
+        """ Handle an OpenID request with user-agent interaction """
+        request = self.openid_request
+        is_session_identity = False
+        openid_url = self._get_openid_url(self.username)
+        if self.username:
+            if openid_url == request.identity:
+                # Session is authenticated for requested identity
+                is_session_identity = True
+        consumer_auth_store = self.server.consumer_auth_store
+        auth_tuple = (request.identity, request.trust_root)
+        is_authorised = consumer_auth_store.is_authorised(auth_tuple)
 
-    def _make_openid_response(self):
+        dispatch_map = {
+            'checkid_immediate': self._make_checkid_immediate_response,
+            'checkid_setup': self._make_checkid_setup_response,
+        }
+        response = dispatch_map[request.mode](request,
+            is_session_identity = is_session_identity,
+            is_authorised = is_authorised,
+        )
+
+        return response
+
+    def _make_checkid_immediate_response(self, request,
+        is_session_identity, is_authorised
+    ):
+        """ Make a response for an OpenID checkid_immediate request """
+        response = None
+
+        if is_session_identity and is_authorised:
+            openid_response = request.answer(True)
+        else:
+            openid_response = request.answer(False,
+                self._make_server_url("openidserver")
+            )
+        response = self._make_response_from_openid_response(
+            openid_response)
+
+        return response
+
+    def _make_checkid_setup_response(self, request,
+        is_session_identity, is_authorised
+    ):
+        """ Make a response for an OpenID checkid_immediate request """
+        response = None
+
+        if is_session_identity and is_authorised:
+            openid_response = request.answer(True)
+            response = self._make_response_from_openid_response(
+                openid_response)
+        else:
+            if is_session_identity:
+                response = \
+                    self._make_authorise_consumer_query_response(
+                        trust_root = request.trust_root,
+                        want_id = request.identity
+                    )
+            else:
+                response = self._make_wrong_identity_response(
+                    request.identity
+                )
+
+        return response
+
+    def _make_response_from_openid_response(self, openid_response):
         """ Construct a response to a request to the OpenID server """
-        self.server.logger.info("Delegating request to OpenID library")
+        self.server.logger.info("Delegating response to OpenID library")
         openid_server = self.server.openid_server
-        openid_response = openid_server.handleRequest(
-            self.openid_request)
         web_response = openid_server.encodeResponse(
             openid_response)
         header = ResponseHeader(web_response.code)
@@ -396,4 +466,26 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for a successful login request """
         root_url = self._make_server_url("")
         response = self._make_redirect_response(root_url)
+        return response
+
+    def _make_authorise_consumer_query_response(self,
+            trust_root, want_id
+    ):
+        """ Make a response for query to authorise a consumer """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.authorise_consumer_query_page(
+            trust_root = trust_root, want_id_url = want_id
+        )
+        data = self._get_page_data(page)
+        response = Response(header, data)
+
+        return response
+
+    def _make_wrong_identity_response(self, want_id):
+        """ Make a response for action with wrong session auth """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.wrong_identity_page(want_id_url = want_id)
+        data = self._get_page_data(page)
+        response = Response(header, data)
+
         return response

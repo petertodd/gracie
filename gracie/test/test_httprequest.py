@@ -23,7 +23,9 @@ from test_authservice import Stub_AuthService
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import (
     Stub_OpenIDStore, Stub_OpenIDServer,
-    Stub_OpenIDError, Stub_OpenIDResponse,
+    Stub_OpenIDError, Stub_OpenIDRequest, Stub_OpenIDResponse,
+    Stub_ConsumerAuthStore_always_auth,
+    Stub_ConsumerAuthStore_never_auth,
 )
 
 import httprequest
@@ -271,12 +273,71 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                     },
                 ),
             ),
-            'openid-query-checkid': dict(
+            'openid-query-checkid_immediate-no-session': dict(
                 request = Stub_Request("GET", "/openidserver",
+                    header = [],
                     query = {
                         "openid.mode": "checkid_immediate",
-                        "openid.identity": "http://example.com/fred",
-                        "openid.return_to": "http://example.org/",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
+                    },
+                ),
+            ),
+            'openid-query-checkid_setup-no-session': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    header = [],
+                    query = {
+                        "openid.mode": "checkid_setup",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
+                    },
+                ),
+            ),
+            'openid-query-checkid_immediate-other-session': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-bill"),
+                    ],
+                    query = {
+                        "openid.mode": "checkid_immediate",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
+                    },
+                ),
+            ),
+            'openid-query-checkid_setup-other-session': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-bill"),
+                    ],
+                    query = {
+                        "openid.mode": "checkid_setup",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
+                    },
+                ),
+            ),
+            'openid-query-checkid_immediate-right-session': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
+                    query = {
+                        "openid.mode": "checkid_immediate",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
+                    },
+                ),
+            ),
+            'openid-query-checkid_setup-right-session': dict(
+                request = Stub_Request("GET", "/openidserver",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
+                    query = {
+                        "openid.mode": "checkid_setup",
+                        "openid.identity": "http://example.org:0/id/fred",
+                        "openid.return_to": "http://example.com/",
                     },
                 ),
             ),
@@ -644,7 +705,9 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         args = params['args']
         server = args['server']
         openid_server = server.openid_server
-        openid_server.decodeRequest.mock_returns = object()
+        openid_server.decodeRequest.mock_returns = Stub_OpenIDRequest(
+            params['request']
+        )
         openid_server.encodeResponse.mock_returns = Stub_OpenIDResponse()
         instance = self.handler_class(**args)
         expect_stdout = """\
@@ -660,6 +723,145 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
+ 
+    def _make_stub_openid_request(self, http_request):
+        immediate = http_request.query['openid.mode'].endswith("immediate")
+        openid_request = Stub_OpenIDRequest(
+            http_request, dict(
+                identity="http://example.org:0/id/fred",
+                trust_root="http://bar.example.com/",
+                answer=Mock('OpenIDRequest.answer'),
+                immediate=immediate,
+            )
+        )
+
+        return openid_request
+
+    def test_checkid_immediate_no_session_returns_failure(self):
+        """ OpenID check_immediate with no session should reject """
+        params_key = 'openid-query-checkid_immediate-no-session'
+        params = self.valid_requests[params_key]
+        args = params['args']
+        server = args['server']
+        openid_server = server.openid_server
+        openid_server.decodeRequest.mock_returns = (
+            self._make_stub_openid_request(params['request'])
+        )
+        server.consumer_auth_store = \
+            Stub_ConsumerAuthStore_always_auth()
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called openid_server.decodeRequest(...)
+            Called OpenIDRequest.answer(False, ...)
+            Called openid_server.encodeResponse(...)
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_checkid_setup_wrong_session_returns_login_page(self):
+        """ OpenID checkid_setup with wrong session should request login """
+        for params_key in [
+            'openid-query-checkid_setup-no-session',
+            'openid-query-checkid_setup-other-session',
+        ]:
+            params = self.valid_requests[params_key]
+            args = params['args']
+            server = args['server']
+            openid_server = server.openid_server
+            openid_server.decodeRequest.mock_returns = (
+                self._make_stub_openid_request(params['request'])
+            )
+            server.consumer_auth_store = \
+                Stub_ConsumerAuthStore_always_auth()
+            instance = self.handler_class(**args)
+            expect_stdout = """\
+                Called openid_server.decodeRequest(...)
+                Called ResponseHeader_class(200)
+                Called Page_class('Wrong Authorisation')
+                ...
+                Called Response.send_to_handler(...)
+                """
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
+
+    def test_checkid_immediate_no_auth_returns_failure(self):
+        """ OpenID checkid_immediate with no auth should return False """
+        params_key = 'openid-query-checkid_immediate-right-session'
+        params = self.valid_requests[params_key]
+        args = params['args']
+        server = args['server']
+        openid_server = server.openid_server
+        openid_server.decodeRequest.mock_returns = (
+            self._make_stub_openid_request(params['request'])
+        )
+        server.consumer_auth_store = \
+            Stub_ConsumerAuthStore_never_auth()
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called openid_server.decodeRequest(...)
+            Called OpenIDRequest.answer(False, ...)
+            Called openid_server.encodeResponse(...)
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_checkid_setup_no_auth_sends_authorise_query_page(self):
+        """ OpenID checkid_setup with no auth should send Authorise? """
+        params_key = 'openid-query-checkid_setup-right-session'
+        params = self.valid_requests[params_key]
+        args = params['args']
+        server = args['server']
+        openid_server = server.openid_server
+        openid_server.decodeRequest.mock_returns = (
+            self._make_stub_openid_request(params['request'])
+        )
+        server.consumer_auth_store = \
+            Stub_ConsumerAuthStore_never_auth()
+        instance = self.handler_class(**args)
+        expect_stdout = """\
+            Called openid_server.decodeRequest(...)
+            Called ResponseHeader_class(200)
+            Called Page_class('Approve OpenID Request?')
+            ...
+            Called Response.send_to_handler(...)
+            """
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_checkid_with_session_and_auth_returns_success(self):
+        """ OpenID checkid with right session and auth should succeed """
+        for params_key in [
+            'openid-query-checkid_immediate-right-session',
+            'openid-query-checkid_setup-right-session',
+        ]:
+            params = self.valid_requests[params_key]
+            args = params['args']
+            server = args['server']
+            openid_server = server.openid_server
+            openid_server.decodeRequest.mock_returns = (
+                self._make_stub_openid_request(params['request'])
+            )
+            server.consumer_auth_store = \
+                Stub_ConsumerAuthStore_always_auth()
+            instance = self.handler_class(**args)
+            expect_stdout = """\
+                Called openid_server.decodeRequest(...)
+                Called OpenIDRequest.answer(True)
+                Called openid_server.encodeResponse(...)
+                ...
+                Called Response.send_to_handler(...)
+                """
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
 
 
 suite = scaffold.suite(__name__)

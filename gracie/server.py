@@ -84,6 +84,29 @@ class SessionManager(object):
         del self._sessions[session_id]
 
 
+class ConsumerAuthStore(object):
+    """ Storage for consumer request authorisations """
+
+    def __init__(self):
+        """ Set up a new instance """
+        self._authorisations = dict()
+
+    def is_authorised(self, auth_tuple):
+        """ Report authorisation of an (identity, known_root) tuple """
+        is_authorised = self._authorisations.get(
+            auth_tuple, False)
+        return is_authorised
+
+    def store_authorisation(self, auth_tuple, status):
+        """ Store an authorisation status """
+        self._authorisations[auth_tuple] = status
+
+    def remove_authorisation(self, auth_tuple):
+        """ Remove an authorisation status """
+        if auth_tuple in self._authorisations:
+            del self._authorisations[auth_tuple]
+
+
 class HTTPServer(BaseHTTPServer):
     """ Server for HTTP protocol requests """
 
@@ -96,6 +119,7 @@ class HTTPServer(BaseHTTPServer):
         self._setup_openid()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
+        self.consumer_auth_store = ConsumerAuthStore()
 
     def server_bind(self):
         """ Bind and name the server """

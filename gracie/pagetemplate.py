@@ -28,6 +28,8 @@ page_template = Template("""\
     $css_sheet
     </style>
 
+    $openid_metadata
+
 </head>
 $page_body
 </html>
@@ -184,9 +186,13 @@ class Page(object):
             page_header=header_text, page_footer=footer_text,
             page_content=content_text,
         )
+        openid_metadata_text = Template(
+            self.openid_metadata
+        ).substitute(self.values)
         page_text = page_template.substitute(
             page_title=self.title, page_body=body_text,
             css_sheet=self.css_sheet,
+            openid_metadata=openid_metadata_text,
             character_encoding=self.character_encoding,
         )
         return page_text
@@ -241,6 +247,9 @@ def identity_user_not_found_page(name):
 def identity_view_user_page(entry, identity_url):
     title = "Identity page for %(fullname)s" % entry
     page = Page(title)
+    page.openid_metadata = """
+        <link rel="openid.server" href="$server_url" />
+    """
     page.content = """
         <div id="identity-info">
         <table>
@@ -311,11 +320,48 @@ def login_submit_failed_page(message, name):
     """
     return page
 
-def login_auth_succeeded_page(name):
-    title = "Login Succeeded"
+def _authorise_consumer_form(trust_root, want_id_url):
+    form_text = """
+        <form id="authorise_consumer"
+            action="/authorise" method="POST">
+        <p><label for="trust_root">Requesting site:</label>
+            <strong name="trust_root">$trust_root</strong>
+            <input type="hidden"
+                name="trust_root" value="$trust_root" />
+        </p>
+        <p><label for="want_id_url">Requested identity:</label>
+            <strong name="want_id_url">$want_id_url</strong>
+            <input type="hidden"
+                name="identity" value="$want_id_url" />
+        </p>
+        <p>Approve this request?
+        <input type="submit" name="approve" value="Approve" />
+        <input type="submit" name="deny" value="Deny" />
+        </p>
+        </form>
+    """
+    form_text = Template(form_text).substitute(locals())
+    return form_text
+
+def authorise_consumer_query_page(trust_root, want_id_url):
+    title = "Approve OpenID Request?"
     page = Page(title)
-    page.values.update(dict(name=name))
+    form_text = _authorise_consumer_form(trust_root, want_id_url)
+    page.values.update(dict(form=form_text))
     page.content = """
-        You can <a href="/id/$name">view your identity page</a>.
+        The following site has requested OpenID information.
+        Choose one of the options to respond.
+        $form
+    """
+    return page
+
+def wrong_identity_page(want_id_url):
+    title = "Wrong Authorisation"
+    page = Page(title)
+    page.values.update(dict(want_id=want_id_url))
+    page.content = """
+        The requested action can only be performed if you
+        <a href="$login_url">log in</a> as the identity
+        <a href="$want_id">$want_id</a>.
     """
     return page
