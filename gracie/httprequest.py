@@ -306,7 +306,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             page = pagetemplate.identity_user_not_found_page(name)
         else:
             header = ResponseHeader(http_codes['ok'])
-            page = pagetemplate.identity_view_user_page(entry)
+            identity_url = self._get_openid_url(name)
+            page = pagetemplate.identity_view_user_page(
+                entry, identity_url
+            )
 
         data = self._get_page_data(page)
         response = Response(header, data)

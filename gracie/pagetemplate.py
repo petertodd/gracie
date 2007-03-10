@@ -238,12 +238,14 @@ def identity_user_not_found_page(name):
     page = user_not_found_page(name)
     return page
 
-def identity_view_user_page(entry):
-    title = "Identity page for %(name)s" % entry
+def identity_view_user_page(entry, identity_url):
+    title = "Identity page for %(fullname)s" % entry
     page = Page(title)
     page.content = """
         <div id="identity-info">
         <table>
+        <tr><th>OpenID</th><td><a href="$identity_url"
+            >$identity_url</a></td></tr>
         <tr><th>User ID</th><td>$id</td></tr>
         <tr><th>Name</th><td>$name</td></tr>
         <tr><th>Full name</th><td>$fullname</td></tr>
@@ -251,6 +253,7 @@ def identity_view_user_page(entry):
         </div><!-- identity-info -->
     """
     page.values.update(entry)
+    page.values.update(dict(identity_url=identity_url))
     return page
 
 def login_user_not_found_page(name):

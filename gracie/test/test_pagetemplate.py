@@ -220,7 +220,10 @@ class Test_PageTemplates(scaffold.TestCase):
             name = "fred",
             fullname = "Fred Nurk",
         )
-        page = pagetemplate.identity_view_user_page(entry)
+        identity_url = "http://example.org/id/%(name)s" % entry
+        page = pagetemplate.identity_view_user_page(
+            entry, identity_url
+        )
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
             "...%(id)s..." % entry, page_data

@@ -464,7 +464,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(404)
-            Called Page_class(...)
+            Called Page_class('...')
             ...
             Called Response.send_to_handler(...)
             """ % locals()
@@ -479,7 +479,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(404)
-            Called Page_class(...)
+            Called Page_class('...')
             ...
             Called Response.send_to_handler(...)
             """ % locals()
@@ -494,7 +494,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(200)
-            Called Page_class('...%(identity_name)s...')
+            Called Page_class('...')
             ...
             Called Response.send_to_handler(...)
             """ % locals()
