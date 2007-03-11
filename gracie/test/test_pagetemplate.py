@@ -180,13 +180,13 @@ class Test_Page(scaffold.TestCase,
 class Test_PageTemplates(scaffold.TestCase):
     """ Test cases for individual page templates """
 
-    def test_internal_error_page_returns_page(self):
-        """ Internal Error page should return page """
+    def test_internal_error_page_contains_message(self):
+        """ Internal Error page should contain specified message """
         message = "Bad stuff happened"
         page = pagetemplate.internal_error_page(message)
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "Page {...}", page_data
+            "Page {...%(message)s...}" % locals(), page_data
         )
 
     def test_url_not_found_page_contains_url(self):
@@ -304,10 +304,10 @@ class Test_PageTemplates(scaffold.TestCase):
             "...%(want_id)s..." % locals(), page_data
         )
 
-    def test_wrong_identity_page_contains_url(self):
+    def test_wrong_authentication_page_contains_url(self):
         """ Resulting page should contain the specified URLs """
         want_id = "http://foo.example.org/id/bill"
-        page = pagetemplate.wrong_identity_page(
+        page = pagetemplate.wrong_authentication_page(
             want_id_url=want_id,
         )
         page_data = page.serialise()

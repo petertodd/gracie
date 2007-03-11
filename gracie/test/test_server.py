@@ -52,8 +52,7 @@ class Test_SessionManager(scaffold.TestCase):
     def test_create_session_should_return_session_id(self):
         """ Creating a session should return session ID """
         instance = self.manager_class()
-        identity_name = "fred"
-        session_id = instance.create_session(identity_name)
+        session_id = instance.create_session()
         self.failUnless(session_id is not None)
 
     def test_get_session_unknown_id_raises_keyerror(self):
@@ -64,13 +63,17 @@ class Test_SessionManager(scaffold.TestCase):
             instance.get_session, session_id
         )
 
-    def test_get_session_returns_same_username(self):
+    def test_get_session_returns_same_session(self):
         """ Getting a session by ID should return same username """
         instance = self.manager_class()
-        identity_name = "fred"
-        session_id = instance.create_session(identity_name)
-        got_name = instance.get_session(session_id)
-        self.failUnlessEqual(identity_name, got_name)
+        session = dict(
+            username = "fred",
+            foo = "spam",
+        )
+        session_id = instance.create_session(session)
+        session['session_id'] = session_id
+        got_session = instance.get_session(session_id)
+        self.failUnlessEqual(session, got_session)
 
     def test_create_session_should_create_unique_id(self):
         """ Creating a session should create unique ID each time """
@@ -78,10 +81,14 @@ class Test_SessionManager(scaffold.TestCase):
         usernames = ["larry", "curly", "moe"]
         sessions = dict()
         for username in usernames:
-            session_id = instance.create_session(username)
+            session_id = instance.create_session()
             self.failIf(session_id in sessions,
                 "Session ID %(session_id)r already exists"
                 " in %(sessions)r" % locals()
+            )
+            sessions[session_id] = dict(
+                session_id = session_id,
+                username = username,
             )
 
     def test_create_multiple_session_for_same_username(self):
@@ -91,11 +98,15 @@ class Test_SessionManager(scaffold.TestCase):
         sessions = dict()
         for username in usernames:
             for _ in range(10):
-                session_id = instance.create_session(username)
-                sessions[session_id] = username
-        for session_id, username in sessions.items():
-            got_username = instance.get_session(session_id)
-            self.failUnlessEqual(username, got_username)
+                session = dict(username=username)
+                session_id = instance.create_session(session)
+                session.update(dict(
+                    session_id = session_id
+                ))
+                sessions[session_id] = session
+        for session_id, session in sessions.items():
+            got_session = instance.get_session(session_id)
+            self.failUnlessEqual(session, got_session)
 
     def test_remove_session_unknown_should_raise_keyerror(self):
         """ Removing an unknown session ID should raise KeyError """
@@ -109,7 +120,7 @@ class Test_SessionManager(scaffold.TestCase):
         """ Removing a session should result in failure to get session """
         instance = self.manager_class()
         identity_name = "fred"
-        session_id = instance.create_session(identity_name)
+        session_id = instance.create_session()
         instance.remove_session(session_id)
         self.failUnlessRaises(KeyError,
             instance.get_session, session_id
@@ -119,8 +130,14 @@ class Test_SessionManager(scaffold.TestCase):
 class Stub_ConsumerAuthStore(object):
     """ Stub class for ConsumerAuthStore """
 
+    def __init__(self):
+        self._authorisations = dict()
+
+    def store_authorisation(self, auth_tuple, status):
+        self._authorisations[auth_tuple] = status
+
     def is_authorised(self, auth_tuple):
-        return None
+        return self._authorisations.get(auth_tuple, False)
 
 class Stub_ConsumerAuthStore_always_auth(Stub_ConsumerAuthStore):
     """ ConsumerAuthStore stub that always authorises """
@@ -208,16 +225,20 @@ class Stub_OpenIDServer(object):
             store, (Stub_OpenIDStore, server.OpenIDStore)):
             raise ValueError("store must be an OpenIDStore instance")
 
+    def decodeRequest(self, request):
+        return Stub_OpenIDResponse()
+
+    def encodeResponse(self, response):
+        return Stub_OpenIDWebResponse()
+
 class Stub_OpenIDRequest(object):
     """ Stub class for an OpenID protocol request """
 
-    def __init__(self, http_request, params=None):
+    def __init__(self, http_query, params=None):
         """ Set up a new instance """
-        def send_openid_answer(request, *args, **kwargs):
-            pass
 
-        self.mode = http_request.query.get('openid.mode')
-        keys = ('identity', 'trust_root', 'answer', 'immediate')
+        self.mode = http_query.get('openid.mode')
+        keys = ('identity', 'trust_root', 'immediate')
         if params is None:
             params = dict()
         for key in keys:
@@ -225,13 +246,19 @@ class Stub_OpenIDRequest(object):
             if key in params:
                 setattr(self, key, params[key])
 
+    def answer(self, *args, **kwargs):
+        return Stub_OpenIDResponse()
+
 class Stub_OpenIDResponse(object):
     """ Stub class for an OpenID protocol response """
+
+class Stub_OpenIDWebResponse(object):
+    """ Stub class for an encoded OpenID response """
 
     def __init__(self):
         """ Set up a new instance """
         self.code = 200
-        self.headers = [("openid", "yes")]
+        self.headers = {"openid": "yes"}
         self.body = "OpenID response"
 
 

@@ -95,10 +95,9 @@ class Stub_AuthService(object):
     """ Stub class for AuthService classes """
 
     def get_entry(self, value):
-        match = [e for e in stub_entries
-                 if e['name'] == value]
+        match = [e for e in stub_entries if e['name'] == value]
         if not match:
-            raise KeyError("No such entry for %(value)s" % locals())
+            raise KeyError("No entry for %(value)r" % locals())
         entry = match[0]
         return entry
 

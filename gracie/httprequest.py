@@ -26,7 +26,7 @@ from httpresponse import response_codes as http_codes
 from authservice import AuthenticationError
 from server import __version__
 
-cookie_name_prefix = "gracie_"
+session_cookie_name = "gracie_session"
 
 
 class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
@@ -68,24 +68,21 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _setup_auth_session(self):
         """ Set up the authentication session """
-        self.session_id = None
-        self.username = None
-        self.auth_entry = None
-        session_id = self._get_auth_cookie()
         sess_manager = self.server.sess_manager
+        session_id = self._get_auth_cookie()
+        username = None
         try:
-            username = sess_manager.get_session(session_id)
+            self.session = sess_manager.get_session(session_id)
+            username = self.session['username']
         except KeyError:
-            pass
+            self.session = dict()
         else:
-            self.username = username
-            self.session_id = session_id
-            auth_service = self.server.auth_service
-            self.auth_entry = auth_service.get_entry(username)
+            auth_entry = self.server.auth_service.get_entry(username)
+            self.session['auth_entry'] = auth_entry
 
-        if self.username:
+        if username:
             self.server.logger.info(
-                "Session authenticated as %r" % self.username
+                "Session authenticated as %(username)r" % locals()
             )
         else:
             self.server.logger.info("Session not authenticated")
@@ -93,30 +90,20 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _remove_auth_session(self):
         """ Remove the authentication session """
         sess_manager = self.server.sess_manager
-        if self.session_id:
-            sess_manager.remove_session(self.session_id)
-        self.session_id = None
-        self.username = None
-        self.auth_entry = None
+        if self.session:
+            sess_manager.remove_session(self.session.get('session_id'))
+        self.session.clear()
 
         self.server.logger.info("Removed authentication session")
-
-    def _get_openid_url(self, username):
-        """ Generate the OpenID URL for a username """
-        path = "id/%(username)s" % locals()
-        url = self._make_server_url(path)
-        return url
 
     def _get_cookie(self, name):
         """ Get a cookie from the request """
         value = None
-        prefix = cookie_name_prefix
         cookie_string = ";".join(self.headers.getheaders('Cookie'))
         cookies = Cookie.BaseCookie(cookie_string)
         if cookies:
-            cookie_name = "%(prefix)s%(name)s" % locals()
-            if cookie_name in cookies:
-                value = cookies.get(cookie_name).value
+            if session_cookie_name in cookies:
+                value = cookies[session_cookie_name].value
         return value
 
     def _get_auth_cookie(self):
@@ -126,10 +113,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _set_cookie(self, response, name, value, expire=None):
         """ Set a cookie in the response header """
-        prefix = cookie_name_prefix
-        cookie_name = "%(prefix)s%(name)s" % locals()
         field_name = "Set-Cookie"
-        field_value = "%(cookie_name)s=%(value)s" % locals()
+        field_value = "%(name)s=%(value)s" % locals()
         if expire:
             field_value = (
                 "%(field_value)s;Expires=%(expire)s" % locals())
@@ -142,17 +127,39 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         epoch = time.gmtime(0)
         expire_immediately = time.strftime(
             '%a, %d-%b-%y %H:%M:%S GMT', epoch)
-        prefix = cookie_name_prefix
 
-        session_id = self.session_id
+        session_id = self.session.get('session_id')
         if session_id:
-            self._set_cookie(response, 'session', session_id)
+            self._set_cookie(response, session_cookie_name, session_id)
         else:
-            self._set_cookie(response, 'session', "", expire_immediately)
+            self._set_cookie(response,
+                session_cookie_name, "", expire_immediately
+            )
+
+    def _make_openid_url(self, username):
+        """ Generate the OpenID URL for a username """
+        path = "id/%(username)s" % locals()
+        url = self._make_server_url(path)
+        return url
+
+    def _get_session_openid_url(self):
+        """ Get the OpenID URL for the current session """
+        openid_url = None
+        if self.session:
+            username = self.session.get('username')
+            openid_url = self.session.setdefault('openid_url',
+                self._make_openid_url(username)
+            )
+        return openid_url
+
+    def _get_session_auth_entry(self):
+        auth_entry = None
+        if self.session:
+            auth_entry = self.session.get('auth_entry')
+        return auth_entry
 
     def _dispatch(self):
         """ Dispatch to the appropriate controller """
-        self.openid_request = None
         controller_map = {
             None: self._make_url_not_found_error_response,
             'openid': self._handle_openid_request,
@@ -204,6 +211,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.server.logger.error(message)
             response = self._make_internal_error_response(message)
             self._send_response(response)
+            raise
 
     def do_GET(self):
         """ Handle a GET request """
@@ -225,38 +233,50 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _handle_openid_request(self):
         """ Handle a request to the OpenID server URL """
         openid_server = self.server.openid_server
-        self.openid_request = openid_server.decodeRequest(self.query)
-        if self.openid_request is None:
+        openid_request = openid_server.decodeRequest(self.query)
+        if openid_request is None:
             response = self._make_about_site_view_response()
         else:
-            if self.openid_request.mode in BROWSER_REQUEST_MODES:
-                response = self._handle_openid_browser_request()
+            self.server.logger.info("Received OpenID protocol request")
+            self.session['last_openid_request'] = openid_request
+            if openid_request.mode in BROWSER_REQUEST_MODES:
+                response = self._handle_openid_browser_request(
+                    openid_request
+                )
             else:
                 openid_response = openid_server.handleRequest(
-                    self.openid_request)
+                    openid_request
+                )
                 response = self._make_response_from_openid_response(
-                    openid_response)
+                    openid_response
+                )
 
         return response
 
-    def _handle_openid_browser_request(self):
+    def _handle_openid_browser_request(self, openid_request):
         """ Handle an OpenID request with user-agent interaction """
-        request = self.openid_request
         is_session_identity = False
-        openid_url = self._get_openid_url(self.username)
-        if self.username:
-            if openid_url == request.identity:
-                # Session is authenticated for requested identity
-                is_session_identity = True
+        if self.session:
+            openid_url = self._get_session_openid_url()
+            if openid_url:
+                if openid_url == openid_request.identity:
+                    # Session is authenticated for requested identity
+                    is_session_identity = True
         consumer_auth_store = self.server.consumer_auth_store
-        auth_tuple = (request.identity, request.trust_root)
+        identity = openid_request.identity
+        trust_root = openid_request.trust_root
+        auth_tuple = (identity, trust_root)
         is_authorised = consumer_auth_store.is_authorised(auth_tuple)
+        self.server.logger.info(
+            "Checking authorisation to %(identity)r"
+            " for site %(trust_root)r" % locals()
+        )
 
         dispatch_map = {
             'checkid_immediate': self._make_checkid_immediate_response,
             'checkid_setup': self._make_checkid_setup_response,
         }
-        response = dispatch_map[request.mode](request,
+        response = dispatch_map[openid_request.mode](openid_request,
             is_session_identity = is_session_identity,
             is_authorised = is_authorised,
         )
@@ -276,7 +296,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 self._make_server_url("openidserver")
             )
         response = self._make_response_from_openid_response(
-            openid_response)
+            openid_response
+        )
 
         return response
 
@@ -298,7 +319,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                         want_id = request.identity
                     )
             else:
-                response = self._make_wrong_identity_response(
+                response = self._make_wrong_authentication_response(
                     request.identity
                 )
 
@@ -308,10 +329,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response to a request to the OpenID server """
         self.server.logger.info("Delegating response to OpenID library")
         openid_server = self.server.openid_server
-        web_response = openid_server.encodeResponse(
-            openid_response)
+        web_response = openid_server.encodeResponse(openid_response)
         header = ResponseHeader(web_response.code)
-        header.fields.extend(web_response.headers)
+        for name, value in web_response.headers.items():
+            field = (name, value)
+            header.fields.append(field)
         response = Response(header, web_response.body)
 
         return response
@@ -326,12 +348,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _get_page_data(self, page):
         """ Get the actual data to be used from a page """
-        if self.username:
-            page.values.update(dict(
-                openid_url = self._get_openid_url(self.username),
-            ))
         page.values.update(dict(
-            auth_entry = self.auth_entry,
+            auth_entry = self._get_session_auth_entry(),
+            openid_url = self._get_session_openid_url(),
             root_url = self._make_server_url(""),
             server_url = self._make_server_url("openidserver"),
             login_url = self._make_server_url("login"),
@@ -376,7 +395,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             page = pagetemplate.identity_user_not_found_page(name)
         else:
             header = ResponseHeader(http_codes['ok'])
-            identity_url = self._get_openid_url(name)
+            identity_url = self._make_openid_url(name)
             page = pagetemplate.identity_view_user_page(
                 entry, identity_url
             )
@@ -440,13 +459,17 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         sess_manager = self.server.sess_manager
         try:
             username = auth_service.authenticate(credentials)
-            session_id = sess_manager.create_session(username)
             authenticated = True
         except AuthenticationError, e:
             authenticated = False
         if authenticated:
-            self.username = username
-            self.session_id = session_id
+            session_id = sess_manager.create_session(dict(
+                username = username,
+            ))
+            self.session = sess_manager.get_session(session_id)
+            self.session.update(dict(
+                openid_url = self._get_session_openid_url()
+            ))
             response = self._make_login_succeeded_response()
         else:
             response = self._make_login_failed_response()
@@ -481,10 +504,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         return response
 
-    def _make_wrong_identity_response(self, want_id):
+    def _make_wrong_authentication_response(self, want_id):
         """ Make a response for action with wrong session auth """
         header = ResponseHeader(http_codes['ok'])
-        page = pagetemplate.wrong_identity_page(want_id_url = want_id)
+        page = pagetemplate.wrong_authentication_page(
+            want_id_url = want_id
+        )
         data = self._get_page_data(page)
         response = Response(header, data)
 

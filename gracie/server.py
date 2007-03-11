@@ -60,24 +60,27 @@ class SessionManager(object):
         self._rng.seed()
         self._sessions = dict()
 
-    def _generate_session_id(self, username):
-        """ Generate a session ID for the specified username """
+    def _generate_session_id(self):
+        """ Generate a unique session ID """
         randnum = self._rng.random()
-        message = "%(username)s:%(randnum)s" % locals()
+        message = "%(randnum)s" % locals()
         message_hash = sha.sha(message)
         session_id = message_hash.hexdigest()
         return session_id
 
-    def create_session(self, username):
-        """ Create a new session for username """
-        session_id = self._generate_session_id(username)
-        self._sessions[session_id] = username
+    def create_session(self, session=None):
+        """ Create a new session for supplied session dict """
+        if session is None:
+            session = dict()
+        session_id = self._generate_session_id()
+        session['session_id'] = session_id
+        self._sessions[session_id] = session
         return session_id
 
     def get_session(self, session_id):
-        """ Get the username for specified session ID """
-        username = self._sessions[session_id]
-        return username
+        """ Get the session for specified session ID """
+        session = self._sessions[session_id]
+        return session
 
     def remove_session(self, session_id):
         """ Remove the specified session """

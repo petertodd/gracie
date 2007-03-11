@@ -335,8 +335,10 @@ def _authorise_consumer_form(trust_root, want_id_url):
                 name="identity" value="$want_id_url" />
         </p>
         <p>Approve this request?
-        <input type="submit" name="approve" value="Approve" />
-        <input type="submit" name="deny" value="Deny" />
+        <input type="submit" name="submit_approve"
+            value="Approve this request" />
+        <input type="submit" name="submit_deny"
+            value="Deny this request" />
         </p>
         </form>
     """
@@ -355,7 +357,7 @@ def authorise_consumer_query_page(trust_root, want_id_url):
     """
     return page
 
-def wrong_identity_page(want_id_url):
+def wrong_authentication_page(want_id_url):
     title = "Wrong Authorisation"
     page = Page(title)
     page.values.update(dict(want_id=want_id_url))

@@ -22,8 +22,9 @@ from scaffold import Mock
 from test_authservice import Stub_AuthService
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import (
-    Stub_OpenIDStore, Stub_OpenIDServer,
-    Stub_OpenIDError, Stub_OpenIDRequest, Stub_OpenIDResponse,
+    Stub_OpenIDStore, Stub_OpenIDServer, Stub_OpenIDError,
+    Stub_OpenIDRequest, Stub_OpenIDResponse, Stub_OpenIDWebResponse,
+    Stub_ConsumerAuthStore,
     Stub_ConsumerAuthStore_always_auth,
     Stub_ConsumerAuthStore_never_auth,
 )
@@ -40,6 +41,7 @@ class Stub_Logger(object):
     error = log
     warn = log
     info = log
+    debug = log
 
 class Stub_SessionManager(object):
     """ Stub class for SessionManager """
@@ -47,11 +49,14 @@ class Stub_SessionManager(object):
     def __init__(self):
         """ Set up a new instance """
         self._sessions = dict()
-        self.create_session("fred")
+        self.create_session(dict(
+            username="fred",
+        ))
 
-    def create_session(self, username):
-        session_id = "DEADBEEF-%(username)s" % locals()
-        self._sessions[session_id] = username
+    def create_session(self, session):
+        session_id = "DEADBEEF-%(username)s" % session
+        session.update(dict(session_id = session_id))
+        self._sessions[session_id] = session
         return session_id
 
     def get_session(self, session_id):
@@ -71,6 +76,7 @@ class Stub_HTTPServer(object):
         self.openid_server = Stub_OpenIDServer(store)
         self.auth_service = Stub_AuthService()
         self.sess_manager = Stub_SessionManager()
+        self.consumer_auth_store = Stub_ConsumerAuthStore()
 
 
 class Stub_TCPConnection(object):
@@ -157,14 +163,15 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         self.response_class_prev = httprequest.Response
         self.response_header_class_prev = httprequest.ResponseHeader
         self.page_class_prev = httprequest.pagetemplate.Page
-        self.cookie_name_prefix_prev = httprequest.cookie_name_prefix
+        self.cookie_name_prev = httprequest.session_cookie_name
+        self.dispatch_method_prev = self.handler_class._dispatch
         httprequest.Response = Mock('Response_class')
         httprequest.Response.mock_returns = Mock('Response')
         httprequest.ResponseHeader = Mock('ResponseHeader_class')
         httprequest.ResponseHeader.mock_returns = Mock('ResponseHeader')
         httprequest.pagetemplate.Page = Mock('Page_class')
         httprequest.pagetemplate.Page.mock_returns = Mock('Page')
-        httprequest.cookie_name_prefix = "TEST_"
+        httprequest.session_cookie_name = "TEST_session"
         mock_openid_server = Mock('openid_server')
 
         self.valid_requests = {
@@ -352,7 +359,12 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                 ("example.org", 0))
             server = params.setdefault('server',
                 Stub_HTTPServer(address, object()))
-            server.openid_server = mock_openid_server
+            mock_openid_request = self._make_mock_openid_request(
+                request.query
+            )
+            server.openid_server = self._make_mock_openid_server(
+                mock_openid_request
+            )
             if not args:
                 args = dict(
                     request = request.connection(),
@@ -376,7 +388,37 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         httprequest.Response = self.response_class_prev
         httprequest.ResponseHeader = self.response_header_class_prev
         httprequest.pagetemplate.Page = self.page_class_prev
-        httprequest.cookie_name_prefix = self.cookie_name_prefix_prev
+        httprequest.session_cookie_name = self.cookie_name_prev
+        self.handler_class._dispatch = self.dispatch_method_prev
+
+    def _make_mock_openid_request(self, http_query):
+        """ Make a mock OpenIDRequest for a given HTTP query """
+        openid_request = Mock('OpenIDRequest')
+        keys = ('mode', 'identity', 'trust_root', 'return_to')
+        query_key_prefix = 'openid.'
+        for key in keys:
+            query_key = '%(query_key_prefix)s%(key)s' % locals()
+            setattr(openid_request, key, http_query.get(query_key))
+        openid_request.immediate = (
+            openid_request.mode in ['checkid_immediate']
+        )
+        openid_request.answer.mock_returns = Stub_OpenIDResponse()
+
+        return openid_request
+
+    def _make_mock_openid_server(self, openid_request):
+        """ Make a mock OpenIDServer for a given HTTP query """
+        openid_server = Mock('openid_server')
+
+        if openid_request.mode:
+            openid_server.decodeRequest.mock_returns = \
+                openid_request
+            openid_server.handleRequest.mock_returns = \
+                Stub_OpenIDResponse()
+            openid_server.encodeResponse.mock_returns = \
+                Stub_OpenIDWebResponse()
+
+        return openid_server
 
     def test_instantiate(self):
         """ New HTTPRequestHandler instance should be created """
@@ -443,13 +485,17 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
 
     def test_internal_error_sends_server_error_response(self):
         """ When an error condition is raised, should send Server Error """
+        class TestingError(StandardError):
+            pass
         def raise_Error(_):
-            raise StandardError("Testing error")
-        dispatch_method_prev = self.handler_class._dispatch
+            raise TestingError("Testing error")
         self.handler_class._dispatch = raise_Error
 
         params = self.valid_requests['get-root']
-        instance = self.handler_class(**params['args'])
+        try:
+            instance = self.handler_class(**params['args'])
+        except TestingError:
+            pass
         expect_stdout = """\
             Called ResponseHeader_class(500)
             ...
@@ -458,7 +504,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
-        self.handler_class._dispatch = dispatch_method_prev
 
     def test_request_with_no_cookie_response_not_logged_in(self):
         """ With no session cookie, response should send Not Logged In """
@@ -689,7 +734,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         args = params['args']
         server = args['server']
         server.openid_server.decodeRequest = raise_ProtocolError
-        instance = self.handler_class(**args)
+        try:
+            instance = self.handler_class(**args)
+        except Stub_OpenIDError:
+            pass
         expect_stdout = """\
             Called ResponseHeader_class(500)
             ...
@@ -704,18 +752,13 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests['openid-query-associate']
         args = params['args']
         server = args['server']
-        openid_server = server.openid_server
-        openid_server.decodeRequest.mock_returns = Stub_OpenIDRequest(
-            params['request']
-        )
-        openid_server.encodeResponse.mock_returns = Stub_OpenIDResponse()
         instance = self.handler_class(**args)
         expect_stdout = """\
             Called openid_server.decodeRequest(...)
             Called openid_server.handleRequest(...)
             Called openid_server.encodeResponse(...)
             Called ResponseHeader_class(200)
-            Called ResponseHeader.fields.extend([('openid', 'yes')])
+            Called ResponseHeader.fields.append(('openid', 'yes'))
             Called Response_class(..., 'OpenID response')
             ...
             Called Response.send_to_handler(...)
@@ -723,19 +766,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
- 
-    def _make_stub_openid_request(self, http_request):
-        immediate = http_request.query['openid.mode'].endswith("immediate")
-        openid_request = Stub_OpenIDRequest(
-            http_request, dict(
-                identity="http://example.org:0/id/fred",
-                trust_root="http://bar.example.com/",
-                answer=Mock('OpenIDRequest.answer'),
-                immediate=immediate,
-            )
-        )
-
-        return openid_request
 
     def test_checkid_immediate_no_session_returns_failure(self):
         """ OpenID check_immediate with no session should reject """
@@ -743,10 +773,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        openid_server = server.openid_server
-        openid_server.decodeRequest.mock_returns = (
-            self._make_stub_openid_request(params['request'])
-        )
         server.consumer_auth_store = \
             Stub_ConsumerAuthStore_always_auth()
         instance = self.handler_class(**args)
@@ -770,10 +796,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            openid_server = server.openid_server
-            openid_server.decodeRequest.mock_returns = (
-                self._make_stub_openid_request(params['request'])
-            )
             server.consumer_auth_store = \
                 Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
@@ -794,10 +816,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        openid_server = server.openid_server
-        openid_server.decodeRequest.mock_returns = (
-            self._make_stub_openid_request(params['request'])
-        )
         server.consumer_auth_store = \
             Stub_ConsumerAuthStore_never_auth()
         instance = self.handler_class(**args)
@@ -818,10 +836,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        openid_server = server.openid_server
-        openid_server.decodeRequest.mock_returns = (
-            self._make_stub_openid_request(params['request'])
-        )
         server.consumer_auth_store = \
             Stub_ConsumerAuthStore_never_auth()
         instance = self.handler_class(**args)
@@ -845,10 +859,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            openid_server = server.openid_server
-            openid_server.decodeRequest.mock_returns = (
-                self._make_stub_openid_request(params['request'])
-            )
             server.consumer_auth_store = \
                 Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
