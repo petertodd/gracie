@@ -34,9 +34,12 @@ class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
 
 
 mapper = routes.Mapper()
-mapper.connect('openid', 'openidserver', controller='openid')
 mapper.connect('root', '', controller='about', action='view')
-mapper.connect('identity', 'id/:name', controller='identity', action='view')
+mapper.connect('openid', 'openidserver', controller='openid')
+mapper.connect('authorise', 'authorise',
+               controller='authorise', action='submit')
+mapper.connect('identity', 'id/:name',
+               controller='identity', action='view')
 mapper.connect('login', 'login', controller='login', action='view')
 mapper.connect('logout', 'logout', controller='logout', action='view')
 
@@ -167,6 +170,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             'identity': self._make_identity_view_response,
             'logout': self._make_logout_response,
             'login': self._make_login_response,
+            'authorise': self._handle_authorise_request,
         }
         controller_name = None
         if self.route_map:
@@ -338,6 +342,77 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         return response
 
+    def _handle_authorise_request(self):
+        """ Handle a request to the authorise resource """
+        identity = self.query.get('identity', object())
+        openid_url = self._get_session_openid_url()
+        openid_request = self.session.get('last_openid_request')
+        if self.command not in ["POST"]:
+            response = self._make_url_not_found_error_response()
+        elif openid_url != identity:
+            response = self._make_wrong_authentication_response(
+                identity
+            )
+        elif not openid_request:
+            message = "No OpenID request for requested authorisation"
+            self.server.logger.warn(message)
+            response = self._make_protocol_error_response(message)
+        else:
+            response = self._handle_authorise_submit_request(
+                openid_request
+            )
+
+        return response
+
+    def _handle_authorise_submit_request(self, openid_request):
+        """ Handle a request to authorise a consumer for an identity """
+        self.server.logger.info(
+            "Received consumer authorisation submission"
+        )
+
+        status_map = {
+            "submit_approve": True,
+            "submit_deny": False,
+        }
+
+        self.server.logger.debug("HTTP query: %r" % self.query)
+        try:
+            trust_root = self.query['trust_root']
+            identity = self.query['identity']
+            submit_choice = None
+            for key in status_map:
+                if key in self.query:
+                    submit_choice = key
+            status = status_map[submit_choice]
+        except KeyError, e:
+            message = "Malformed authorisation submission"
+            self.server.logger.warn(message)
+            response = self._make_protocol_error_response(message)
+        else:
+            auth_tuple = (identity, trust_root)
+            self.server.consumer_auth_store.store_authorisation(
+                (identity, trust_root), status
+            )
+            self.server.logger.info(
+                "Storing authorisation status %(auth_tuple)r: %(status)r"
+                % locals()
+            )
+            response = self._make_authorise_response(
+                openid_request, status
+            )
+
+        return response
+
+    def _make_authorise_response(self, openid_request, status):
+        """ Construct a response to an authorisation submission """
+        openid_response = openid_request.answer(status)
+        response = self._make_response_from_openid_response(
+            openid_response
+        )
+
+        return response
+
+
     def _make_redirect_response(self, url):
         """ Construct a response for a redirect """
         header = ResponseHeader(http_codes['found'])
@@ -370,6 +445,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Construct a Not Found error response """
         header = ResponseHeader(http_codes['not_found'])
         page = pagetemplate.url_not_found_page(self.path)
+        data = self._get_page_data(page)
+        response = Response(header, data)
+        return response
+
+    def _make_protocol_error_response(self, message):
+        """ Construct a Protocol Error error response """
+        header = ResponseHeader(http_codes['ok'])
+        page = pagetemplate.protocol_error_page(message)
         data = self._get_page_data(page)
         response = Response(header, data)
         return response

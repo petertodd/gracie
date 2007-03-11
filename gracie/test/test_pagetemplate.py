@@ -197,6 +197,15 @@ class Test_PageTemplates(scaffold.TestCase):
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
+    def test_protocol_error_page_contains_message(self):
+        """ Protocol Error page should contain specified message """
+        message = "Bad stuff happened"
+        page = pagetemplate.protocol_error_page(message)
+        page_data = page.serialise()
+        self.failUnlessOutputCheckerMatch(
+            "Page {...%(message)s...}" % locals(), page_data
+        )
+
     def test_about_site_page_returns_page(self):
         """ About Site page should return page """
         page = pagetemplate.about_site_view_page()

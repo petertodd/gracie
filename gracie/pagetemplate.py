@@ -221,6 +221,18 @@ def url_not_found_page(url):
     ))
     return page
 
+def protocol_error_page(message):
+    title = "Protocol Error"
+    page = Page(title)
+    page.content = """
+        The request did not conform to the expected protocol.
+        The message was: $message
+    """
+    page.values.update(dict(
+        message = message,
+    ))
+    return page
+
 def about_site_view_page():
     title = "About this site"
     page = Page(title)

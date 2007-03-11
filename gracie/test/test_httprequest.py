@@ -348,6 +348,79 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                     },
                 ),
             ),
+            'get-authorise': dict(
+                request = Stub_Request("GET", "/authorise",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
+                    query = {
+                        "trust_root": "http://example.com/",
+                        "identity": "http://example.org:0/id/fred",
+                        "return_to": "http://www.example.com/",
+                        "submit_deny": "Deny",
+                    },
+                ),
+            ),
+            'post-authorise-no-session': dict(
+                request = Stub_Request("POST", "/authorise",
+                    header = [],
+                    query = {
+                        "trust_root": "http://example.com/",
+                        "identity": "http://example.org:0/id/fred",
+                        "return_to": "http://www.example.com/",
+                        "submit_approve": "Approve",
+                    },
+                ),
+            ),
+            'post-authorise-other-session': dict(
+                request = Stub_Request("POST", "/authorise",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-bill"),
+                    ],
+                    query = {
+                        "trust_root": "http://example.com/",
+                        "identity": "http://example.org:0/id/fred",
+                        "return_to": "http://www.example.com/",
+                        "submit_approve": "Approve",
+                    },
+                ),
+            ),
+            'post-authorise-approve': dict(
+                request = Stub_Request("POST", "/authorise",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
+                    query = {
+                        "trust_root": "http://example.com/",
+                        "identity": "http://example.org:0/id/fred",
+                        "return_to": "http://www.example.com/",
+                        "submit_approve": "Approve",
+                    },
+                ),
+                auth_tuple = (
+                    "http://example.org:0/id/fred",
+                    "http://example.com/"
+                ),
+                auth_status = True,
+            ),
+            'post-authorise-deny': dict(
+                request = Stub_Request("POST", "/authorise",
+                    header = [
+                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                    ],
+                    query = {
+                        "trust_root": "http://example.com/",
+                        "identity": "http://example.org:0/id/fred",
+                        "return_to": "http://www.example.com/",
+                        "submit_deny": "Deny",
+                    },
+                ),
+                auth_tuple = (
+                    "http://example.org:0/id/fred",
+                    "http://example.com/"
+                ),
+                auth_status = False,
+            ),
         }
 
         logging.basicConfig(stream=self.stdout_test)
@@ -872,6 +945,76 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             self.failUnlessOutputCheckerMatch(
                 expect_stdout, self.stdout_test.getvalue()
             )
+
+    def test_get_authorise_returns_not_found_response(self):
+        """ GET authorise should return Not Found response """
+        params = self.valid_requests['get-authorise']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(404)
+            Called Page_class('...')
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_authorise_wrong_session_returns_login_page(self):
+        """ POST authorise with wrong session should request login """
+        for params_key in [
+            'post-authorise-no-session',
+            'post-authorise-other-session',
+        ]:
+            params = self.valid_requests[params_key]
+            args = params['args']
+            instance = self.handler_class(**args)
+            expect_stdout = """\
+                Called ResponseHeader_class(200)
+                Called Page_class('Wrong Authorisation')
+                ...
+                Called Response.send_to_handler(...)
+                """
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
+
+    def test_post_authorise_with_right_session_stores_result(self):
+        """ POST authorise with right session should store result """
+        for params_key in [
+            'post-authorise-approve',
+            'post-authorise-deny',
+        ]:
+            params = self.valid_requests[params_key]
+            args = params['args']
+            server = args['server']
+            checkid_request = self.valid_requests[
+                'openid-query-checkid_setup-right-session']['request']
+            session = server.sess_manager.get_session("DEADBEEF-fred")
+            openid_request = self._make_mock_openid_request(
+                http_query = checkid_request.query
+            )
+            session['last_openid_request'] = openid_request
+            server.openid_server = self._make_mock_openid_server(
+                openid_request
+            )
+            server.consumer_auth_store = Mock('ConsumerAuthStore')
+            auth_tuple = params['auth_tuple']
+            auth_status = params['auth_status']
+            instance = self.handler_class(**args)
+            expect_stdout = """\
+                Called ConsumerAuthStore.store_authorisation(
+                    %(auth_tuple)r,
+                    %(auth_status)r)
+                Called OpenIDRequest.answer(%(auth_status)r)
+                Called openid_server.encodeResponse(...)
+                ...
+                Called Response.send_to_handler(...)
+                """ % locals()
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
+            self.stdout_test.truncate(0)
 
 
 suite = scaffold.suite(__name__)
