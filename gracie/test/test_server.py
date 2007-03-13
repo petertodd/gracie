@@ -16,6 +16,7 @@ import sys
 import os
 from StringIO import StringIO
 import logging
+import optparse
 
 import scaffold
 from scaffold import Mock
@@ -32,7 +33,9 @@ def stub_server_bind(server):
 
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
-    def __init__(self, server_address, RequestHandlerClass):
+    def __init__(self,
+            server_address, RequestHandlerClass, gracie_server
+    ):
         """ Set up a new instance """
 
     server_bind = stub_server_bind
@@ -219,9 +222,6 @@ class Stub_OpenIDServer(object):
 
     def __init__(self, store):
         """ Set up a new instance """
-        if not isinstance(
-            store, (Stub_OpenIDStore, server.OpenIDStore)):
-            raise ValueError("store must be an OpenIDStore instance")
 
     def decodeRequest(self, request):
         return Stub_OpenIDResponse()
@@ -259,6 +259,13 @@ class Stub_OpenIDWebResponse(object):
         self.headers = {"openid": "yes"}
         self.body = "OpenID response"
 
+def make_default_opts():
+    """ Create commandline opts instance with required values """
+    opts = optparse.Values(dict(
+        datadir = "/tmp",
+    ))
+    return opts
+
 
 class Test_GracieServer(scaffold.TestCase):
     """ Test cases for GracieServer class """
@@ -269,8 +276,8 @@ class Test_GracieServer(scaffold.TestCase):
         self.server_class = server.GracieServer
 
         self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
 
         self.openid_server_prev = server.OpenIDServer
         self.openid_store_prev = server.OpenIDStore
@@ -288,17 +295,32 @@ class Test_GracieServer(scaffold.TestCase):
 
         self.valid_servers = {
             'simple': dict(
-                address = ('', 80),
+            ),
+            'with-opts': dict(
+                opts = dict(
+                    foo="spam",
+                    bar="eggs",
+                ),
+            ),
+            'datadir': dict(
+                opts = dict(
+                    datadir = "/foo/bar",
+                ),
+                datadir = "/foo/bar",
             ),
         }
 
         for key, params in self.valid_servers.items():
             args = params.get('args')
-            address = params.get('address')
+            address = params.setdefault('address', ('', 80))
             if not args:
                 args = dict(
                     server_address = address,
                 )
+            opts = make_default_opts()
+            opts._update_loose(params.get('opts', dict()))
+            params['opts'] = opts
+            args.update(dict(opts=opts))
             instance = self.server_class(**args)
             params['args'] = args
             params['instance'] = instance
@@ -327,11 +349,18 @@ class Test_GracieServer(scaffold.TestCase):
         """ GracieServer should have specified version string """
         params = self.valid_servers['simple']
         version_prev = server.__version__
-        version_test = "1.414"
+        version_test = "1.414.test"
         server.__version__ = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
         server.__version__ = version_prev
+
+    def test_opts_as_specified(self):
+        """ GracieServer should have specified opts mapping """
+        params = self.valid_servers['with-opts']
+        instance = params['instance']
+        opts = params['opts']
+        self.failUnlessEqual(opts, instance.opts)
 
     def test_logger_name_as_specified(self):
         """ GracieServer should have logger of specified name """
@@ -344,12 +373,46 @@ class Test_GracieServer(scaffold.TestCase):
         self.failUnlessEqual(expect_logger, instance.logger)
         server.logger_name = logger_name_prev
 
+    def test_server_creates_http_server(self):
+        """ GracieServer should create an HTTP server """
+        params = self.valid_servers['simple']
+        args = params['args']
+        server_address = args['server_address']
+        http_server_class_prev = server.HTTPServer
+        server.HTTPServer = Mock('HTTPServer_class')
+        expect_stdout = """\
+            Called HTTPServer_class(
+                %(server_address)r,
+                <class '...HTTPRequestHandler'>,
+                <server.GracieServer object ...>)
+            """ % locals()
+        instance = self.server_class(**params['args'])
+        server.HTTPServer = http_server_class_prev
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
     def test_server_has_openid_server(self):
         """ GracieServer should have an openid_server attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         openid_server = instance.openid_server
         self.failUnless(isinstance(openid_server, Stub_OpenIDServer))
+
+    def test_openid_store_created_with_datadir(self):
+        """ OpenIDStore should be created with specified datadir """
+        params = self.valid_servers['datadir']
+        datadir = params['datadir']
+        openid_store_class_prev = server.OpenIDStore
+        server.OpenIDStore = Mock('FileOpenIDStore_class')
+        expect_stdout = """\
+            Called FileOpenIDStore_class(%(datadir)r)
+            """ % locals()
+        instance = self.server_class(**params['args'])
+        server.OpenIDStore = openid_store_class_prev
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
 
     def test_server_has_auth_service(self):
         """ GracieServer should have an auth_service attribute """

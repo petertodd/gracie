@@ -40,7 +40,14 @@ class OptionParser(optparse.OptionParser):
         self.add_option('--log-level',
             action='store', type='string', default="WARN",
             dest='loglevel', metavar='LEVEL',
-            help="Set logging verbosity level to LEVEL",
+            help="Set logging verbosity level to LEVEL"
+                 " (default %default)",
+        )
+        self.add_option('--data-dir',
+            action='store', type='string', default="/var/lib/gracie",
+            dest='datadir', metavar='LEVEL',
+            help="Set logging verbosity level to LEVEL"
+                 " (default %default)",
         )
 
 
@@ -52,7 +59,7 @@ class Gracie(object):
         self._process_commandline(argv)
         self._init_logging()
         socket_params = self._get_socket_params()
-        self.server = GracieServer(socket_params)
+        self.server = GracieServer(socket_params, self.opts)
 
     def _process_commandline(self, argv):
         """ Process command line to this application """

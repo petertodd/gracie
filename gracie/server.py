@@ -11,12 +11,11 @@
 """ Behaviour for OpenID provider server
 """
 
-import sys
 import logging
 import random
 import sha
 from openid.server.server import Server as OpenIDServer
-from openid.store.dumbstore import DumbStore as OpenIDStore
+from openid.store.filestore import FileOpenIDStore as OpenIDStore
 
 from httprequest import HTTPRequestHandler
 from httpserver import HTTPServer, default_host, default_port
@@ -94,11 +93,14 @@ class ConsumerAuthStore(object):
 class GracieServer(object):
     """ Server for Gracie OpenID provider service """
 
-    def __init__(self, server_address):
+    def __init__(self, server_address, opts):
         """ Set up a new instance """
         self.version = __version__
+        self.opts = opts
         self._setup_logging()
-        self.httpserver = HTTPServer(server_address, HTTPRequestHandler)
+        self.httpserver = HTTPServer(
+            server_address, HTTPRequestHandler, self
+        )
         self._setup_openid()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
@@ -106,8 +108,7 @@ class GracieServer(object):
 
     def _setup_openid(self):
         """ Set up OpenID parameters """
-        secret = "gracie"
-        store = OpenIDStore(secret)
+        store = OpenIDStore(self.opts.datadir)
         self.openid_server = OpenIDServer(store)
 
     def __del__(self):

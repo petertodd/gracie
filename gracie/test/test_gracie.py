@@ -32,7 +32,7 @@ class Stub_GracieServer(object):
 
     version = "3.14.test"
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, socket_params, opts):
         """ Set up a new instance """
 
 
@@ -127,7 +127,6 @@ class Test_Gracie(scaffold.TestCase):
 
     def test_opts_help(self):
         """ Gracie instance should perform help action """
-
         argv = ["--help"]
         expect_stdout = """\
             usage: ...
@@ -142,12 +141,17 @@ class Test_Gracie(scaffold.TestCase):
 
     def test_opts_loglevel(self):
         """ Gracie instance should accept log-level setting """
-
         want_loglevel = "DEBUG"
         argv = ["--log-level", want_loglevel]
-        gracie.HTTPServer = self.mock_server_class
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
+
+    def test_opts_datadir(self):
+        """ Gracie instance should accept data-dir setting """
+        want_dir = "/foo/bar"
+        argv = ["--data-dir", want_dir]
+        instance = self.app_class(argv=argv)
+        self.failUnlessEqual(want_dir, instance.opts.datadir)
 
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """
@@ -155,7 +159,9 @@ class Test_Gracie(scaffold.TestCase):
         host = gracie.default_host
         port = gracie.default_port
         expect_stdout = """\
-            Called GracieServer_class((%(host)r, %(port)r))
+            Called GracieServer_class(
+                (%(host)r, %(port)r),
+                <Values ...>)
             ...""" % locals()
         gracie.GracieServer = self.mock_server_class
         instance = self.app_class(**args)
