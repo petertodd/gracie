@@ -68,10 +68,27 @@ class Stub_SessionManager(object):
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
 
-    def __init__(self, server_address, handler_class):
+    def __init__(self, server_address, handler_class, gracie_server):
         """ Set up a new instance """
-        self.server_location = "%s:%s" % server_address
+        self.gracie_server = gracie_server
+        (host, port) = server_address
+        self.server_location = "%(host)s:%(port)s" % locals()
+
+class Stub_HTTPRequestHandler(object):
+    """ Stub class for HTTPRequestHandler """
+
+class Stub_GracieServer(object):
+    """ Stub class for GracieServer """
+
+    version = "3.14.test"
+
+    def __init__(self, server_address):
+        """ Set up a new instance """
         self.logger = Stub_Logger()
+        self.server_location = "%s:%s" % server_address
+        self.http_server = Stub_HTTPServer(
+            server_address, Stub_HTTPRequestHandler(), self
+        )
         store = Stub_OpenIDStore(None)
         self.openid_server = Stub_OpenIDServer(store)
         self.auth_service = Stub_AuthService()
@@ -430,14 +447,17 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             request = params['request']
             address = params.setdefault('address',
                 ("example.org", 0))
+            gracie_server = Stub_GracieServer(address)
             server = params.setdefault('server',
-                Stub_HTTPServer(address, object()))
+                gracie_server.http_server
+            )
             mock_openid_request = self._make_mock_openid_request(
                 request.query
             )
-            server.openid_server = self._make_mock_openid_server(
+            mock_openid_server = self._make_mock_openid_server(
                 mock_openid_request
             )
+            server.gracie_server.openid_server = mock_openid_server
             if not args:
                 args = dict(
                     request = request.connection(),
@@ -450,7 +470,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             default_params_dict = self.valid_requests
         )
 
-        version = httprequest.__version__
+        version = Stub_GracieServer.version
         self.expect_server_version = "Gracie/%(version)s" % locals()
         python_version = sys.version.split()[0]
         self.expect_sys_version = "Python/%(python_version)s" % locals()
@@ -508,8 +528,11 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
 
     def test_server_version_as_specified(self):
         """ HTTPRequestHandler should report module version """
-        server_version = self.handler_class.server_version
-        self.failUnlessEqual(self.expect_server_version, server_version)
+        for key, params in self.iterate_params():
+            instance = self.handler_class(**params['args'])
+            self.failUnlessEqual(
+                self.expect_server_version, instance.server_version
+            )
 
     def test_version_string_as_specified(self):
         """ HTTPRequestHandler should report expected version string """
@@ -528,8 +551,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests['get-bogus']
         instance = self.handler_class(**params['args'])
         server = params['server']
-        server.logger = Mock("logger")
-        server.logger.log = Mock("logger.log")
+        server.gracie_server.logger = Mock("logger")
+        server.gracie_server.logger.log = Mock("logger.log")
         msg_format = "Foo"
         msg_level = logging.INFO
         msg_args = ("spam", "eggs")
@@ -806,7 +829,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests['openid-bogus-query']
         args = params['args']
         server = args['server']
-        server.openid_server.decodeRequest = raise_ProtocolError
+        server.gracie_server.openid_server.decodeRequest = \
+            raise_ProtocolError
         try:
             instance = self.handler_class(**args)
         except Stub_OpenIDError:
@@ -846,7 +870,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        server.consumer_auth_store = \
+        server.gracie_server.consumer_auth_store = \
             Stub_ConsumerAuthStore_always_auth()
         instance = self.handler_class(**args)
         expect_stdout = """\
@@ -869,7 +893,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            server.consumer_auth_store = \
+            server.gracie_server.consumer_auth_store = \
                 Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
             expect_stdout = """\
@@ -889,7 +913,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        server.consumer_auth_store = \
+        server.gracie_server.consumer_auth_store = \
             Stub_ConsumerAuthStore_never_auth()
         instance = self.handler_class(**args)
         expect_stdout = """\
@@ -909,7 +933,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        server.consumer_auth_store = \
+        server.gracie_server.consumer_auth_store = \
             Stub_ConsumerAuthStore_never_auth()
         instance = self.handler_class(**args)
         expect_stdout = """\
@@ -932,7 +956,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            server.consumer_auth_store = \
+            server.gracie_server.consumer_auth_store = \
                 Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
             expect_stdout = """\
@@ -990,15 +1014,19 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             server = args['server']
             checkid_request = self.valid_requests[
                 'openid-query-checkid_setup-right-session']['request']
-            session = server.sess_manager.get_session("DEADBEEF-fred")
+            session = server.gracie_server.sess_manager.get_session(
+                "DEADBEEF-fred"
+            )
             openid_request = self._make_mock_openid_request(
                 http_query = checkid_request.query
             )
             session['last_openid_request'] = openid_request
-            server.openid_server = self._make_mock_openid_server(
+            mock_openid_server = self._make_mock_openid_server(
                 openid_request
             )
-            server.consumer_auth_store = Mock('ConsumerAuthStore')
+            server.gracie_server.openid_server = mock_openid_server
+            mock_auth_store = Mock('ConsumerAuthStore')
+            server.gracie_server.consumer_auth_store = mock_auth_store
             auth_tuple = params['auth_tuple']
             auth_status = params['auth_status']
             instance = self.handler_class(**args)

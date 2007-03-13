@@ -15,10 +15,9 @@
 import optparse
 import logging
 
-from server import HTTPServer
-from httprequest import HTTPRequestHandler
-from server import default_host, default_port
 from server import __version__
+from server import GracieServer
+from httpserver import default_host, default_port
 
 
 class OptionParser(optparse.OptionParser):
@@ -53,7 +52,7 @@ class Gracie(object):
         self._process_commandline(argv)
         self._init_logging()
         socket_params = self._get_socket_params()
-        self.server = HTTPServer(socket_params, HTTPRequestHandler)
+        self.server = GracieServer(socket_params)
 
     def _process_commandline(self, argv):
         """ Process command line to this application """

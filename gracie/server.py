@@ -13,38 +13,19 @@
 
 import sys
 import logging
-from BaseHTTPServer import HTTPServer as BaseHTTPServer
 import random
 import sha
 from openid.server.server import Server as OpenIDServer
 from openid.store.dumbstore import DumbStore as OpenIDStore
 
+from httprequest import HTTPRequestHandler
+from httpserver import HTTPServer, default_host, default_port
 from authservice import PamAuthService as AuthService
 
 __version__ = "0.0"
 
 # Name of the Python logging instance to use for this module
 logger_name = "gracie.server"
-
-
-class BaseHTTPServer(BaseHTTPServer, object):
-    """ Shim to insert base object type into hierarchy """
-
-
-http_port = 80
-
-def net_location(host, port=None):
-    """ Construct a location string from host string and port number """
-    if port is None or port == http_port:
-        location_spec = "%(host)s"
-    else:
-        location_spec = "%(host)s:%(port)s"
-    location = location_spec % locals()
-    return location
-
-default_host = "localhost"
-default_port = 8000
-default_location = net_location(default_host, default_port)
 
 
 class SessionManager(object):
@@ -110,26 +91,18 @@ class ConsumerAuthStore(object):
             del self._authorisations[auth_tuple]
 
 
-class HTTPServer(BaseHTTPServer):
-    """ Server for HTTP protocol requests """
+class GracieServer(object):
+    """ Server for Gracie OpenID provider service """
 
-    def __init__(self, server_address, RequestHandlerClass):
+    def __init__(self, server_address):
         """ Set up a new instance """
+        self.version = __version__
         self._setup_logging()
-        super(HTTPServer, self).__init__(
-            server_address, RequestHandlerClass
-        )
+        self.httpserver = HTTPServer(server_address, HTTPRequestHandler)
         self._setup_openid()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
         self.consumer_auth_store = ConsumerAuthStore()
-
-    def server_bind(self):
-        """ Bind and name the server """
-        super(HTTPServer, self).server_bind()
-        self.server_location = net_location(
-            self.server_name, self.server_port
-        )
 
     def _setup_openid(self):
         """ Set up OpenID parameters """
@@ -149,16 +122,6 @@ class HTTPServer(BaseHTTPServer):
             % locals()
         )
 
-    def handle_request(self):
-        """ Handle a single request """
-        try:
-            super(HTTPServer, self).handle_request()
-        except (KeyboardInterrupt, SystemExit), e:
-            exc_name = e.__class__.__name__
-            message = "Received %(exc_name)s" % locals()
-            self.logger.warn(message)
-            raise
-        except Exception, e:
-            message = str(e)
-            self.logger.error(message)
-            raise
+    def serve_forever(self):
+        """ Begin serving requests indefinitely """
+        self.httpserver.serve_forever()

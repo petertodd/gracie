@@ -25,20 +25,17 @@ from test_httpresponse import Stub_ResponseHeader, Stub_Response
 import server
 
 
-class Test_net_location(scaffold.TestCase):
-    """ Test cases for net_location function """
+def stub_server_bind(server):
+    """ Stub method to get server location """
+    (host, port) = server.server_address
+    (server.server_name, server.server_port) = (host, port)
 
-    def test_combines_components_to_location(self):
-        """ net_location() should combine components to net location """
-        locations = {
-            ("foo", None): "foo",
-            ("foo", 80): "foo",
-            ("foo", 81): "foo:81",
-        }
+class Stub_HTTPServer(object):
+    """ Stub class for HTTPServer """
+    def __init__(self, server_address, RequestHandlerClass):
+        """ Set up a new instance """
 
-        for (host, port), expect_location in locations.items():
-            location = server.net_location(host, port)
-            self.failUnlessEqual(expect_location, location)
+    server_bind = stub_server_bind
 
 
 class Test_SessionManager(scaffold.TestCase):
@@ -207,6 +204,7 @@ class Test_ConsumerAuthStore(scaffold.TestCase):
 class Stub_HTTPRequestHandler(object):
     """ Stub class for HTTPRequestHandler """
 
+
 class Stub_OpenIDError(Exception):
     """ Stub error class for openid module """
 
@@ -262,21 +260,17 @@ class Stub_OpenIDWebResponse(object):
         self.body = "OpenID response"
 
 
-def stub_server_bind(server):
-    """ Stub method to get server location """
-    (host, port) = server.server_address
-    (server.server_name, server.server_port) = (host, port)
-
-class Test_HTTPServer(scaffold.TestCase):
-    """ Test cases for HTTPServer class """
+class Test_GracieServer(scaffold.TestCase):
+    """ Test cases for GracieServer class """
 
     def setUp(self):
         """ Set up test fixtures """
 
-        self.server_class = server.HTTPServer
+        self.server_class = server.GracieServer
 
-        self.stub_handler_class = Stub_HTTPRequestHandler
-        self.mock_handler_class = Mock('HTTPRequestHandler')
+        self.stdout_prev = sys.stdout
+        self.test_stdout = StringIO()
+        sys.stdout = self.test_stdout
 
         self.openid_server_prev = server.OpenIDServer
         self.openid_store_prev = server.OpenIDStore
@@ -285,12 +279,15 @@ class Test_HTTPServer(scaffold.TestCase):
         server.OpenIDStore = Stub_OpenIDStore
         server.ConsumerAuthStore = Stub_ConsumerAuthStore
 
-        self.server_bind_prev = server.BaseHTTPServer.server_bind
-        server.BaseHTTPServer.server_bind = stub_server_bind
+        self.mock_server_class = Mock('HTTPServer_class')
+        self.mock_server_class.mock_returns = Mock('HTTPServer')
 
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
+        self.server_class_prev = server.HTTPServer
+        server.HTTPServer = Stub_HTTPServer
+        self.handler_class_prev = server.HTTPRequestHandler
+        server.RequestHandlerClass = Stub_HTTPRequestHandler
+        self.default_port_prev = server.default_port
+        server.default_port = 7654
 
         self.valid_servers = {
             'simple': dict(
@@ -301,12 +298,9 @@ class Test_HTTPServer(scaffold.TestCase):
         for key, params in self.valid_servers.items():
             args = params.get('args')
             address = params.get('address')
-            handler_class = params.setdefault(
-                'handler_class', self.stub_handler_class)
             if not args:
                 args = dict(
                     server_address = address,
-                    RequestHandlerClass = handler_class
                 )
             instance = self.server_class(**args)
             params['args'] = args
@@ -319,16 +313,28 @@ class Test_HTTPServer(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
+        server.HTTPServer = self.server_class_prev
+        server.HTTPRequestHandler = self.handler_class_prev
+        server.default_port = self.default_port_prev
         server.OpenIDServer = self.openid_server_prev
         server.OpenIDStore = self.openid_store_prev
         server.ConsumerAuthStore = self.consumer_store_prev
-        server.BaseHTTPServer.server_bind = self.server_bind_prev
 
     def test_instantiate(self):
-        """ New HTTPServer instance should be created """
+        """ New GracieServer instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
             self.failUnless(instance is not None)
+
+    def test_version_as_specified(self):
+        """ GracieServer should have specified version string """
+        params = self.valid_servers['simple']
+        version_prev = server.__version__
+        version_test = "1.414"
+        server.__version__ = version_test
+        instance = self.server_class(**params['args'])
+        self.failUnlessEqual(version_test, instance.version)
+        server.__version__ = version_prev
 
     def test_logger_name_as_specified(self):
         """ HTTPServer should have logger of specified name """
@@ -340,14 +346,6 @@ class Test_HTTPServer(scaffold.TestCase):
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(expect_logger, instance.logger)
         server.logger_name = logger_name_prev
-
-    def test_request_handler_class_as_specified(self):
-        """ HTTPServer should have specified RequestHandlerClass """
-        for key, params in self.iterate_params():
-            instance = params['instance']
-            handler_class = params['handler_class']
-            self.failUnlessEqual(handler_class,
-                                 instance.RequestHandlerClass)
 
     def test_server_has_openid_server(self):
         """ HTTPServer should have an openid_server attribute """
