@@ -279,10 +279,7 @@ class Test_GracieServer(scaffold.TestCase):
         server.OpenIDStore = Stub_OpenIDStore
         server.ConsumerAuthStore = Stub_ConsumerAuthStore
 
-        self.mock_server_class = Mock('HTTPServer_class')
-        self.mock_server_class.mock_returns = Mock('HTTPServer')
-
-        self.server_class_prev = server.HTTPServer
+        self.httpserver_class_prev = server.HTTPServer
         server.HTTPServer = Stub_HTTPServer
         self.handler_class_prev = server.HTTPRequestHandler
         server.RequestHandlerClass = Stub_HTTPRequestHandler
@@ -313,7 +310,7 @@ class Test_GracieServer(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        server.HTTPServer = self.server_class_prev
+        server.HTTPServer = self.httpserver_class_prev
         server.HTTPRequestHandler = self.handler_class_prev
         server.default_port = self.default_port_prev
         server.OpenIDServer = self.openid_server_prev
@@ -337,7 +334,7 @@ class Test_GracieServer(scaffold.TestCase):
         server.__version__ = version_prev
 
     def test_logger_name_as_specified(self):
-        """ HTTPServer should have logger of specified name """
+        """ GracieServer should have logger of specified name """
         params = self.valid_servers['simple']
         logger_name_prev = server.logger_name
         logger_name_test = "Foo.Bar"
@@ -348,35 +345,35 @@ class Test_GracieServer(scaffold.TestCase):
         server.logger_name = logger_name_prev
 
     def test_server_has_openid_server(self):
-        """ HTTPServer should have an openid_server attribute """
+        """ GracieServer should have an openid_server attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         openid_server = instance.openid_server
         self.failUnless(isinstance(openid_server, Stub_OpenIDServer))
 
     def test_server_has_auth_service(self):
-        """ HTTPServer should have an auth_service attribute """
+        """ GracieServer should have an auth_service attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         auth_service = instance.auth_service
         self.failUnless(auth_service is not None)
 
     def test_server_has_session_manager(self):
-        """ HTTPServer should have a sess_manager attribute """
+        """ GracieServer should have a sess_manager attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         sess_manager = instance.sess_manager
         self.failUnless(sess_manager is not None)
 
     def test_server_has_authorisation_store(self):
-        """ HTTPServer should have a consumer_auth_store attribute """
+        """ GracieServer should have a consumer_auth_store attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         consumer_auth_store = instance.consumer_auth_store
         self.failUnless(consumer_auth_store is not None)
 
     def test_serve_forever_is_callable(self):
-        """ HTTPServer.serve_forever should be callable """
+        """ GracieServer.serve_forever should be callable """
         self.failUnless(callable(self.server_class.serve_forever))
 
 
