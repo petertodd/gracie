@@ -1,0 +1,12 @@
+============================
+Development tasks to be done
+============================
+
+:Updated: bignose 2007-03-15
+
+* Use TLS for login
+* Use separate process for root-required PAM auth
+* Package as a Python egg for setuptools
+* Put project in the Python Cheeseshop
+* Package as a Debian package
+
