@@ -1,0 +1,6 @@
+gracie (0.1-1) unstable; urgency=low
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Ben Finney <ben+debian@benfinney.id.au>  Mon, 19 Mar 2007 12:08:28 +1100
+

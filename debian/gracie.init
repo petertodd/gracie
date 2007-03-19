@@ -1,0 +1,66 @@
+#!/bin/sh -e
+#
+# gracie        Startup script for the Gracie OpenID server.
+#
+# Version:      $Id$
+#
+### BEGIN INIT INFO
+# Provides:          gracie
+# Required-Start:    $syslog $network
+# Required-Stop:     $syslog $network
+# Should-Start:      $local_fs
+# Should-Stop:       $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start the stand-alone Gracie OpenID server
+# Description:       Start the stand-alone Gracie OpenID server
+### END INIT INFO
+
+
+DESC='Gracie OpenID server'
+
+BINFILE=gracie
+EXECUTABLE=/usr/bin/$BINFILE
+### to be taken from /etc/roundup/roundup-server.ini:
+PIDFILE=/var/run/gracie/server.pid
+OPTIONS=--data-dir /var/lib/gracie
+
+if test -f /etc/default/gracie; then
+    . /etc/default/gracie
+fi
+
+test -x $EXECUTABLE || exit 0
+
+start_stop() {
+    case "$1" in
+    start)
+        printf "Starting $DESC:"
+        start-stop-daemon --start --oknodo --quiet \
+            --pidfile $PIDFILE \
+            --exec $EXECUTABLE $OPTIONS
+        printf " $BINFILE"
+        printf ".\n"
+        ;;
+    stop)
+        printf "Stopping $DESC:"
+        start-stop-daemon --stop --oknodo --quiet \
+            --pidfile $PIDFILE
+        printf " $BINFILE"
+        printf ".\n"
+        ;;
+    restart | force-reload)
+        start_stop stop
+        sleep 1
+        start_stop start
+        ;;
+    *)
+        printf "Usage: $0 {start|stop|restart|force-reload}\n" >&2
+        exit 1
+        ;;
+    esac
+}
+
+start_stop "$@"
+
+exit 0
+

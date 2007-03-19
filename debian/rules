@@ -1,0 +1,87 @@
+#! /usr/bin/make -f
+# -*- makefile -*-
+#
+# debian/rules
+# Part of Gracie, an OpenID provider
+#
+# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# This is free software; you may copy, modify and/or distribute this work
+# under the terms of the GNU General Public License, version 2 or later.
+# No warranty expressed or implied. See the file LICENSE for details.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PYVERS = $(shell pyversions -vr)
+
+
+.PHONY: build
+build: build-stamp
+
+build-stamp: ${PYVERS:%=build-python%}
+	dh_testdir
+	# Add here commands to compile the package.
+	$(MAKE)
+	docbook-to-man debian/gracie.sgml > gracie.1
+	touch $@
+
+build-python%:
+	dh_testdir
+	python$* setup.py build
+	touch $@
+
+.PHONY: clean
+clean:
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+
+	# Add here commands to clean up after the build process.
+	-$(MAKE) clean
+
+	dh_clean 
+install: build $(PYVERS:%=install-python%)
+install-python%:
+	python$* setup.py install --root $(CURDIR)/debian/python-foo
+
+.PHONY: install
+install: build ${PYVERS:%=install-python%}
+	dh_testdir
+	dh_testroot
+	dh_clean -k 
+	dh_installdirs
+	dh_installinit
+	dh_installpam
+
+install-python%:
+	python$* setup.py install \
+		--single-version-externally-managed \
+		--root $(CURDIR)/debian/gracie
+
+
+.PHONY: binary-indep
+binary-indep: build install
+	# We have nothing to do by default.
+
+.PHONY: binary-arch
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs 
+	dh_installdocs
+	dh_installexamples
+	dh_installman
+	dh_pycentral
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: binary
+binary: binary-indep binary-arch
+

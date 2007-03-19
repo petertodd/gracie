@@ -1,0 +1,8 @@
+# /etc/pam.d/gracie
+# PAM configuration for Gracie session authentication
+
+# Standard Un*x authentication.
+@include common-auth
+
+# Obey access limits
+account required pam_access.so
