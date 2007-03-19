@@ -12,8 +12,13 @@
 # Uncomment this to turn on verbose mode.
 ### export DH_VERBOSE=1
 
-PYVERS = $(shell pyversions -vr)
+PACKAGE_NAME = gracie
+MODULE_NAME = ${PACKAGE_NAME}
 
+PYVERS = $(shell pyversions -vr)
+DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog \
+	| grep '^Version:' | cut -d ' ' -f 2 \
+	| cut -d '-' -f 1)
 
 .PHONY: build
 build: build-stamp
@@ -33,9 +38,9 @@ build-python%:
 clean:
 	dh_testdir
 	dh_testroot
-	rm -f build-stamp configure-stamp
+	rm -f build-stamp build-python*
 	-$(MAKE) clean
-	dh_clean 
+	dh_clean
 
 .PHONY: install
 install: build ${PYVERS:%=install-python%}
@@ -49,12 +54,13 @@ install: build ${PYVERS:%=install-python%}
 install-python%:
 	python$* setup.py install \
 		--single-version-externally-managed \
-		--root $(CURDIR)/debian/gracie
+		--root $(CURDIR)/debian/${PACKAGE_NAME}
+	# install only one Egg dir (without python's version number)
+	mv debian/${PACKAGE_NAME}/usr/lib/python$*/site-packages/${MODULE_NAME}{-${DEB_UPSTREAM_VERSION}-py$*,}.egg-info
 
 
 .PHONY: binary-indep
 binary-indep: build install
-# We have nothing to do by default.
 
 .PHONY: binary-arch
 binary-arch: build install
@@ -70,6 +76,7 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 	dh_installdeb
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
