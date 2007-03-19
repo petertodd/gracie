@@ -1,2 +1,6 @@
 .bzr-commit
 semantic.cache
+*.egg-info
+./build
+./dist
+PKG-INFO
