@@ -3,7 +3,7 @@ Section: web
 Priority: extra
 Maintainer: Ben Finney <ben+debian@benfinney.id.au>
 Build-Depends: debhelper (>= 5.0.38), docbook-to-man,
-    python-all-dev (>= 2.3.5-11),
+    python-dev (>= 2.4),
     python-central (>= 0.5.6),
     python-setuptools (>= 0.6b3-1)
 Standards-Version: 3.7.2

@@ -46,7 +46,6 @@ clean:
 install: build ${PYVERS:%=install-python%}
 	dh_testdir
 	dh_testroot
-	dh_clean -k 
 	dh_installdirs
 	dh_installinit
 	dh_installpam
@@ -56,7 +55,8 @@ install-python%:
 		--single-version-externally-managed \
 		--root $(CURDIR)/debian/${PACKAGE_NAME}
 	# install only one Egg dir (without python's version number)
-	mv debian/${PACKAGE_NAME}/usr/lib/python$*/site-packages/${MODULE_NAME}{-${DEB_UPSTREAM_VERSION}-py$*,}.egg-info
+	mv debian/${PACKAGE_NAME}/usr/lib/python$*/site-packages/${MODULE_NAME}-${DEB_UPSTREAM_VERSION}-py$*.egg-info \
+		debian/${PACKAGE_NAME}/usr/lib/python$*/site-packages/${MODULE_NAME}.egg-info
 
 
 .PHONY: binary-indep
@@ -83,4 +83,5 @@ binary-arch: build install
 
 .PHONY: binary
 binary: binary-indep binary-arch
+	dh_clean -k 
 
