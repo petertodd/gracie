@@ -136,7 +136,8 @@ manpage.1: manpage.sgml
   <refsect1>
     <title>SEE ALSO</title>
 
-    <para>The OpenID project page <url>http://openid.net/</url>.
+    <para>The OpenID project page
+      <ulink url="http://openid.net/">http://openid.net/</ulink>.
       </para>
   </refsect1>
   <refsect1>

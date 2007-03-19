@@ -4,3 +4,5 @@ semantic.cache
 ./build
 ./dist
 PKG-INFO
+./build-python[0-9]*
+./build-stamp

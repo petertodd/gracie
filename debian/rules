@@ -10,7 +10,7 @@
 # No warranty expressed or implied. See the file LICENSE for details.
 
 # Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+### export DH_VERBOSE=1
 
 PYVERS = $(shell pyversions -vr)
 
@@ -20,7 +20,6 @@ build: build-stamp
 
 build-stamp: ${PYVERS:%=build-python%}
 	dh_testdir
-	# Add here commands to compile the package.
 	$(MAKE)
 	docbook-to-man debian/gracie.sgml > gracie.1
 	touch $@
@@ -35,14 +34,8 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-
-	# Add here commands to clean up after the build process.
 	-$(MAKE) clean
-
 	dh_clean 
-install: build $(PYVERS:%=install-python%)
-install-python%:
-	python$* setup.py install --root $(CURDIR)/debian/python-foo
 
 .PHONY: install
 install: build ${PYVERS:%=install-python%}
@@ -61,7 +54,7 @@ install-python%:
 
 .PHONY: binary-indep
 binary-indep: build install
-	# We have nothing to do by default.
+# We have nothing to do by default.
 
 .PHONY: binary-arch
 binary-arch: build install
@@ -77,7 +70,6 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 	dh_installdeb
-	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb
