@@ -44,8 +44,8 @@ class Test_Gracie(scaffold.TestCase):
         self.app_class = gracie.Gracie
 
         self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
 
         self.stub_server_class = Stub_GracieServer
         self.mock_server_class = Mock('GracieServer_class')
@@ -63,6 +63,22 @@ class Test_Gracie(scaffold.TestCase):
             'argv_loglevel_debug': dict(
                 args = dict(),
                 options = ["--log-level", "debug"],
+            ),
+            'change-host': dict(
+                args = dict(),
+                options = ["--host", "frobnitz"],
+                host = "frobnitz",
+            ),
+            'change-port': dict(
+                args = dict(),
+                options = ["--port", "9779"],
+                port = 9779,
+            ),
+            'change-address': dict(
+                args = dict(),
+                options = ["--host", "frobnitz", "--port", "9779"],
+                host = "frobnitz",
+                port = 9779,
             ),
         }
 
@@ -103,7 +119,7 @@ class Test_Gracie(scaffold.TestCase):
            """
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
         gracie.logging = logging_prev
 
@@ -121,7 +137,7 @@ class Test_Gracie(scaffold.TestCase):
             self.app_class, argv=argv
         )
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
         gracie.__version__ = version_prev
 
@@ -136,7 +152,7 @@ class Test_Gracie(scaffold.TestCase):
             self.app_class, argv=argv
         )
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
     def test_opts_loglevel(self):
@@ -153,9 +169,24 @@ class Test_Gracie(scaffold.TestCase):
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_dir, instance.opts.datadir)
 
+    def test_opts_host(self):
+        """ Gracie instance should accept host setting """
+        want_host = "frobnitz"
+        argv = ["--host", want_host]
+        instance = self.app_class(argv=argv)
+        self.failUnlessEqual(want_host, instance.opts.host)
+
+    def test_opts_port(self):
+        """ Gracie instance should accept port setting """
+        want_port = 9779
+        argv = ["--port", want_port]
+        instance = self.app_class(argv=argv)
+        self.failUnlessEqual(want_port, instance.opts.port)
+
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """
-        args = self.valid_apps['simple']['args']
+        params = self.valid_apps['simple']
+        args = params['args']
         host = gracie.default_host
         port = gracie.default_port
         expect_stdout = """\
@@ -166,9 +197,32 @@ class Test_Gracie(scaffold.TestCase):
         gracie.GracieServer = self.mock_server_class
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
         self.failUnless(instance.server is not None)
+
+    def test_sets_specified_socket_params(self):
+        """ Should set the server on the specified host:port """
+        for key, params in self.iterate_params():
+            args = params['args']
+            default_address = (
+                gracie.default_host, gracie.default_port
+            )
+            host = params.get('host', gracie.default_host)
+            port = params.get('port', gracie.default_port)
+            if (host, port) == default_address:
+                continue
+            expect_stdout = """\
+                Called GracieServer_class(
+                    (%(host)r, %(port)r),
+                    <Values ...>)
+                ...""" % locals()
+            gracie.GracieServer = self.mock_server_class
+            instance = self.app_class(**args)
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+            )
+            self.stdout_test.truncate(0)
 
     def test_run_is_callable(self):
         """ Gracie.run should be callable """
@@ -186,7 +240,7 @@ class Test_Gracie(scaffold.TestCase):
         instance = self.app_class(**args)
         instance.run()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
 
@@ -200,8 +254,8 @@ class Test_main(scaffold.TestCase):
         self.mainfunc = gracie.__main__
 
         self.stdout_prev = sys.stdout
-        self.test_stdout = StringIO()
-        sys.stdout = self.test_stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
 
         self.app_class_prev = gracie.Gracie
         gracie.Gracie = mock_app_class
@@ -223,7 +277,7 @@ class Test_main(scaffold.TestCase):
             ..."""
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
     def test_defaults_argv_to_sys_argv(self):
@@ -234,7 +288,7 @@ class Test_main(scaffold.TestCase):
             ...""" % dict(argv=sys.argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
     def test_passes_argv_to_server(self):
@@ -248,7 +302,7 @@ class Test_main(scaffold.TestCase):
             ...""" % dict(argv=argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
     def test_invokes_run(self):
@@ -261,7 +315,7 @@ class Test_main(scaffold.TestCase):
         """ % dict(argv=argv)
         self.mainfunc(**args)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.test_stdout.getvalue()
+            expect_stdout, self.stdout_test.getvalue()
         )
 
 

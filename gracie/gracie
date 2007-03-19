@@ -49,6 +49,18 @@ class OptionParser(optparse.OptionParser):
             help="Set logging verbosity level to LEVEL"
                  " (default %default)",
         )
+        self.add_option('--host',
+            action='store', type='string', default=default_host,
+            dest='host', metavar='HOST',
+            help="Listen on address HOST; can be name or address"
+                 " (default %default)",
+        )
+        self.add_option('--port',
+            action='store', type='int', default=default_port,
+            dest='port', metavar='PORT',
+            help="Listen on TCP port PORT"
+                 " (default %default)",
+        )
 
 
 class Gracie(object):
@@ -57,8 +69,8 @@ class Gracie(object):
     def __init__(self, argv):
         """ Set up a new instance """
         self._process_commandline(argv)
-        self._init_logging()
         socket_params = self._get_socket_params()
+        self._init_logging()
         self.server = GracieServer(socket_params, self.opts)
 
     def _process_commandline(self, argv):
@@ -78,9 +90,8 @@ class Gracie(object):
 
     def _get_socket_params(self):
         """ Determine the server socket parameters """
-        host = default_host
-        port = default_port
-        return (host, port)
+        params = (self.opts.host, self.opts.port)
+        return params
 
     def run(self):
         """ Run the Gracie application """
