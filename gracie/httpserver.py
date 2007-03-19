@@ -52,6 +52,7 @@ class HTTPServer(BaseHTTPServer):
         super(HTTPServer, self).__init__(
             server_address, RequestHandlerClass
         )
+        self._log_location()
 
     def _setup_version(self):
         """ Set up version string for this server """
@@ -71,6 +72,14 @@ class HTTPServer(BaseHTTPServer):
         super(HTTPServer, self).server_bind()
         self.server_location = net_location(
             self.server_name, self.server_port
+        )
+
+    def _log_location(self):
+        """ Log the net location of the server """
+        location = net_location(*self.server_address)
+        self.logger.info(
+            "Listening on address %(location)s"
+            % locals()
         )
 
     def handle_request(self):

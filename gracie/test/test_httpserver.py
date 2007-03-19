@@ -28,12 +28,25 @@ import httpserver
 class Test_net_location(scaffold.TestCase):
     """ Test cases for net_location function """
 
+    def setUp(self):
+        """ Set up test fixtures """
+        self.default_port_prev = httpserver.default_port
+        self.default_port_test = 9779
+        httpserver.default_port = self.default_port_test
+
+    def tearDown(self):
+        """ Tear down test fixtures """
+        httpserver.default_port = self.default_port_prev
+
     def test_combines_components_to_location(self):
         """ net_location() should combine components to net location """
+        http_port = 80
         locations = {
             ("foo", None): "foo",
-            ("foo", 80): "foo",
-            ("foo", 81): "foo:81",
+            ("foo", http_port): "foo",
+            ("foo", self.default_port_test):
+                "foo:%s" % self.default_port_test,
+            ("foo", 2468): "foo:2468",
         }
 
         for (host, port), expect_location in locations.items():
