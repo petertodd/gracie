@@ -65,7 +65,7 @@ class Test_ResponseHeader(scaffold.TestCase):
             default_params_dict = self.valid_headers
         )
 
-    def test_initialise(self):
+    def test_instantiate(self):
         """ New ResponseHeader instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']

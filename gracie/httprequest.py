@@ -48,10 +48,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def __init__(self, request, client_address, server):
         """ Set up a new instance """
         self.gracie_server = server.gracie_server
+        self._setup_version()
         super(HTTPRequestHandler, self).__init__(
             request, client_address, server
         )
-        self._setup_version()
 
     def _setup_version(self):
         """ Set up the version string """
@@ -427,6 +427,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _get_page_data(self, page):
         """ Get the actual data to be used from a page """
         page.values.update(dict(
+            server_version = self.server_version,
+            server_location = self.server.server_location,
             auth_entry = self._get_session_auth_entry(),
             openid_url = self._get_session_openid_url(),
             root_url = self._make_server_url(""),

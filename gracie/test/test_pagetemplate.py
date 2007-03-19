@@ -101,6 +101,8 @@ class Test_Page(scaffold.TestCase,
             if 'auth_entry' not in values:
                 values.update({'auth_entry': None})
             values.update(dict(
+                server_version = "FooBar v0.0",
+                server_location = "frobnitz:9779",
                 root_url = "/",
                 server_url = "/openidserver",
                 login_url = "/login",
