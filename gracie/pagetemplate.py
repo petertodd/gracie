@@ -20,7 +20,8 @@ page_template = Template("""\
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd" >
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
-    <meta http-equiv="Content-Type" content="text/xhtml; $character_encoding" />
+    <meta http-equiv="Content-Type"
+        content="application/xhtml+xml; $character_encoding" />
 
     <title>$page_title</title>
 
@@ -55,6 +56,8 @@ $auth_section
 
 footer_template = Template("""\
 <div id="footer">
+<p>Server version $server_version;
+running on $server_location</p>
 </div><!-- footer -->
 """)
 
@@ -87,8 +90,14 @@ div#header {
 }
 
 div#footer {
+    color: black;
+    background-color: #FFC;
     border: 0;
     border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    padding: 0.2em;
+    font-size: 70%;
+    font-family: sans-serif;
 }
 
 p#banner {
@@ -112,6 +121,7 @@ div#auth-info {
 div#content {
     margin: 0.0em;
     padding: 0.5em;
+    padding-bottom: 3.0em;
 }
 """
 
@@ -127,6 +137,8 @@ class Page(object):
         self.openid_metadata = ""
         self.content = ""
         self.values = dict(
+            server_version = None,
+            server_location = None,
             auth_entry = None,
             root_url = None,
             server_url = None,
@@ -202,8 +214,10 @@ def internal_error_page(message):
     title = "Internal Server Error"
     page = Page(title)
     page.content = """
-        The server encountered an error trying to serve the request.
-        The message was: $message
+        <p>The server encountered an error trying to serve the request.
+        The message was:</p>
+
+        <pre>$message</pre>
     """
     page.values.update(dict(
         message = message,
@@ -214,7 +228,7 @@ def url_not_found_page(url):
     title = "Resource Not Found"
     page = Page(title)
     page.content = """
-        The requested resource was not found: $want_url
+        <p>The requested resource was not found: $want_url</p>
     """
     page.values.update(dict(
         want_url = url,
@@ -225,8 +239,10 @@ def protocol_error_page(message):
     title = "Protocol Error"
     page = Page(title)
     page.content = """
-        The request did not conform to the expected protocol.
-        The message was: $message
+        <p>The request did not conform to the expected protocol.
+        The message was:</p>
+
+        <pre>$message</pre>
     """
     page.values.update(dict(
         message = message,
@@ -236,16 +252,22 @@ def protocol_error_page(message):
 def about_site_view_page():
     title = "About this site"
     page = Page(title)
+    openid_project_url = "http://openid.net/"
     page.content = """
-        This is Gracie, an OpenID provider.
-    """
+        <p>This is Gracie, an 
+        <a href="%(openid_project_url)s">OpenID</a> provider.</p>
+
+        <p>It provides OpenID identities for local accounts,
+        maintains authorisation of site requests,
+        and allows authentication against the local PAM system.</p>
+    """ % locals()
     return page
 
 def user_not_found_page(name):
     title = "User Not Found"
     page = Page(title)
     page.content = """
-        The requested user name does not exist: $user_name
+        <p>The requested user name does not exist: $user_name</p>
     """
     page.values.update(dict(
         user_name = name,
@@ -317,8 +339,8 @@ def login_cancelled_page():
     title = "Login Cancelled"
     page = Page(title)
     page.content = """
-        The login was cancelled.
-        You can <a href="$login_url">log in now</a> if you want.
+        <p>The login was cancelled.</p>
+        <p>You can <a href="$login_url">log in now</a> if you want.</p>
     """
     return page
 
@@ -363,8 +385,8 @@ def authorise_consumer_query_page(trust_root, want_id_url):
     form_text = _authorise_consumer_form(trust_root, want_id_url)
     page.values.update(dict(form=form_text))
     page.content = """
-        The following site has requested OpenID information.
-        Choose one of the options to respond.
+        <p>The following site has requested OpenID information.
+        Choose one of the options to respond.</p>
         $form
     """
     return page
@@ -374,8 +396,8 @@ def wrong_authentication_page(want_id_url):
     page = Page(title)
     page.values.update(dict(want_id=want_id_url))
     page.content = """
-        The requested action can only be performed if you
+        <p>The requested action can only be performed if you
         <a href="$login_url">log in</a> as the identity
-        <a href="$want_id">$want_id</a>.
+        <a href="$want_id">$want_id</a>.</p>
     """
     return page

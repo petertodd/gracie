@@ -48,6 +48,10 @@ class Test_ResponseHeader(scaffold.TestCase):
                 code = 200,
                 protocol = "HTTP/1.1",
             ),
+            'content-type-bogus': dict(
+                code = 200,
+                content_type = "BoGuS",
+            ),
         }
 
         for key, params in self.valid_headers.items():
@@ -57,6 +61,9 @@ class Test_ResponseHeader(scaffold.TestCase):
             protocol = params.get('protocol')
             if protocol is not None:
                 args['protocol'] = protocol
+            content_type = params.get('content_type')
+            if content_type is not None:
+                args['content_type'] = content_type
             params['args'] = args
             instance = self.header_class(**args)
             params['instance'] = instance
@@ -65,7 +72,7 @@ class Test_ResponseHeader(scaffold.TestCase):
             default_params_dict = self.valid_headers
         )
 
-    def test_initialise(self):
+    def test_instantiate(self):
         """ New ResponseHeader instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
@@ -93,6 +100,23 @@ class Test_ResponseHeader(scaffold.TestCase):
                 continue
             instance = params['instance']
             self.failUnlessEqual(protocol, instance.protocol)
+
+    def test_content_type_default_xhtml(self):
+        """ ResponseHeader should default to Content-Type of XHTML """
+        params = self.valid_headers['simple']
+        instance = params['instance']
+        expect_field =("Content-Type", "application/xhtml+xml")
+        self.failUnless(expect_field in instance.fields)
+
+    def test_content_type_as_specified(self):
+        """ ResponseHeader should have specified Content-Type field """
+        for key, params in self.iterate_params():
+            content_type = params.get('content_type')
+            expect_field = ("Content-Type", content_type)
+            if content_type is None:
+                continue
+            instance = params['instance']
+            self.failUnless(expect_field in instance.fields)
 
 
 class Stub_ResponseHeader(object):

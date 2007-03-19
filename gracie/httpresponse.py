@@ -20,15 +20,20 @@ for code, (reason, explain) in response_map.items():
     key = reason.lower().replace(" ", "_")
     response_codes[key] = code
 
+content_type_xhtml = "application/xhtml+xml"
+
 
 class ResponseHeader(object):
     """ Encapsulation of an HTTP response header """
 
-    def __init__(self, code, protocol="HTTP/1.0"):
+    def __init__(self, code,
+        protocol="HTTP/1.0", content_type=content_type_xhtml
+    ):
         """ Set up a new instance """
         self.code = code
         self.protocol = protocol
         self.fields = []
+        self.fields.append(("Content-Type", content_type))
 
 class Response(object):
     """ Encapsulation for an HTTP response """
