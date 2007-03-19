@@ -136,7 +136,8 @@ class PamAuthService(PosixAuthService):
         username = credentials['username']
         password = credentials['password']
         _logger.info("Attempting to authenticate credentials"
-                     " for %(username)r" % locals())
+            " for %(username)r" % locals()
+        )
         try:
             got_username = self._authenticate_creds(username, password)
         except PAM.error, e:
@@ -146,4 +147,8 @@ class PamAuthService(PosixAuthService):
                 (reason, code) = e.args
             raise AuthenticationError(code, reason)
 
+        _logger.info("Successful authentication for %(username)r"
+            % locals()
+        )
         return got_username
+
