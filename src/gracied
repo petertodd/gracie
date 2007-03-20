@@ -15,9 +15,9 @@
 import optparse
 import logging
 
-from server import __version__
-from server import GracieServer
-from httpserver import default_host, default_port
+from gracie.server import __version__
+from gracie.server import GracieServer
+from gracie.httpserver import default_host, default_port
 
 
 class OptionParser(optparse.OptionParser):

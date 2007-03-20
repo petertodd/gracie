@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# test_gracie.py
+# test_gracied.py
 # Part of Gracie, an OpenID provider
 #
 # Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
@@ -9,7 +9,7 @@
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
-""" Unit test for gracie application module
+""" Unit test for gracied application module
 """
 
 import sys
@@ -20,9 +20,9 @@ import scaffold
 from scaffold import Mock
 from test_httprequest import Stub_GracieServer
 
-module_name = 'gracie'
+module_name = 'gracied'
 module_file_under_test = os.path.join(scaffold.code_dir, module_name)
-gracie = scaffold.make_module_from_file(
+gracied = scaffold.make_module_from_file(
     module_name, module_file_under_test
 )
 
@@ -41,7 +41,7 @@ class Test_Gracie(scaffold.TestCase):
     def setUp(self):
         """ Set up test fixtures """
 
-        self.app_class = gracie.Gracie
+        self.app_class = gracied.Gracie
 
         self.stdout_prev = sys.stdout
         self.stdout_test = StringIO()
@@ -51,10 +51,10 @@ class Test_Gracie(scaffold.TestCase):
         self.mock_server_class = Mock('GracieServer_class')
         self.mock_server_class.mock_returns = Mock('GracieServer')
 
-        self.server_class_prev = gracie.GracieServer
-        gracie.GracieServer = self.stub_server_class
-        self.default_port_prev = gracie.default_port
-        gracie.default_port = 7654
+        self.server_class_prev = gracied.GracieServer
+        gracied.GracieServer = self.stub_server_class
+        self.default_port_prev = gracied.default_port
+        gracied.default_port = 7654
 
         self.valid_apps = {
             'simple': dict(
@@ -99,8 +99,8 @@ class Test_Gracie(scaffold.TestCase):
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        gracie.GracieServer = self.server_class_prev
-        gracie.default_port = self.default_port_prev
+        gracied.GracieServer = self.server_class_prev
+        gracied.default_port = self.default_port_prev
 
     def test_instantiate(self):
         """ New Gracie instance should be created """
@@ -112,24 +112,24 @@ class Test_Gracie(scaffold.TestCase):
         """ New Gracie instance should configure logging """
         params = self.valid_apps['simple']
         args = params['args']
-        logging_prev = gracie.logging
-        gracie.logging = Mock('logging')
+        logging_prev = gracied.logging
+        gracied.logging = Mock('logging')
         expect_stdout = """\
            Called logging.basicConfig(...)
            """
         instance = self.app_class(**args)
+        gracied.logging = logging_prev
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
-        gracie.logging = logging_prev
 
     def test_opts_version(self):
         """ Gracie instance should perform version action """
 
         argv = ["--version"]
-        version_prev = gracie.__version__
+        version_prev = gracied.__version__
         version_test = "Foo.Boo"
-        gracie.__version__ = version_test
+        gracied.__version__ = version_test
         expect_stdout = """\
             ...%(version)s...
             """ % dict(version=version_test)
@@ -139,7 +139,7 @@ class Test_Gracie(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
-        gracie.__version__ = version_prev
+        gracied.__version__ = version_prev
 
     def test_opts_help(self):
         """ Gracie instance should perform help action """
@@ -147,7 +147,7 @@ class Test_Gracie(scaffold.TestCase):
         expect_stdout = """\
             usage: ...
             """
-        gracie.GracieServer = self.mock_server_class
+        gracied.GracieServer = self.mock_server_class
         self.failUnlessRaises(SystemExit,
             self.app_class, argv=argv
         )
@@ -187,14 +187,14 @@ class Test_Gracie(scaffold.TestCase):
         """ Gracie instance should create a new server instance """
         params = self.valid_apps['simple']
         args = params['args']
-        host = gracie.default_host
-        port = gracie.default_port
+        host = gracied.default_host
+        port = gracied.default_port
         expect_stdout = """\
             Called GracieServer_class(
                 (%(host)r, %(port)r),
                 <Values ...>)
             ...""" % locals()
-        gracie.GracieServer = self.mock_server_class
+        gracied.GracieServer = self.mock_server_class
         instance = self.app_class(**args)
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
@@ -206,10 +206,10 @@ class Test_Gracie(scaffold.TestCase):
         for key, params in self.iterate_params():
             args = params['args']
             default_address = (
-                gracie.default_host, gracie.default_port
+                gracied.default_host, gracied.default_port
             )
-            host = params.get('host', gracie.default_host)
-            port = params.get('port', gracie.default_port)
+            host = params.get('host', gracied.default_host)
+            port = params.get('port', gracied.default_port)
             if (host, port) == default_address:
                 continue
             expect_stdout = """\
@@ -217,7 +217,7 @@ class Test_Gracie(scaffold.TestCase):
                     (%(host)r, %(port)r),
                     <Values ...>)
                 ...""" % locals()
-            gracie.GracieServer = self.mock_server_class
+            gracied.GracieServer = self.mock_server_class
             instance = self.app_class(**args)
             self.failUnlessOutputCheckerMatch(
                 expect_stdout, self.stdout_test.getvalue()
@@ -231,12 +231,12 @@ class Test_Gracie(scaffold.TestCase):
     def test_run_starts_server(self):
         """ Gracie.run should start GracieServer """
         args = self.valid_apps['simple']['args']
-        port = gracie.default_port
+        port = gracied.default_port
         expect_stdout = """\
             ...
             Called GracieServer.serve_forever()
             """
-        gracie.GracieServer = self.mock_server_class
+        gracied.GracieServer = self.mock_server_class
         instance = self.app_class(**args)
         instance.run()
         self.failUnlessOutputCheckerMatch(
@@ -251,19 +251,19 @@ class Test_main(scaffold.TestCase):
         """ Set up test fixtures """
         mock_app_class = Mock('Gracie_class')
         mock_app_class.mock_returns = Mock('Gracie')
-        self.mainfunc = gracie.__main__
+        self.mainfunc = gracied.__main__
 
         self.stdout_prev = sys.stdout
         self.stdout_test = StringIO()
         sys.stdout = self.stdout_test
 
-        self.app_class_prev = gracie.Gracie
-        gracie.Gracie = mock_app_class
+        self.app_class_prev = gracied.Gracie
+        gracied.Gracie = mock_app_class
 
     def tearDown(self):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
-        gracie.Gracie = self.app_class_prev
+        gracied.Gracie = self.app_class_prev
 
     def test_is_callable(self):
         """ __main__ function should be callable """

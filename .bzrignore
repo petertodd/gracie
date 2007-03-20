@@ -3,6 +3,8 @@ semantic.cache
 *.egg-info
 ./build
 ./dist
-PKG-INFO
+./*-stamp
+./src/*-stamp
 ./build-python[0-9]*
-./build-stamp
+./bin
+./sbin

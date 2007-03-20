@@ -29,7 +29,7 @@ from test_server import (
     Stub_ConsumerAuthStore_never_auth,
 )
 
-import httprequest
+from gracie import httprequest
 
 
 class Stub_Logger(object):

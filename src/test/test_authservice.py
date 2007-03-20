@@ -15,7 +15,7 @@
 import scaffold
 from scaffold import Mock
 
-import authservice
+from gracie import authservice
 
 
 class Test_ModuleExceptions(scaffold.Test_Exception):

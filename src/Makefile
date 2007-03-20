@@ -10,13 +10,29 @@
 
 # Makefile for gracie module
 
-RM = rm
+BIN_DEST = ../bin
+SBIN_DEST = ../sbin
+EGG_DEST = ..
 
+BIN_FILES =
+SBIN_FILES = gracied
+
+RM = rm
 PYTHON = python
 
 
 .PHONY: all
-all:
+all: build
+
+.PHONY: build
+build: build-stamp
+build-stamp:
+	install -d ${BIN_DEST} ${SBIN_DEST}
+	### install -m 755 -t ${BIN_DEST} ${BIN_FILES}
+	install -m 755 -t ${SBIN_DEST} ${SBIN_FILES}
+	$(PYTHON) ./setup.py bdist_egg
+	cp dist/*.egg ${EGG_DEST}/.
+	touch "$@"
 
 .PHONY: test
 test:
@@ -24,3 +40,8 @@ test:
 
 .PHONY: clean
 clean:
+	- $(RM) *-stamp
+	- $(RM) -r ${BIN_DEST} ${SBIN_DEST}
+	- $(RM) -rf *.egg-info/
+	- $(RM) -rf build/ dist/
+
