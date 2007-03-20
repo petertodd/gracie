@@ -1,3 +1,6 @@
+# (c) 2006 Ian Bicking and contributors
+# Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
+
 r"""
 minimock is a simple library for doing Mock objects with doctest.
 When using doctest, mock objects can be very simple.
