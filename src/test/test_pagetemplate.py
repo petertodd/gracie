@@ -18,7 +18,7 @@ import textwrap
 import scaffold
 from scaffold import Mock
 
-import pagetemplate
+from gracie import pagetemplate
 
 
 class Mixin_PageTemplateFixture(object):

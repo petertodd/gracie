@@ -20,10 +20,10 @@ import urlparse
 import routes
 from openid.server.server import BROWSER_REQUEST_MODES
 
-import pagetemplate
-from httpresponse import ResponseHeader, Response
-from httpresponse import response_codes as http_codes
-from authservice import AuthenticationError
+from gracie import pagetemplate
+from gracie.httpresponse import ResponseHeader, Response
+from gracie.httpresponse import response_codes as http_codes
+from gracie.authservice import AuthenticationError
 
 session_cookie_name = "gracie_session"
 

@@ -4,3 +4,7 @@ semantic.cache
 ./build
 ./dist
 PKG-INFO
+./*-stamp
+./src/*-stamp
+./bin
+./sbin

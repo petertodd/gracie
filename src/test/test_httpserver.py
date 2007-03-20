@@ -20,9 +20,9 @@ import scaffold
 from scaffold import Mock
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import stub_server_bind, make_default_opts
-from test_gracie import Stub_GracieServer
+from test_gracied import Stub_GracieServer
 
-import httpserver
+from gracie import httpserver
 
 
 class Test_net_location(scaffold.TestCase):

@@ -23,7 +23,7 @@ from scaffold import Mock
 from test_authservice import Stub_AuthService
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 
-import server
+from gracie import server
 
 
 def stub_server_bind(server):
@@ -384,7 +384,7 @@ class Test_GracieServer(scaffold.TestCase):
             Called HTTPServer_class(
                 %(server_address)r,
                 <class '...HTTPRequestHandler'>,
-                <server.GracieServer object ...>)
+                <gracie.server.GracieServer object ...>)
             """ % locals()
         instance = self.server_class(**params['args'])
         server.HTTPServer = http_server_class_prev

@@ -18,7 +18,7 @@ from StringIO import StringIO
 import scaffold
 from scaffold import Mock
 
-import httpresponse
+from gracie import httpresponse
 
 
 class Stub_Response(object):
