@@ -21,12 +21,12 @@ setup(
     name = "gracie",
     version = "0.1",
     packages = find_packages(
-        exclude = ['gracie/test'],
+        exclude = ['test'],
     ),
 
     # setuptools metadata
     zip_safe = True,
-    test_suite = "gracie.test.suite.suite",
+    test_suite = "test.suite.suite",
     install_requires = """
         python-openid >= 1.2
     """,

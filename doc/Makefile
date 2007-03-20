@@ -10,9 +10,12 @@
 
 # Makefile for documentation
 
+DOC_NAMES = README TODO
+
 RST_SUFFIX = .txt
 
 XHTML_SUFFIX = .html
+XHTML_DOCS = $(addsuffix ${XHTML_SUFFIX},${DOC_NAMES})
 
 RM = rm
 
@@ -21,13 +24,18 @@ RST2HTML_OPTS =
 
 
 .PHONY: all
-all:
+all: doc
 
 .PHONY: doc
-doc:
+doc: xhtml
+
+.PHONY: xhtml
+xhtml: ${XHTML_DOCS}
 
 %${XHTML_SUFFIX}: %${RST_SUFFIX}
 	$(RST2HTML) ${RST2HTML_OPTS} "$<" > "$@"
 
 .PHONY: clean
 clean:
+	- $(RM) ${XHTML_DOCS}
+

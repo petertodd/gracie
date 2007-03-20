@@ -12,11 +12,10 @@
 
 BIN_DEST = ../bin
 SBIN_DEST = ../sbin
-LIB_DEST = ../gracie
+EGG_DEST = ..
 
 BIN_FILES =
 SBIN_FILES = gracied
-LIB_FILES = $(wildcard gracie/*.py)
 
 RM = rm
 PYTHON = python
@@ -28,10 +27,11 @@ all: build
 .PHONY: build
 build: build-stamp
 build-stamp:
-	install -d ${BIN_DEST} ${SBIN_DEST} ${LIB_DEST}
+	install -d ${BIN_DEST} ${SBIN_DEST}
 	### install -m 755 -t ${BIN_DEST} ${BIN_FILES}
 	install -m 755 -t ${SBIN_DEST} ${SBIN_FILES}
-	install -m 644 -t ${LIB_DEST} ${LIB_FILES}
+	$(PYTHON) ./setup.py bdist_egg
+	cp dist/*.egg ${EGG_DEST}/.
 	touch "$@"
 
 .PHONY: test
@@ -41,5 +41,7 @@ test:
 .PHONY: clean
 clean:
 	- $(RM) *-stamp
-	- $(RM) -r ${BIN_DEST} ${SBIN_DEST} ${LIB_DEST}
+	- $(RM) -r ${BIN_DEST} ${SBIN_DEST}
+	- $(RM) -rf *.egg-info/
+	- $(RM) -rf build/ dist/
 

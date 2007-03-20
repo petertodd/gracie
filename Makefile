@@ -10,47 +10,55 @@
 
 # Makefile for Gracie project
 
-PROJECT_MODS = gracie
+PREFIX ?= /usr/local
+
+BIN_DEST = ${PREFIX}/bin
+SBIN_DEST = ${PREFIX}/sbin
+
+SRC_DIR = src
 DOC_DIR = doc
-PROJECT_DIRS = ${DOC_DIR} ${PROJECT_MODS}
+BIN_DIR = bin
+SBIN_DIR = sbin
 
-DOC_SRC_SUFFIX = .txt
-DOC_NAMES = README
-doc_src = $(addsuffix ${DOC_SRC_SUFFIX},${DOC_NAMES})
+BIN_FILES =
+SBIN_FILES = \
+	${SBIN_DIR}/gracied
 
-XHTML_SUFFIX = .html
-xhtml_files = $(addsuffix ${XHTML_SUFFIX},${DOC_NAMES})
+PROJECT_DIRS = ${SRC_DIR} ${DOC_DIR}
 
 RM = rm
-
 PYTHON = python
-
-RST2HTML = rst2html
-RST2HTML_OPTS =
+EASY_INSTALL = easy_install
 
 
 .PHONY: all
-all:
+all: build
 
 .PHONY: doc
-doc: xhtml
-	$(MAKE) --directory=${DOC_DIR}
+doc:
+	$(MAKE) --directory=${DOC_DIR} "$@"
 
-xhtml: ${xhtml_files}
-${xhtml_files}: ${doc_src_files}
+.PHONY: build
+build: build-stamp
+build-stamp:
+	$(MAKE) --directory=${SRC_DIR} "$@"
+	touch "$@"
 
-%${XHTML_SUFFIX}: %${DOC_SRC_SUFFIX}
-	$(RST2HTML) ${RST2HTML_OPTS} "$<" > "$@"
+.PHONY: install
+install: build
+	install -d ${BIN_DEST} ${SBIN_DEST}
+	### install -m 755 -t ${BIN_DEST} ${BIN_FILES}
+	install -m 755 -t ${SBIN_DEST} ${SBIN_FILES}
+	echo Install the Python egg using easy_install.
 
 .PHONY: test
 test:
-	@ for dir in ${PROJECT_MODS} ; do \
-		$(MAKE) --directory=$${dir} "$@" ; \
-	done
+	$(MAKE) --directory=${SRC_DIR} "$@"
 
 .PHONY: clean
 clean:
-	$(RM) -f ${xhtml_files}
+	- $(RM) *-stamp
+	- $(RM) *.egg
 	for dir in ${PROJECT_DIRS} ; do \
 		$(MAKE) --directory=$${dir} "$@" ; \
 	done
