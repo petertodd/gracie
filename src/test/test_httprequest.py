@@ -77,14 +77,24 @@ class Stub_HTTPServer(object):
 class Stub_HTTPRequestHandler(object):
     """ Stub class for HTTPRequestHandler """
 
+class Stub_OptionValues(object):
+    """ Stub class for optparse.OptionValues """
+
+    def __init__(self, opt_dict):
+        """ Set up a new instance """
+        for key, value in opt_dict.items():
+            setattr(self, key, value)
+
 class Stub_GracieServer(object):
     """ Stub class for GracieServer """
 
     version = "3.14.test"
 
-    def __init__(self, server_address):
+    def __init__(self, opts):
         """ Set up a new instance """
         self.logger = Stub_Logger()
+        self.opts = opts
+        server_address = (opts.host, opts.port)
         self.server_location = "%s:%s" % server_address
         self.http_server = Stub_HTTPServer(
             server_address, Stub_HTTPRequestHandler(), self
@@ -445,9 +455,12 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         for key, params in self.valid_requests.items():
             args = params.get('args')
             request = params['request']
-            address = params.setdefault('address',
-                ("example.org", 0))
-            gracie_server = Stub_GracieServer(address)
+            opts = Stub_OptionValues(dict(
+                host = "example.org",
+                port = 0,
+                root_url = "http://example.org:0/",
+            ))
+            gracie_server = Stub_GracieServer(opts)
             server = params.setdefault('server',
                 gracie_server.http_server
             )
@@ -461,7 +474,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             if not args:
                 args = dict(
                     request = request.connection(),
-                    client_address = address,
+                    client_address = (opts.host, opts.port),
                     server = server,
                 )
             params['args'] = args

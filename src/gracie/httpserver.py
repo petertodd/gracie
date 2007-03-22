@@ -12,6 +12,7 @@
 """
 
 import logging
+import urlparse
 from BaseHTTPServer import HTTPServer as BaseHTTPServer
 
 import server
@@ -37,6 +38,10 @@ def net_location(host, port=None):
         location_spec = "%(host)s:%(port)s"
     location = location_spec % locals()
     return location
+
+default_root_url = urlparse.urlunsplit(
+    ("http", net_location(default_host, default_port), "/", "", "")
+)
 
 
 class HTTPServer(BaseHTTPServer):

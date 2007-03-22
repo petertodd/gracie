@@ -80,6 +80,21 @@ class Test_Gracie(scaffold.TestCase):
                 host = "frobnitz",
                 port = 9779,
             ),
+            'change-root-url': dict(
+                args = dict(),
+                options = ["--root-url", "http://spudnik/spam"],
+                root_url = "http://spudnik/spam",
+            ),
+            'change-address-and-root-url': dict(
+                args = dict(),
+                options = [
+                    "--host", "frobnitz", "--port", "9779",
+                    "--root-url", "http://spudnik/spam",
+                ],
+                host = "frobnitz",
+                port = 9779,
+                root_url = "http://frobnitz/spam",
+            ),
         }
 
         for key, params in self.valid_apps.items():
@@ -182,6 +197,13 @@ class Test_Gracie(scaffold.TestCase):
         argv = ["--port", want_port]
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_port, instance.opts.port)
+
+    def test_opts_root_url(self):
+        """ Gracie instance should accept root_url setting """
+        want_url = "http://spudnik/spam"
+        argv = ["--root-url", want_url]
+        instance = self.app_class(argv=argv)
+        self.failUnlessEqual(want_url, instance.opts.root_url)
 
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """

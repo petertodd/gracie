@@ -263,6 +263,7 @@ def make_default_opts():
     """ Create commandline opts instance with required values """
     opts = optparse.Values(dict(
         datadir = "/tmp",
+        host = "example.org", port = 9779,
     ))
     return opts
 
@@ -312,11 +313,8 @@ class Test_GracieServer(scaffold.TestCase):
 
         for key, params in self.valid_servers.items():
             args = params.get('args')
-            address = params.setdefault('address', ('', 80))
             if not args:
-                args = dict(
-                    server_address = address,
-                )
+                args = dict()
             opts = make_default_opts()
             opts._update_loose(params.get('opts', dict()))
             params['opts'] = opts
@@ -377,7 +375,8 @@ class Test_GracieServer(scaffold.TestCase):
         """ GracieServer should create an HTTP server """
         params = self.valid_servers['simple']
         args = params['args']
-        server_address = args['server_address']
+        opts = params['opts']
+        server_address = (opts.host, opts.port)
         http_server_class_prev = server.HTTPServer
         server.HTTPServer = Mock('HTTPServer_class')
         expect_stdout = """\

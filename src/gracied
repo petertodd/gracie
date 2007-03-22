@@ -17,7 +17,7 @@ import logging
 
 from gracie.server import __version__
 from gracie.server import GracieServer
-from gracie.httpserver import default_host, default_port
+from gracie.httpserver import default_host, default_port, default_root_url
 
 
 class OptionParser(optparse.OptionParser):
@@ -59,6 +59,12 @@ class OptionParser(optparse.OptionParser):
             action='store', type='int', default=default_port,
             dest='port', metavar='PORT',
             help="Listen on TCP port PORT"
+                 " (default %default)",
+        )
+        self.add_option('--root-url',
+            action='store', type='string', default=default_root_url,
+            dest='root_url', metavar='URL',
+            help="Set root URL of the server to URL"
                  " (default %default)",
         )
 

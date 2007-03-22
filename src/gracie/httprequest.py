@@ -66,10 +66,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_server_url(self, path):
         """ Construct a URL to a path on this server """
-        protocol = "http"
-        location = self.server.server_location
-        path = path.lstrip("/")
-        url = "%(protocol)s://%(location)s/%(path)s" % locals()
+        root_url = self.gracie_server.opts.root_url
+        url = urlparse.urljoin(root_url, path)
         return url
 
     def _setup_auth_session(self):

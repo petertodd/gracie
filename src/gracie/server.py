@@ -21,7 +21,7 @@ from httprequest import HTTPRequestHandler
 from httpserver import HTTPServer, default_host, default_port
 from authservice import PamAuthService as AuthService
 
-__version__ = "0.0"
+__version__ = "0.1.1"
 
 # Name of the Python logging instance to use for this module
 logger_name = "gracie.server"
@@ -93,11 +93,12 @@ class ConsumerAuthStore(object):
 class GracieServer(object):
     """ Server for Gracie OpenID provider service """
 
-    def __init__(self, server_address, opts):
+    def __init__(self, opts):
         """ Set up a new instance """
         self.version = __version__
         self.opts = opts
         self._setup_logging()
+        server_address = (opts.host, opts.port)
         self.httpserver = HTTPServer(
             server_address, HTTPRequestHandler, self
         )
