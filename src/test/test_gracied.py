@@ -9,7 +9,7 @@
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
-""" Unit test for gracied application module
+""" Unit test for gracied daemon module
 """
 
 import sys
@@ -34,6 +34,9 @@ class Stub_GracieServer(object):
 
     def __init__(self, socket_params, opts):
         """ Set up a new instance """
+
+    def serve_forever(self):
+        pass
 
 
 class Test_Gracie(scaffold.TestCase):
@@ -250,8 +253,21 @@ class Test_Gracie(scaffold.TestCase):
         """ Gracie.run should be callable """
         self.failUnless(callable(self.app_class.run))
 
+    def test_run_calls_become_daemon(self):
+        """ Gracie.run should attempt to become a daemon """
+        params = self.valid_apps['simple']
+        gracied.become_daemon = Mock('become_daemon')
+        expect_stdout = """\
+            Called become_daemon()
+            """
+        instance = params['instance']
+        instance.run()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
     def test_run_starts_server(self):
-        """ Gracie.run should start GracieServer """
+        """ Gracie.run should start GracieServer if child fork """
         args = self.valid_apps['simple']['args']
         port = gracied.default_port
         expect_stdout = """\

@@ -26,6 +26,148 @@ from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from gracie import server
 
 
+class Test_remove_standard_files(scaffold.TestCase):
+    """ Test cases for remove_standard_files function """
+
+    def setUp(self):
+        """ Set up test fixtures """
+        self.stdout_prev = sys.stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
+
+        self.server_stdin_prev = server.sys.stdin
+        server.sys.stdin = Mock('sys.stdin')
+        self.server_stdout_prev = server.sys.stdout
+        server.sys.stdout = Mock('sys.stdout')
+        self.server_stderr_prev = server.sys.stderr
+        server.sys.stderr = Mock('sys.stderr')
+
+    def tearDown(self):
+        """ Tear down test fixtures """
+        sys.stdout = self.stdout_prev
+        server.sys.stdin = self.server_stdin_prev
+        server.sys.stdout = self.server_stdout_prev
+        server.sys.stderr = self.server_stderr_prev
+
+
+class Mock_fork(object):
+    """ Mock callable for os.fork() """
+
+    def __init__(self, name, pids):
+        self.mock_name = name
+        self._return_pids = iter(pids)
+
+    def _make_message(self, args, kwargs):
+        parts = [repr(a) for a in args]
+        parts.extend(
+            '%s=%r' % (items) for items in sorted(kwargs.items()))
+        msg = 'Called %s(%s)' % (self.mock_name, ', '.join(parts))
+        if len(msg) > 80:
+            msg = 'Called %s(\n    %s)' % (
+                self.mock_name, ',\n    '.join(parts))
+        return msg
+
+    def __call__(self, *args, **kwargs):
+        print self._make_message(args, kwargs)
+        return self._return_pids.next()
+
+class Test_become_daemon(scaffold.TestCase):
+    """ Test cases for become_daemon function """
+
+    def setUp(self):
+        """ Set up test fixtures """
+        self.stdout_prev = sys.stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
+
+        self.fork_prev = server.os.fork
+        test_pids = [23, 0]
+        server.os.fork = Mock_fork('os.fork', test_pids)
+        self.setsid_prev = server.os.setsid
+        server.os.setsid = Mock('os.setsid')
+        self._exit_prev = server.os._exit
+        server.os._exit = Mock('os._exit')
+        self.exit_prev = server.sys.exit
+        server.sys.exit = Mock('sys.exit')
+        self.remove_files_prev = server.remove_standard_files
+        server.remove_standard_files = Mock('remove_standard_files')
+
+    def tearDown(self):
+        """ Tear down test fixtures """
+        sys.stdout = self.stdout_prev
+        server.os.fork = self.fork_prev
+        server.os.setsid = self.setsid_prev
+        server.os._exit = self._exit_prev
+        server.sys.exit = self.exit_prev
+        server.remove_standard_files = self.remove_files_prev
+
+    def test_parent_exits(self):
+        """ become_daemon parent process should exit """
+        parent_pid = 0
+        server.os.fork = Mock_fork('os.fork', [parent_pid])
+        expect_stdout = """\
+            Called os.fork()
+            Called os._exit(0)
+            ...
+            """
+        server.become_daemon()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_child_starts_new_process_group(self):
+        """ become_daemon child should start new process group """
+        expect_stdout = """\
+            Called os.fork()
+            Called os.setsid()
+            ...
+            """
+        server.become_daemon()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_child_forks_next_child_exits(self):
+        """ become_daemon should fork, then exit if child """
+        test_pids = [23, 42]
+        server.os.fork = Mock_fork('os.fork', test_pids)
+        expect_stdout = """\
+            Called os.fork()
+            Called os.setsid()
+            Called os.fork()
+            Called os._exit(0)
+            ...
+            """
+        server.become_daemon()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_child_forks_next_parent_continues(self):
+        """ become_daemon should fork, then continue if parent """
+        expect_stdout = """\
+            Called os.fork()
+            Called os.setsid()
+            Called os.fork()
+            Called remove_standard_files()
+            """
+        server.become_daemon()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_removes_standard_files(self):
+        """ become_daemon should request removal of standard files """
+        expect_stdout = """\
+            ...
+            Called remove_standard_files()
+            """
+        server.become_daemon()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+
 def stub_server_bind(server):
     """ Stub method to get server location """
     (host, port) = server.server_address
@@ -157,7 +299,6 @@ class Test_ConsumerAuthStore(scaffold.TestCase):
 
     def setUp(self):
         """ Set up test fixtures """
-
         self.store_class = server.ConsumerAuthStore
 
     def test_instantiate(self):

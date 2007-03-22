@@ -15,6 +15,7 @@
 import optparse
 import logging
 
+from gracie.server import become_daemon
 from gracie.server import __version__
 from gracie.server import GracieServer
 from gracie.httpserver import default_host, default_port, default_root_url
@@ -101,6 +102,7 @@ class Gracie(object):
 
     def run(self):
         """ Run the Gracie application """
+        become_daemon()
         self.server.serve_forever()
 
 
