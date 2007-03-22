@@ -17,9 +17,13 @@ ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
 
+import gracie
+
+description = gracie.__doc__.split('\n\n', 1)
+
 setup(
     name = "gracie",
-    version = "0.1",
+    version = gracie.__version__,
     packages = find_packages(
         exclude = ['test'],
     ),
@@ -34,17 +38,11 @@ setup(
     # PyPI metadata
     author = "Ben Finney",
     author_email = "ben+python@benfinney.id.au",
-    description = "Gracie - OpenID provider for local accounts",
+    description = description[0].strip(),
     license = "GPL",
     keywords = "gracie openid identity authentication provider",
     ### url = "http://example.org/projects/gracie/",
-    long_description = """
-        Gracie is an OpenID server (a "provider" in OpenID terminology) that
-        serves OpenID identities for the local system PAM accounts. It
-        authenticates users with a username/password challenge.
-
-        The OpenID protocol is documented at <URL:http://openid.net/>.
-    """,
+    long_description = description[1],
     classifiers = [
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: GNU General Public License (GPL)",
