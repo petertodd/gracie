@@ -858,12 +858,12 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         )
 
     def test_post_openid_login_auth_other_sends_wrong_auth(self):
-        """ Login wrong auth with OpenID should send Wrong Auth """
+        """ Login wrong auth with OpenID should send Auth Required """
         params = self.valid_requests['openid-login-bill-other']
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(200)
-            Called Page_class('Wrong Authentication')
+            Called Page_class('Authentication Required')
             ...
             Called Response.send_to_handler(...)
             """ % locals()
@@ -960,7 +960,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout = """\
                 Called openid_server.decodeRequest(...)
                 Called ResponseHeader_class(200)
-                Called Page_class('Wrong Authentication')
+                Called Page_class('Authentication Required')
                 ...
                 Called Response.send_to_handler(...)
                 """

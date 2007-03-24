@@ -291,9 +291,11 @@ class Test_PageTemplates(scaffold.TestCase):
 
     def test_wrong_authentication_page_contains_url(self):
         """ Resulting page should contain the specified URLs """
+        want_username = "bill"
         want_id = "http://foo.example.org/id/bill"
         page = pagetemplate.wrong_authentication_page(
-            want_id_url=want_id,
+            want_username = want_username,
+            want_id_url = want_id,
         )
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(

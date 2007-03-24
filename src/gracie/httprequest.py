@@ -147,6 +147,16 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         session_id = self.session['session_id']
         self._set_cookie(response, session_cookie_name, session_id)
 
+    def _get_username_from_identity(self, identity):
+        """ Parse a local username from an OpenID URL """
+        name = None
+        (_, _, path, _, _) = urlparse.urlsplit(identity)
+        route_map = mapper.match(path)
+        if route_map:
+            if route_map.get('controller') == 'identity':
+                name = route_map.get('name')
+        return name
+
     def _make_openid_url(self, username):
         """ Generate the OpenID URL for a username """
         path = "id/%(username)s" % locals()
@@ -520,8 +530,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_wrong_authentication_response(self, want_id):
         """ Make a response for action with wrong session auth """
+        want_username = self._get_username_from_identity(want_id)
         header = ResponseHeader(http_codes['ok'])
         page = pagetemplate.wrong_authentication_page(
+            want_username = want_username,
             want_id_url = want_id
         )
         data = self._get_page_data(page)

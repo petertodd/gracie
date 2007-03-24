@@ -345,21 +345,30 @@ def login_cancelled_page():
 
 def login_submit_failed_page(message, name):
     title = "Login Failed"
-    form_text = _login_form(message, name)
     page = Page(title)
+    form_text = _login_form(message, name)
     page.values.update(dict(form=form_text))
     page.content = """
         $form
     """
     return page
 
-def wrong_authentication_page(want_id_url):
-    title = "Wrong Authentication"
+def wrong_authentication_page(want_username, want_id_url):
+    title = "Authentication Required"
     page = Page(title)
-    page.values.update(dict(want_id=want_id_url))
+    message_template = Template("""
+        The requested action can only be performed if you log in
+        as the identity <a href="$want_id">$want_id</a>
+    """)
+    message = message_template.substitute(dict(
+        want_username = want_username,
+        want_id = want_id_url,
+    ))
+    form_text = _login_form(message, want_username)
+    page.values.update(dict(
+        form = form_text,
+    ))
     page.content = """
-        <p>The requested action can only be performed if you
-        <a href="$login_url">log in</a> as the identity
-        <a href="$want_id">$want_id</a>.</p>
+        $form
     """
     return page
