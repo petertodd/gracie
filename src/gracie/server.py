@@ -14,19 +14,19 @@
 import sys
 import os
 import logging
-import random
-import sha
 from openid.server.server import Server as OpenIDServer
 from openid.store.filestore import FileOpenIDStore as OpenIDStore
 
 from httprequest import HTTPRequestHandler
 from httpserver import HTTPServer, default_host, default_port
 from authservice import PamAuthService as AuthService
+from authorisation import ConsumerAuthStore
+from session import SessionManager
 
 __version__ = "0.1.1"
 
-# Name of the Python logging instance to use for this module
-logger_name = "gracie.server"
+# Get the Python logging instance for this module
+_logger = logging.getLogger("gracie.server")
 
 
 def remove_standard_files():
@@ -46,10 +46,6 @@ def become_daemon():
 
     pid = os.fork()
     if pid == 0:
-        # This is the parent process of the first fork
-        # so we want to exit, leaving only the child to run
-        os._exit(os.EX_OK)
-    else:
         # This is the child of the first fork, so we are now in the
         # background.
 
@@ -65,77 +61,18 @@ def become_daemon():
             # This is the child of the second fork, so we want to exit
             # orphaning the true process to run by itself.
             os._exit(os.EX_OK)
+    else:
+        # This is the parent process of the first fork
+        # so we want to exit, leaving only the child to run
+        os._exit(os.EX_OK)
 
     remove_standard_files()
-
-
-class SessionManager(object):
-    """ Manage user sessions across transactions """
-
-    def __init__(self):
-        """ Set up a new instance """
-        self._init_session_generator()
-
-    def _init_session_generator(self):
-        """ Initialise the session ID generator """
-        self._rng = random.Random()
-        self._rng.seed()
-        self._sessions = dict()
-
-    def _generate_session_id(self):
-        """ Generate a unique session ID """
-        randnum = self._rng.random()
-        message = "%(randnum)s" % locals()
-        message_hash = sha.sha(message)
-        session_id = message_hash.hexdigest()
-        return session_id
-
-    def create_session(self, session=None):
-        """ Create a new session for supplied session dict """
-        if session is None:
-            session = dict()
-        session_id = self._generate_session_id()
-        session['session_id'] = session_id
-        self._sessions[session_id] = session
-        return session_id
-
-    def get_session(self, session_id):
-        """ Get the session for specified session ID """
-        session = self._sessions[session_id]
-        return session
-
-    def remove_session(self, session_id):
-        """ Remove the specified session """
-        del self._sessions[session_id]
-
-
-class ConsumerAuthStore(object):
-    """ Storage for consumer request authorisations """
-
-    def __init__(self):
-        """ Set up a new instance """
-        self._authorisations = dict()
-
-    def is_authorised(self, auth_tuple):
-        """ Report authorisation of an (identity, known_root) tuple """
-        is_authorised = self._authorisations.get(
-            auth_tuple, False)
-        return is_authorised
-
-    def store_authorisation(self, auth_tuple, status):
-        """ Store an authorisation status """
-        self._authorisations[auth_tuple] = status
-
-    def remove_authorisation(self, auth_tuple):
-        """ Remove an authorisation status """
-        if auth_tuple in self._authorisations:
-            del self._authorisations[auth_tuple]
 
 
 class GracieServer(object):
     """ Server for Gracie OpenID provider service """
 
-    def __init__(self, opts):
+    def __init__(self, socket_params, opts):
         """ Set up a new instance """
         self.version = __version__
         self.opts = opts
@@ -155,13 +92,12 @@ class GracieServer(object):
         self.openid_server = OpenIDServer(store)
 
     def __del__(self):
-        self.logger.info("Exiting Gracie server")
+        _logger.info("Exiting Gracie server")
 
     def _setup_logging(self):
         """ Set up logging for this server """
-        self.logger = logging.getLogger(logger_name)
         server_version = __version__
-        self.logger.info(
+        _logger.info(
             "Starting Gracie server (version %(server_version)s)"
             % locals()
         )

@@ -27,6 +27,8 @@ from gracie.authservice import AuthenticationError
 
 session_cookie_name = "gracie_session"
 
+_logger = logging.getLogger("gracie.httprequest")
+
 
 class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
     """ Shim to insert base object type into hierarchy """
@@ -60,7 +62,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args, **kwargs):
         """ Log a message via the server's logger """
-        logger = self.gracie_server.logger
+        logger = _logger
         loglevel = logging.INFO
         logger.log(loglevel, format, *args, **kwargs)
 
@@ -85,11 +87,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.session['auth_entry'] = auth_entry
 
         if username:
-            self.gracie_server.logger.info(
+            _logger.info(
                 "Session authenticated as %(username)r" % locals()
             )
         else:
-            self.gracie_server.logger.info("Session not authenticated")
+            _logger.info("Session not authenticated")
 
     def _remove_auth_session(self):
         """ Remove the authentication session """
@@ -98,7 +100,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             sess_manager.remove_session(self.session.get('session_id'))
         self.session.clear()
 
-        self.gracie_server.logger.info("Removed authentication session")
+        _logger.info("Removed authentication session")
 
     def _get_cookie(self, name):
         """ Get a cookie from the request """
@@ -178,7 +180,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             controller_name = self.route_map['controller']
         controller = controller_map[controller_name]
 
-        self.gracie_server.logger.info(
+        _logger.info(
             "Dispatching to controller %(controller_name)r" % locals()
         )
 
@@ -190,7 +192,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Send an HTTP response to the user agent """
         response.send_to_handler(self)
 
-        self.gracie_server.logger.info("Sent HTTP response")
+        _logger.info("Sent HTTP response")
 
     def _parse_path(self):
         """ Parse the request path """
@@ -213,7 +215,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             raise
         except Exception, e:
             message = str(e)
-            self.gracie_server.logger.error(message)
+            _logger.error(message)
             response = self._make_internal_error_response(message)
             self._send_response(response)
             raise
@@ -242,7 +244,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if openid_request is None:
             response = self._make_about_site_view_response()
         else:
-            self.gracie_server.logger.info("Received OpenID protocol request")
+            _logger.info("Received OpenID protocol request")
             self.session['last_openid_request'] = openid_request
             if openid_request.mode in BROWSER_REQUEST_MODES:
                 response = self._handle_openid_browser_request(
@@ -272,7 +274,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         trust_root = openid_request.trust_root
         auth_tuple = (identity, trust_root)
         is_authorised = consumer_auth_store.is_authorised(auth_tuple)
-        self.gracie_server.logger.info(
+        _logger.info(
             "Checking authorisation to %(identity)r"
             " for site %(trust_root)r" % locals()
         )
@@ -332,7 +334,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_response_from_openid_response(self, openid_response):
         """ Construct a response to a request to the OpenID server """
-        self.gracie_server.logger.info("Delegating response to OpenID library")
+        _logger.info("Delegating response to OpenID library")
         openid_server = self.gracie_server.openid_server
         web_response = openid_server.encodeResponse(openid_response)
         header = ResponseHeader(web_response.code)
@@ -356,7 +358,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             )
         elif not openid_request:
             message = "No OpenID request for requested authorisation"
-            self.gracie_server.logger.warn(message)
+            _logger.warn(message)
             response = self._make_protocol_error_response(message)
         else:
             response = self._handle_authorise_submit_request(
@@ -367,16 +369,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_authorise_submit_request(self, openid_request):
         """ Handle a request to authorise a consumer for an identity """
-        self.gracie_server.logger.info(
-            "Received consumer authorisation submission"
-        )
+        _logger.info("Received consumer authorisation submission")
 
         status_map = {
             "submit_approve": True,
             "submit_deny": False,
         }
 
-        self.gracie_server.logger.debug("HTTP query: %r" % self.query)
+        _logger.debug("HTTP query: %r" % self.query)
         try:
             trust_root = self.query['trust_root']
             identity = self.query['identity']
@@ -387,14 +387,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             status = status_map[submit_choice]
         except KeyError, e:
             message = "Malformed authorisation submission"
-            self.gracie_server.logger.warn(message)
+            _logger.warn(message)
             response = self._make_protocol_error_response(message)
         else:
             auth_tuple = (identity, trust_root)
             self.gracie_server.consumer_auth_store.store_authorisation(
                 (identity, trust_root), status
             )
-            self.gracie_server.logger.info(
+            _logger.info(
                 "Storing authorisation status %(auth_tuple)r: %(status)r"
                 % locals()
             )

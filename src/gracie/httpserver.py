@@ -17,8 +17,8 @@ from BaseHTTPServer import HTTPServer as BaseHTTPServer
 
 import server
 
-# Name of the Python logging instance to use for this module
-logger_name = "gracie.httpserver"
+# Get the Python logging instance for this module
+_logger = logging.getLogger("gracie.httpserver")
 
 default_host = "localhost"
 default_port = 8000
@@ -65,9 +65,8 @@ class HTTPServer(BaseHTTPServer):
 
     def _setup_logging(self):
         """ Set up logging for this server """
-        self.logger = logging.getLogger(logger_name)
         version = self.version
-        self.logger.info(
+        _logger.info(
             "Starting Gracie HTTP server (version %(version)s)"
             % locals()
         )
@@ -82,7 +81,7 @@ class HTTPServer(BaseHTTPServer):
     def _log_location(self):
         """ Log the net location of the server """
         location = net_location(*self.server_address)
-        self.logger.info(
+        _logger.info(
             "Listening on address %(location)s"
             % locals()
         )
@@ -94,9 +93,9 @@ class HTTPServer(BaseHTTPServer):
         except (KeyboardInterrupt, SystemExit), e:
             exc_name = e.__class__.__name__
             message = "Received %(exc_name)s" % locals()
-            self.logger.warn(message)
+            _logger.warn(message)
             raise
         except Exception, e:
             message = str(e)
-            self.logger.error(message)
+            _logger.error(message)
             raise

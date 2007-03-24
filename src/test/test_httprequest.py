@@ -92,7 +92,6 @@ class Stub_GracieServer(object):
 
     def __init__(self, opts):
         """ Set up a new instance """
-        self.logger = Stub_Logger()
         self.opts = opts
         server_address = (opts.host, opts.port)
         self.server_location = "%s:%s" % server_address
@@ -558,25 +557,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             % locals() )
         version_string = instance.version_string()
         self.failUnlessEqual(expect_version_string, version_string)
-
-    def test_log_message_to_logger(self):
-        """ Request should log messages using server's logger """
-        params = self.valid_requests['get-bogus']
-        instance = self.handler_class(**params['args'])
-        server = params['server']
-        server.gracie_server.logger = Mock("logger")
-        server.gracie_server.logger.log = Mock("logger.log")
-        msg_format = "Foo"
-        msg_level = logging.INFO
-        msg_args = ("spam", "eggs")
-        expect_stdout = """\
-            ...
-            Called logger.log(%(msg_level)r, %(msg_format)r, ...)
-            """ % locals()
-        instance.log_message(msg_format, *msg_args)
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
 
     def test_command_from_request(self):
         """ Request command attribute should come from request text """

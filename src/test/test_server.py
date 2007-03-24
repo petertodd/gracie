@@ -81,7 +81,7 @@ class Test_become_daemon(scaffold.TestCase):
         sys.stdout = self.stdout_test
 
         self.fork_prev = server.os.fork
-        test_pids = [23, 0]
+        test_pids = [0, 0]
         server.os.fork = Mock_fork('os.fork', test_pids)
         self.setsid_prev = server.os.setsid
         server.os.setsid = Mock('os.setsid')
@@ -103,7 +103,7 @@ class Test_become_daemon(scaffold.TestCase):
 
     def test_parent_exits(self):
         """ become_daemon parent process should exit """
-        parent_pid = 0
+        parent_pid = 23
         server.os.fork = Mock_fork('os.fork', [parent_pid])
         expect_stdout = """\
             Called os.fork()
@@ -127,9 +127,9 @@ class Test_become_daemon(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_child_forks_next_child_exits(self):
-        """ become_daemon should fork, then exit if child """
-        test_pids = [23, 42]
+    def test_child_forks_next_parent_exits(self):
+        """ become_daemon should fork, then exit if parent """
+        test_pids = [0, 42]
         server.os.fork = Mock_fork('os.fork', test_pids)
         expect_stdout = """\
             Called os.fork()
@@ -143,8 +143,8 @@ class Test_become_daemon(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_child_forks_next_parent_continues(self):
-        """ become_daemon should fork, then continue if parent """
+    def test_child_forks_next_child_continues(self):
+        """ become_daemon should fork, then continue if child """
         expect_stdout = """\
             Called os.fork()
             Called os.setsid()
@@ -183,92 +183,6 @@ class Stub_HTTPServer(object):
     server_bind = stub_server_bind
 
 
-class Test_SessionManager(scaffold.TestCase):
-    """ Test cases for SessionManager class """
-
-    def setUp(self):
-        """ Set up test fixtures """
-
-        self.manager_class = server.SessionManager
-
-    def test_create_session_should_return_session_id(self):
-        """ Creating a session should return session ID """
-        instance = self.manager_class()
-        session_id = instance.create_session()
-        self.failUnless(session_id is not None)
-
-    def test_get_session_unknown_id_raises_keyerror(self):
-        """ Getting an unknown session ID should raise KeyError """
-        instance = self.manager_class()
-        session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
-            instance.get_session, session_id
-        )
-
-    def test_get_session_returns_same_session(self):
-        """ Getting a session by ID should return same username """
-        instance = self.manager_class()
-        session = dict(
-            username = "fred",
-            foo = "spam",
-        )
-        session_id = instance.create_session(session)
-        session['session_id'] = session_id
-        got_session = instance.get_session(session_id)
-        self.failUnlessEqual(session, got_session)
-
-    def test_create_session_should_create_unique_id(self):
-        """ Creating a session should create unique ID each time """
-        instance = self.manager_class()
-        usernames = ["larry", "curly", "moe"]
-        sessions = dict()
-        for username in usernames:
-            session_id = instance.create_session()
-            self.failIf(session_id in sessions,
-                "Session ID %(session_id)r already exists"
-                " in %(sessions)r" % locals()
-            )
-            sessions[session_id] = dict(
-                session_id = session_id,
-                username = username,
-            )
-
-    def test_create_multiple_session_for_same_username(self):
-        """ Creating multiple sessions for same username should succeed """
-        instance = self.manager_class()
-        usernames = ["larry", "curly", "moe"]
-        sessions = dict()
-        for username in usernames:
-            for _ in range(10):
-                session = dict(username=username)
-                session_id = instance.create_session(session)
-                session.update(dict(
-                    session_id = session_id
-                ))
-                sessions[session_id] = session
-        for session_id, session in sessions.items():
-            got_session = instance.get_session(session_id)
-            self.failUnlessEqual(session, got_session)
-
-    def test_remove_session_unknown_should_raise_keyerror(self):
-        """ Removing an unknown session ID should raise KeyError """
-        instance = self.manager_class()
-        session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
-            instance.remove_session, session_id
-        )
-
-    def test_remove_session_should_cause_get_session_failure(self):
-        """ Removing a session should result in failure to get session """
-        instance = self.manager_class()
-        identity_name = "fred"
-        session_id = instance.create_session()
-        instance.remove_session(session_id)
-        self.failUnlessRaises(KeyError,
-            instance.get_session, session_id
-        )
-
-
 class Stub_ConsumerAuthStore(object):
     """ Stub class for ConsumerAuthStore """
 
@@ -294,55 +208,17 @@ class Stub_ConsumerAuthStore_never_auth(Stub_ConsumerAuthStore):
         return False
 
 
-class Test_ConsumerAuthStore(scaffold.TestCase):
-    """ Test cases for ConsumerAuthStore class """
+class Stub_SessionManager(object):
+    """ Stub class for SessionManager """
 
-    def setUp(self):
-        """ Set up test fixtures """
-        self.store_class = server.ConsumerAuthStore
+    def store_session(self, session):
+        pass
 
-    def test_instantiate(self):
-        """ New ConsumerAuthStore instance should be created """
-        instance = self.store_class()
-        self.failUnless(instance is not None)
+    def get_session(self, session_id):
+        return None
 
-    def test_is_authorised_unknown_returns_false(self):
-        """ is_authorised for unknown args should return False """
-        instance = self.store_class()
-        auth_tuple = ("bogus", "bogus")
-        is_authorised = instance.is_authorised(auth_tuple)
-        self.failUnlessEqual(False, is_authorised)
-
-    def test_store_authorisation_result_in_authorisation(self):
-        """ store_authorisation should let is_authorised succeed """
-        instance = self.store_class()
-        identity = "/id/fred"
-        trust_root = "http://example.com/"
-        auth_tuple = (identity, trust_root)
-        status = True
-        instance.store_authorisation(auth_tuple, status)
-        got_status = instance.is_authorised(auth_tuple)
-        self.failUnlessEqual(True, got_status)
-
-    def test_remove_authorisation_unknown_should_succeed(self):
-        """ remove_authorisation for unknown args should succeed """
-        instance = self.store_class()
-        auth_tuple = ("bogus", "bogus")
-        instance.remove_authorisation(auth_tuple)
-        is_authorised = instance.is_authorised(auth_tuple)
-        self.failUnlessEqual(False, is_authorised)
-
-    def test_remove_authorisation_result_in_no_authorisation(self):
-        """ remove_authorisation should make is_authorised return False """
-        instance = self.store_class()
-        identity = "/id/fred"
-        trust_root = "http://example.com/"
-        auth_tuple = (identity, trust_root)
-        status = True
-        instance.store_authorisation(auth_tuple, status)
-        instance.remove_authorisation(auth_tuple)
-        got_status = instance.is_authorised(auth_tuple)
-        self.failUnlessEqual(False, got_status)
+    def remove_session(self, session_id):
+        pass
 
 
 class Stub_HTTPRequestHandler(object):
@@ -424,9 +300,11 @@ class Test_GracieServer(scaffold.TestCase):
         self.openid_server_prev = server.OpenIDServer
         self.openid_store_prev = server.OpenIDStore
         self.consumer_store_prev = server.ConsumerAuthStore
+        self.session_manager_prev = server.SessionManager
         server.OpenIDServer = Stub_OpenIDServer
         server.OpenIDStore = Stub_OpenIDStore
         server.ConsumerAuthStore = Stub_ConsumerAuthStore
+        server.SessionManager = Stub_SessionManager
 
         self.httpserver_class_prev = server.HTTPServer
         server.HTTPServer = Stub_HTTPServer
@@ -459,7 +337,10 @@ class Test_GracieServer(scaffold.TestCase):
             opts = make_default_opts()
             opts._update_loose(params.get('opts', dict()))
             params['opts'] = opts
-            args.update(dict(opts=opts))
+            args.update(dict(
+                socket_params=None,
+                opts=opts,
+            ))
             instance = self.server_class(**args)
             params['args'] = args
             params['instance'] = instance
@@ -477,6 +358,7 @@ class Test_GracieServer(scaffold.TestCase):
         server.OpenIDServer = self.openid_server_prev
         server.OpenIDStore = self.openid_store_prev
         server.ConsumerAuthStore = self.consumer_store_prev
+        server.SessionManager = self.session_manager_prev
 
     def test_instantiate(self):
         """ New GracieServer instance should be created """
@@ -500,17 +382,6 @@ class Test_GracieServer(scaffold.TestCase):
         instance = params['instance']
         opts = params['opts']
         self.failUnlessEqual(opts, instance.opts)
-
-    def test_logger_name_as_specified(self):
-        """ GracieServer should have logger of specified name """
-        params = self.valid_servers['simple']
-        logger_name_prev = server.logger_name
-        logger_name_test = "Foo.Bar"
-        server.logger_name = logger_name_test
-        expect_logger = logging.getLogger(logger_name_test)
-        instance = self.server_class(**params['args'])
-        self.failUnlessEqual(expect_logger, instance.logger)
-        server.logger_name = logger_name_prev
 
     def test_server_creates_http_server(self):
         """ GracieServer should create an HTTP server """
