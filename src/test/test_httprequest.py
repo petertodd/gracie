@@ -24,9 +24,6 @@ from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import (
     Stub_OpenIDStore, Stub_OpenIDServer, Stub_OpenIDError,
     Stub_OpenIDRequest, Stub_OpenIDResponse, Stub_OpenIDWebResponse,
-    Stub_ConsumerAuthStore,
-    Stub_ConsumerAuthStore_always_auth,
-    Stub_ConsumerAuthStore_never_auth,
 )
 
 from gracie import httprequest
@@ -49,12 +46,15 @@ class Stub_SessionManager(object):
     def __init__(self):
         """ Set up a new instance """
         self._sessions = dict()
-        self.create_session(dict(
-            username="fred",
-        ))
 
     def create_session(self, session):
-        session_id = "DEADBEEF-%(username)s" % session
+        username = session.get('username')
+        session_id = session.get('session_id')
+        if session_id is None:
+            if username is None:
+                session_id = "DEADBEEF"
+            else:
+                session_id = "DEADBEEF-%(username)s" % session
         session.update(dict(session_id = session_id))
         self._sessions[session_id] = session
         return session_id
@@ -102,7 +102,6 @@ class Stub_GracieServer(object):
         self.openid_server = Stub_OpenIDServer(store)
         self.auth_service = Stub_AuthService()
         self.sess_manager = Stub_SessionManager()
-        self.consumer_auth_store = Stub_ConsumerAuthStore()
 
 
 class Stub_TCPConnection(object):
@@ -216,6 +215,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                         ("Cookie", "TEST_session=DECAFBAD"),
                     ],
                 ),
+                session_id = "DECAFBAD",
             ),
             'good-cookie': dict(
                 identity_name = "fred",
@@ -223,6 +223,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                     header = [
                         ("Cookie", "TEST_session=DEADBEEF-fred"),
                     ],
+                ),
+                session = dict(
+                    session_id = "DEADBEEF-fred",
+                    username = "fred",
                 ),
             ),
             'id-bogus': dict(
@@ -337,6 +341,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                         "openid.return_to": "http://example.com/",
                     },
                 ),
+                session = dict(
+                    session_id = "DEADBEEF-bill",
+                    username = "bill",
+                ),
             ),
             'openid-query-checkid_setup-other-session': dict(
                 request = Stub_Request("GET", "/openidserver",
@@ -348,6 +356,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                         "openid.identity": "http://example.org:0/id/fred",
                         "openid.return_to": "http://example.com/",
                     },
+                ),
+                session = dict(
+                    session_id = "DEADBEEF-bill",
+                    username = "bill",
                 ),
             ),
             'openid-query-checkid_immediate-right-session': dict(
@@ -361,6 +373,10 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                         "openid.return_to": "http://example.com/",
                     },
                 ),
+                session = dict(
+                    session_id = "DEADBEEF-fred",
+                    username = "fred",
+                ),
             ),
             'openid-query-checkid_setup-right-session': dict(
                 request = Stub_Request("GET", "/openidserver",
@@ -373,79 +389,81 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                         "openid.return_to": "http://example.com/",
                     },
                 ),
+                session = dict(
+                    session_id = "DEADBEEF-fred",
+                    username = "fred",
+                ),
             ),
-            'get-authorise': dict(
-                request = Stub_Request("GET", "/authorise",
+            'openid-cancel-login': dict(
+                request = Stub_Request("POST", "/login",
                     header = [
-                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                        ("Cookie", "TEST_session=DEADBEEF"),
                     ],
-                    query = {
-                        "trust_root": "http://example.com/",
-                        "identity": "http://example.org:0/id/fred",
-                        "return_to": "http://www.example.com/",
-                        "submit_deny": "Deny",
-                    },
+                    query = dict(
+                        username = "bogus",
+                        password = "bogus",
+                        cancel = "Cancel",
+                    ),
+                ),
+                session = dict(
+                    session_id = "DEADBEEF",
+                    last_openid_request = Stub_OpenIDRequest(
+                        http_query = {'openid.mode': "checkid_setup"},
+                        params = dict(
+                            identity = "http://example.org:0/id/fred",
+                            trust_root = "http://example.com/",
+                            return_to = "http://example.com/account",
+                        ),
+                    ),
                 ),
             ),
-            'post-authorise-no-session': dict(
-                request = Stub_Request("POST", "/authorise",
-                    header = [],
-                    query = {
-                        "trust_root": "http://example.com/",
-                        "identity": "http://example.org:0/id/fred",
-                        "return_to": "http://www.example.com/",
-                        "submit_approve": "Approve",
-                    },
-                ),
-            ),
-            'post-authorise-other-session': dict(
-                request = Stub_Request("POST", "/authorise",
+            'openid-login-bill-other': dict(
+                identity_name = "fred",
+                request = Stub_Request("POST", "/login",
                     header = [
-                        ("Cookie", "TEST_session=DEADBEEF-bill"),
+                        ("Cookie", "TEST_session=DEADBEEF"),
                     ],
-                    query = {
-                        "trust_root": "http://example.com/",
-                        "identity": "http://example.org:0/id/fred",
-                        "return_to": "http://www.example.com/",
-                        "submit_approve": "Approve",
-                    },
+                    query = dict(
+                        username="bill",
+                        password="secret1",
+                        submit="Sign in",
+                    ),
+                ),
+                session = dict(
+                    session_id = "DEADBEEF",
+                    last_openid_request = Stub_OpenIDRequest(
+                        http_query = {'openid.mode': "checkid_setup"},
+                        params = dict(
+                            identity = "http://example.org:0/id/fred",
+                            trust_root = "http://example.com/",
+                            return_to = "http://example.com/account",
+                        ),
+                    ),
                 ),
             ),
-            'post-authorise-approve': dict(
-                request = Stub_Request("POST", "/authorise",
+            'openid-login-fred-okay': dict(
+                identity_name = "fred",
+                request = Stub_Request("POST", "/login",
                     header = [
-                        ("Cookie", "TEST_session=DEADBEEF-fred"),
+                        ("Cookie", "TEST_session=DEADBEEF"),
                     ],
-                    query = {
-                        "trust_root": "http://example.com/",
-                        "identity": "http://example.org:0/id/fred",
-                        "return_to": "http://www.example.com/",
-                        "submit_approve": "Approve",
-                    },
+                    query = dict(
+                        username="fred",
+                        password="password1",
+                        submit="Sign in",
+                    ),
                 ),
-                auth_tuple = (
-                    "http://example.org:0/id/fred",
-                    "http://example.com/"
+                session = dict(
+                    session_id = "DEADBEEF",
+                    last_openid_request = Stub_OpenIDRequest(
+                        http_query = {'openid.mode': "checkid_setup"},
+                        params = dict(
+                            identity = "http://example.org:0/id/fred",
+                            trust_root = "http://example.com/",
+                            return_to = "http://example.com/account",
+                        ),
+                    ),
                 ),
-                auth_status = True,
-            ),
-            'post-authorise-deny': dict(
-                request = Stub_Request("POST", "/authorise",
-                    header = [
-                        ("Cookie", "TEST_session=DEADBEEF-fred"),
-                    ],
-                    query = {
-                        "trust_root": "http://example.com/",
-                        "identity": "http://example.org:0/id/fred",
-                        "return_to": "http://www.example.com/",
-                        "submit_deny": "Deny",
-                    },
-                ),
-                auth_tuple = (
-                    "http://example.org:0/id/fred",
-                    "http://example.com/"
-                ),
-                auth_status = False,
             ),
         }
 
@@ -460,6 +478,9 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                 root_url = "http://example.org:0/",
             ))
             gracie_server = Stub_GracieServer(opts)
+            sess_manager = gracie_server.sess_manager
+            session = params.get('session', dict())
+            sess_manager.create_session(session)
             server = params.setdefault('server',
                 gracie_server.http_server
             )
@@ -513,6 +534,9 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
 
     def _make_mock_openid_server(self, openid_request):
         """ Make a mock OpenIDServer for a given HTTP query """
+        def stub_sign(obj):
+            return obj
+
         openid_server = Mock('openid_server')
 
         if openid_request.mode:
@@ -522,6 +546,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                 Stub_OpenIDResponse()
             openid_server.encodeResponse.mock_returns = \
                 Stub_OpenIDWebResponse()
+        openid_server.signatory.sign = stub_sign
 
         return openid_server
 
@@ -594,30 +619,28 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_request_with_no_cookie_response_not_logged_in(self):
-        """ With no session cookie, response should send Not Logged In """
+    def test_request_with_no_cookie_response_creates_session(self):
+        """ With no session cookie, response should create new session """
         params = self.valid_requests['no-cookie']
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(200)
             ...
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_session=;Expires=...'))
+            Called Response.header.fields.append(('Set-Cookie', 'TEST_session=DEADBEEF'))
             Called Response.send_to_handler(...)
             """
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_request_with_unknown_cookie_response_not_logged_in(self):
-        """ With unknown username, response should send Not Logged In """
+    def test_request_with_unknown_cookie_creates_new_session(self):
+        """ With unknown username, response should create new session """
         params = self.valid_requests['unknown-cookie']
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(200)
             ...
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_session=;Expires=...'))
+            Called Response.header.fields.append(('Set-Cookie', 'TEST_session=DEADBEEF'))
             Called Response.send_to_handler(...)
             """
         self.failUnlessOutputCheckerMatch(
@@ -697,15 +720,14 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def get_logout_resets_session_and_redirects(self):
-        """ Request to logout should reset session and logout """
+    def get_logout_creates_new_session_and_redirects(self):
+        """ Request to logout should create new session and logout """
         params = self.valid_requests['logout']
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(302)
             Called Response.header.fields.append('Location', ...)
-            Called Response.header.fields.append(
-                ('Set-Cookie', 'TEST_session=;Expires=...'))
+            Called Response.header.fields.append(('Set-Cookie', 'TEST_session=DEADBEEF'))
             Called Response.send_to_handler(...)
             """
         self.failUnlessOutputCheckerMatch(
@@ -739,13 +761,31 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_post_login_cancel_sends_cancelled_response(self):
-        """ POST login cancel should send cancelled response """
+    def test_post_login_cancel_no_openid_redirects_to_root(self):
+        """ Login cancel with no OpenID should redirect to root """
         params = self.valid_requests['cancel-login']
         instance = self.handler_class(**params['args'])
+        root_url = params['server'].gracie_server.opts.root_url
         expect_stdout = """\
-            Called ResponseHeader_class(200)
-            Called Page_class('Login Cancelled')
+            Called ResponseHeader_class(302)
+            Called ResponseHeader.fields.append(('Location', %(root_url)r))
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_openid_login_cancel_redirects_to_openid_url(self):
+        """ Login cancel with OpenID should redirect to OpenID URL """
+        params = self.valid_requests['openid-cancel-login']
+        openid_request = params['session']['last_openid_request']
+        instance = self.handler_class(**params['args'])
+        return_url = openid_request.answer(False).encodeToURL()
+        expect_stdout = """\
+            Called ResponseHeader_class(302)
+            Called ResponseHeader.fields.append(
+                ('Location', %(return_url)r))
             ...
             Called Response.send_to_handler(...)
             """ % locals()
@@ -783,17 +823,49 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_post_login_auth_correct_sends_redirect_response(self):
-        """ POST login with correct details should send redirect """
+    def test_post_login_auth_correct_no_openid_redirects_to_root(self):
+        """ Login with no OpenID, correct details should redirect to root """
         params = self.valid_requests['login-fred-okay']
         identity_name = params['identity_name']
+        root_url = params['server'].gracie_server.opts.root_url
         instance = self.handler_class(**params['args'])
         expect_stdout = """\
             Called ResponseHeader_class(302)
-            Called ResponseHeader.fields.append(('Location', '...'))
+            Called ResponseHeader.fields.append(('Location', %(root_url)r))
             ...
             Called Response.send_to_handler(
                 ...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_openid_login_auth_correct_redirects_to_openid_url(self):
+        """ Login correct with OpenID should redirect to OpenID URL """
+        params = self.valid_requests['openid-login-fred-okay']
+        openid_request = params['session']['last_openid_request']
+        instance = self.handler_class(**params['args'])
+        return_url = openid_request.answer(True).encodeToURL()
+        expect_stdout = """\
+            Called ResponseHeader_class(302)
+            Called ResponseHeader.fields.append(
+                ('Location', %(return_url)r))
+            ...
+            Called Response.send_to_handler(...)
+            """ % locals()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
+    def test_post_openid_login_auth_other_sends_wrong_auth(self):
+        """ Login wrong auth with OpenID should send Wrong Auth """
+        params = self.valid_requests['openid-login-bill-other']
+        instance = self.handler_class(**params['args'])
+        expect_stdout = """\
+            Called ResponseHeader_class(200)
+            Called Page_class('Wrong Authentication')
+            ...
+            Called Response.send_to_handler(...)
             """ % locals()
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
@@ -863,8 +935,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         params = self.valid_requests[params_key]
         args = params['args']
         server = args['server']
-        server.gracie_server.consumer_auth_store = \
-            Stub_ConsumerAuthStore_always_auth()
         instance = self.handler_class(**args)
         expect_stdout = """\
             Called openid_server.decodeRequest(...)
@@ -877,7 +947,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_checkid_setup_wrong_session_returns_login_page(self):
+    def test_checkid_setup_wrong_session_returns_wrong_auth(self):
         """ OpenID checkid_setup with wrong session should request login """
         for params_key in [
             'openid-query-checkid_setup-no-session',
@@ -886,13 +956,11 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            server.gracie_server.consumer_auth_store = \
-                Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
             expect_stdout = """\
                 Called openid_server.decodeRequest(...)
                 Called ResponseHeader_class(200)
-                Called Page_class('Wrong Authorisation')
+                Called Page_class('Wrong Authentication')
                 ...
                 Called Response.send_to_handler(...)
                 """
@@ -900,48 +968,8 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
                 expect_stdout, self.stdout_test.getvalue()
             )
 
-    def test_checkid_immediate_no_auth_returns_failure(self):
-        """ OpenID checkid_immediate with no auth should return False """
-        params_key = 'openid-query-checkid_immediate-right-session'
-        params = self.valid_requests[params_key]
-        args = params['args']
-        server = args['server']
-        server.gracie_server.consumer_auth_store = \
-            Stub_ConsumerAuthStore_never_auth()
-        instance = self.handler_class(**args)
-        expect_stdout = """\
-            Called openid_server.decodeRequest(...)
-            Called OpenIDRequest.answer(False, ...)
-            Called openid_server.encodeResponse(...)
-            ...
-            Called Response.send_to_handler(...)
-            """
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_checkid_setup_no_auth_sends_authorise_query_page(self):
-        """ OpenID checkid_setup with no auth should send Authorise? """
-        params_key = 'openid-query-checkid_setup-right-session'
-        params = self.valid_requests[params_key]
-        args = params['args']
-        server = args['server']
-        server.gracie_server.consumer_auth_store = \
-            Stub_ConsumerAuthStore_never_auth()
-        instance = self.handler_class(**args)
-        expect_stdout = """\
-            Called openid_server.decodeRequest(...)
-            Called ResponseHeader_class(200)
-            Called Page_class('Approve OpenID Request?')
-            ...
-            Called Response.send_to_handler(...)
-            """
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_checkid_with_session_and_auth_returns_success(self):
-        """ OpenID checkid with right session and auth should succeed """
+    def test_checkid_with_session_returns_success(self):
+        """ OpenID checkid with right session should succeed """
         for params_key in [
             'openid-query-checkid_immediate-right-session',
             'openid-query-checkid_setup-right-session',
@@ -949,8 +977,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             params = self.valid_requests[params_key]
             args = params['args']
             server = args['server']
-            server.gracie_server.consumer_auth_store = \
-                Stub_ConsumerAuthStore_always_auth()
             instance = self.handler_class(**args)
             expect_stdout = """\
                 Called openid_server.decodeRequest(...)
@@ -962,80 +988,6 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
             self.failUnlessOutputCheckerMatch(
                 expect_stdout, self.stdout_test.getvalue()
             )
-
-    def test_get_authorise_returns_not_found_response(self):
-        """ GET authorise should return Not Found response """
-        params = self.valid_requests['get-authorise']
-        instance = self.handler_class(**params['args'])
-        expect_stdout = """\
-            Called ResponseHeader_class(404)
-            Called Page_class('...')
-            ...
-            Called Response.send_to_handler(...)
-            """ % locals()
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_post_authorise_wrong_session_returns_login_page(self):
-        """ POST authorise with wrong session should request login """
-        for params_key in [
-            'post-authorise-no-session',
-            'post-authorise-other-session',
-        ]:
-            params = self.valid_requests[params_key]
-            args = params['args']
-            instance = self.handler_class(**args)
-            expect_stdout = """\
-                Called ResponseHeader_class(200)
-                Called Page_class('Wrong Authorisation')
-                ...
-                Called Response.send_to_handler(...)
-                """
-            self.failUnlessOutputCheckerMatch(
-                expect_stdout, self.stdout_test.getvalue()
-            )
-
-    def test_post_authorise_with_right_session_stores_result(self):
-        """ POST authorise with right session should store result """
-        for params_key in [
-            'post-authorise-approve',
-            'post-authorise-deny',
-        ]:
-            params = self.valid_requests[params_key]
-            args = params['args']
-            server = args['server']
-            checkid_request = self.valid_requests[
-                'openid-query-checkid_setup-right-session']['request']
-            session = server.gracie_server.sess_manager.get_session(
-                "DEADBEEF-fred"
-            )
-            openid_request = self._make_mock_openid_request(
-                http_query = checkid_request.query
-            )
-            session['last_openid_request'] = openid_request
-            mock_openid_server = self._make_mock_openid_server(
-                openid_request
-            )
-            server.gracie_server.openid_server = mock_openid_server
-            mock_auth_store = Mock('ConsumerAuthStore')
-            server.gracie_server.consumer_auth_store = mock_auth_store
-            auth_tuple = params['auth_tuple']
-            auth_status = params['auth_status']
-            instance = self.handler_class(**args)
-            expect_stdout = """\
-                Called ConsumerAuthStore.store_authorisation(
-                    %(auth_tuple)r,
-                    %(auth_status)r)
-                Called OpenIDRequest.answer(%(auth_status)r)
-                Called openid_server.encodeResponse(...)
-                ...
-                Called Response.send_to_handler(...)
-                """ % locals()
-            self.failUnlessOutputCheckerMatch(
-                expect_stdout, self.stdout_test.getvalue()
-            )
-            self.stdout_test.truncate(0)
 
 
 suite = scaffold.suite(__name__)

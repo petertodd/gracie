@@ -37,8 +37,6 @@ class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
 mapper = routes.Mapper()
 mapper.connect('root', '', controller='about', action='view')
 mapper.connect('openid', 'openidserver', controller='openid')
-mapper.connect('authorise', 'authorise',
-               controller='authorise', action='submit')
 mapper.connect('identity', 'id/:name',
                controller='identity', action='view')
 mapper.connect('login', 'login', controller='login', action='view')
@@ -72,33 +70,45 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         url = urlparse.urljoin(root_url, path)
         return url
 
-    def _setup_auth_session(self):
-        """ Set up the authentication session """
+    def _begin_new_session(self):
+        """ Begin a new server session """
         sess_manager = self.gracie_server.sess_manager
-        session_id = self._get_auth_cookie()
-        username = None
-        try:
-            self.session = sess_manager.get_session(session_id)
-            username = self.session['username']
-        except KeyError:
-            self.session = dict()
-        else:
-            auth_entry = self.gracie_server.auth_service.get_entry(username)
-            self.session['auth_entry'] = auth_entry
+        self.session = dict()
+        session_id = sess_manager.create_session(self.session)
+        self.session['session_id'] = session_id
 
-        if username:
+    def _authenticate_session(self, username):
+        """ Authenticate the current session as specified username """
+        if username is not None:
+            auth_entry = self.gracie_server.auth_service.get_entry(username)
+            self.session.update(dict(
+                username = username,
+                auth_entry = auth_entry,
+            ))
             _logger.info(
                 "Session authenticated as %(username)r" % locals()
             )
         else:
             _logger.info("Session not authenticated")
 
+    def _setup_auth_session(self):
+        """ Set up the authentication session """
+        sess_manager = self.gracie_server.sess_manager
+        session_id = self._get_auth_cookie()
+        try:
+            self.session = sess_manager.get_session(session_id)
+        except KeyError:
+            self._begin_new_session()
+
+        username = self.session.get('username')
+        self._authenticate_session(username)
+
     def _remove_auth_session(self):
         """ Remove the authentication session """
         sess_manager = self.gracie_server.sess_manager
         if self.session:
             sess_manager.remove_session(self.session.get('session_id'))
-        self.session.clear()
+        self._begin_new_session()
 
         _logger.info("Removed authentication session")
 
@@ -134,13 +144,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         expire_immediately = time.strftime(
             '%a, %d-%b-%y %H:%M:%S GMT', epoch)
 
-        session_id = self.session.get('session_id')
-        if session_id:
-            self._set_cookie(response, session_cookie_name, session_id)
-        else:
-            self._set_cookie(response,
-                session_cookie_name, "", expire_immediately
-            )
+        session_id = self.session['session_id']
+        self._set_cookie(response, session_cookie_name, session_id)
 
     def _make_openid_url(self, username):
         """ Generate the OpenID URL for a username """
@@ -153,9 +158,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         openid_url = None
         if self.session:
             username = self.session.get('username')
-            openid_url = self.session.setdefault('openid_url',
-                self._make_openid_url(username)
-            )
+            openid_url = self._make_openid_url(username)
+            self.session['openid_url'] = openid_url
         return openid_url
 
     def _get_session_auth_entry(self):
@@ -173,7 +177,6 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             'identity': self._make_identity_view_response,
             'logout': self._make_logout_response,
             'login': self._make_login_response,
-            'authorise': self._handle_authorise_request,
         }
         controller_name = None
         if self.route_map:
@@ -263,21 +266,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _handle_openid_browser_request(self, openid_request):
         """ Handle an OpenID request with user-agent interaction """
         is_session_identity = False
+        identity = openid_request.identity
         if self.session:
             openid_url = self._get_session_openid_url()
             if openid_url:
-                if openid_url == openid_request.identity:
+                if openid_url == identity:
                     # Session is authenticated for requested identity
                     is_session_identity = True
-        consumer_auth_store = self.gracie_server.consumer_auth_store
-        identity = openid_request.identity
-        trust_root = openid_request.trust_root
-        auth_tuple = (identity, trust_root)
-        is_authorised = consumer_auth_store.is_authorised(auth_tuple)
-        _logger.info(
-            "Checking authorisation to %(identity)r"
-            " for site %(trust_root)r" % locals()
-        )
 
         dispatch_map = {
             'checkid_immediate': self._make_checkid_immediate_response,
@@ -285,18 +280,17 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         }
         response = dispatch_map[openid_request.mode](openid_request,
             is_session_identity = is_session_identity,
-            is_authorised = is_authorised,
         )
 
         return response
 
     def _make_checkid_immediate_response(self, request,
-        is_session_identity, is_authorised
+        is_session_identity
     ):
         """ Make a response for an OpenID checkid_immediate request """
         response = None
 
-        if is_session_identity and is_authorised:
+        if is_session_identity:
             openid_response = request.answer(True)
         else:
             openid_response = request.answer(False,
@@ -309,26 +303,20 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         return response
 
     def _make_checkid_setup_response(self, request,
-        is_session_identity, is_authorised
+        is_session_identity
     ):
-        """ Make a response for an OpenID checkid_immediate request """
+        """ Make a response for an OpenID checkid_setup request """
         response = None
 
-        if is_session_identity and is_authorised:
+        if is_session_identity:
             openid_response = request.answer(True)
             response = self._make_response_from_openid_response(
-                openid_response)
+                openid_response
+            )
         else:
-            if is_session_identity:
-                response = \
-                    self._make_authorise_consumer_query_response(
-                        trust_root = request.trust_root,
-                        want_id = request.identity
-                    )
-            else:
-                response = self._make_wrong_authentication_response(
-                    request.identity
-                )
+            response = self._make_wrong_authentication_response(
+                request.identity
+            )
 
         return response
 
@@ -345,74 +333,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
         return response
 
-    def _handle_authorise_request(self):
-        """ Handle a request to the authorise resource """
-        identity = self.query.get('identity', object())
-        openid_url = self._get_session_openid_url()
-        openid_request = self.session.get('last_openid_request')
-        if self.command not in ["POST"]:
-            response = self._make_url_not_found_error_response()
-        elif openid_url != identity:
-            response = self._make_wrong_authentication_response(
-                identity
-            )
-        elif not openid_request:
-            message = "No OpenID request for requested authorisation"
-            _logger.warn(message)
-            response = self._make_protocol_error_response(message)
-        else:
-            response = self._handle_authorise_submit_request(
-                openid_request
-            )
-
-        return response
-
-    def _handle_authorise_submit_request(self, openid_request):
-        """ Handle a request to authorise a consumer for an identity """
-        _logger.info("Received consumer authorisation submission")
-
-        status_map = {
-            "submit_approve": True,
-            "submit_deny": False,
-        }
-
-        _logger.debug("HTTP query: %r" % self.query)
-        try:
-            trust_root = self.query['trust_root']
-            identity = self.query['identity']
-            submit_choice = None
-            for key in status_map:
-                if key in self.query:
-                    submit_choice = key
-            status = status_map[submit_choice]
-        except KeyError, e:
-            message = "Malformed authorisation submission"
-            _logger.warn(message)
-            response = self._make_protocol_error_response(message)
-        else:
-            auth_tuple = (identity, trust_root)
-            self.gracie_server.consumer_auth_store.store_authorisation(
-                (identity, trust_root), status
-            )
-            _logger.info(
-                "Storing authorisation status %(auth_tuple)r: %(status)r"
-                % locals()
-            )
-            response = self._make_authorise_response(
-                openid_request, status
-            )
-
-        return response
-
-    def _make_authorise_response(self, openid_request, status):
-        """ Construct a response to an authorisation submission """
-        openid_response = openid_request.answer(status)
-        response = self._make_response_from_openid_response(
-            openid_response
-        )
-
-        return response
-
+    def _make_url_from_openid_response(self, openid_response):
+        """ Construct a URL corresponding to an OpenID response """
+        _logger.info("Getting URL for OpenID response")
+        url = openid_response.encodeToURL()
+        return url
 
     def _make_redirect_response(self, url):
         """ Construct a response for a redirect """
@@ -420,6 +345,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         header.fields.append(("Location", url))
         data = ""
         response = Response(header, data)
+        _logger.info("Redirecting to %(url)r" % locals())
         return response
 
     def _get_page_data(self, page):
@@ -527,10 +453,15 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_login_cancelled_response(self):
         """ Construct a response for a login cancel request """
-        header = ResponseHeader(http_codes['ok'])
-        page = pagetemplate.login_cancelled_page()
-        data = self._get_page_data(page)
-        response = Response(header, data)
+        root_url = self._make_server_url("")
+        openid_request = self.session.get('last_openid_request')
+        if openid_request:
+            return_url = self._make_url_from_openid_response(
+                openid_request.answer(False)
+            )
+        else:
+            return_url = root_url
+        response = self._make_redirect_response(return_url)
         return response
 
     def _make_login_authenticate_response(self):
@@ -542,20 +473,13 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             password=password
         )
         auth_service = self.gracie_server.auth_service
-        sess_manager = self.gracie_server.sess_manager
         try:
             username = auth_service.authenticate(credentials)
             authenticated = True
         except AuthenticationError, e:
             authenticated = False
         if authenticated:
-            session_id = sess_manager.create_session(dict(
-                username = username,
-            ))
-            self.session = sess_manager.get_session(session_id)
-            self.session.update(dict(
-                openid_url = self._get_session_openid_url()
-            ))
+            self._authenticate_session(username)
             response = self._make_login_succeeded_response()
         else:
             response = self._make_login_failed_response()
@@ -574,20 +498,24 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _make_login_succeeded_response(self):
         """ Construct a response for a successful login request """
         root_url = self._make_server_url("")
-        response = self._make_redirect_response(root_url)
-        return response
-
-    def _make_authorise_consumer_query_response(self,
-            trust_root, want_id
-    ):
-        """ Make a response for query to authorise a consumer """
-        header = ResponseHeader(http_codes['ok'])
-        page = pagetemplate.authorise_consumer_query_page(
-            trust_root = trust_root, want_id_url = want_id
-        )
-        data = self._get_page_data(page)
-        response = Response(header, data)
-
+        openid_request = self.session.get('last_openid_request')
+        openid_url = self._get_session_openid_url()
+        if openid_request:
+            if openid_request.identity == openid_url:
+                openid_server = self.server.gracie_server.openid_server
+                openid_response = openid_server.signatory.sign(
+                    openid_request.answer(True)
+                )
+                return_url = self._make_url_from_openid_response(
+                    openid_response
+                )
+                response = self._make_redirect_response(return_url)
+            else:
+                response = self._make_wrong_authentication_response(
+                    openid_request.identity
+                )
+        else:
+            response = self._make_redirect_response(root_url)
         return response
 
     def _make_wrong_authentication_response(self, want_id):

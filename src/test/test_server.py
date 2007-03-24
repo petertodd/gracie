@@ -253,7 +253,9 @@ class Stub_OpenIDRequest(object):
         """ Set up a new instance """
 
         self.mode = http_query.get('openid.mode')
-        keys = ('identity', 'trust_root', 'immediate')
+        keys = [
+            'identity', 'trust_root', 'immediate', 'return_to',
+        ]
         if params is None:
             params = dict()
         for key in keys:
@@ -261,11 +263,24 @@ class Stub_OpenIDRequest(object):
             if key in params:
                 setattr(self, key, params[key])
 
-    def answer(self, *args, **kwargs):
-        return Stub_OpenIDResponse()
+    def answer(self, allow, server_url=None):
+        response = Stub_OpenIDResponse(dict(
+            allow = allow,
+            server_url = server_url,
+        ))
+        return response
 
 class Stub_OpenIDResponse(object):
     """ Stub class for an OpenID protocol response """
+
+    def __init__(self, params=None):
+        self.params = params
+
+    def encodeToURL(self):
+        url = "http://stub/openid_response/" + ";".join([
+            "%s=%s" % (key, val) for key, val in self.params.items()
+        ])
+        return url
 
 class Stub_OpenIDWebResponse(object):
     """ Stub class for an encoded OpenID response """
