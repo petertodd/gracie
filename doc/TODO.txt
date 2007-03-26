@@ -20,6 +20,8 @@ Features
 
 * Use separate process for root-required PAM auth
 
+* Configuration via config file, read at startup
+
 * Configurable setting: Present user with confirmation form to
   authorise or deny OpenID consumer asking for identity
 

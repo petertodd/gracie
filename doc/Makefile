@@ -10,7 +10,7 @@
 
 # Makefile for documentation
 
-DOC_NAMES = README TODO
+DOC_NAMES = README TODO HACKING
 
 RST_SUFFIX = .txt
 

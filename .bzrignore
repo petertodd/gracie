@@ -8,3 +8,7 @@ PKG-INFO
 ./src/*-stamp
 ./bin
 ./sbin
+*.html
+./src/build
+./src/dist
+./*.egg
