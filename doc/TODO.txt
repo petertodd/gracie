@@ -2,7 +2,7 @@
 Development tasks to be done
 ============================
 
-:Updated: bignose 2007-03-26
+:Updated: bignose 2007-03-27
 
 Packaging
 =========
@@ -18,6 +18,8 @@ Features
 
 * Use TLS for login
 
+* Conform to OpenID 1.2 and/or 2.0
+
 * Use separate process for root-required PAM auth
 
 * Configuration via config file, read at startup
@@ -31,3 +33,4 @@ Wheel, reinvention, avoidance of
 * Use templating system for page generation
 
 * Use web framework for HTTP request handling
+
