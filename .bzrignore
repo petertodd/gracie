@@ -12,3 +12,4 @@ PKG-INFO
 ./src/build
 ./src/dist
 ./*.egg
+./doc/*.png
