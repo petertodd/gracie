@@ -10,6 +10,7 @@
 
 # Makefile for gracie module
 
+PREFIX ?= /usr
 BIN_DEST = ../bin
 SBIN_DEST = ../sbin
 EGG_DEST = ..
@@ -43,6 +44,10 @@ build-stamp:
 	$(SETUP) bdist_egg
 	cp dist/*.egg ${EGG_DEST}/.
 	touch "$@"
+
+.PHONY: install
+install:
+	$(SETUP) install --prefix=${PREFIX}
 
 .PHONY: test
 test:
