@@ -18,3 +18,13 @@ The OpenID protocol is documented at <URL:http://openid.net/>.
 """
 
 from server import __version__
+
+__date__ = "2007-03-28"
+__author_name__ = "Ben Finney"
+__author_email__ = "ben+python@benfinney.id.au"
+__author__ = "%s <%s>" % (__author_name__, __author_email__)
+__copyright__ = "Copyright © %s %s" % (
+    __date__.split('-')[0], __author_name__
+)
+__license__ = "GPL"
+__url__ = "http://trac.whitetree.org/gracie/"

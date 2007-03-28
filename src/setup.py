@@ -17,13 +17,14 @@ ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
 
-import gracie
+main_module_name = 'gracie'
+main_module = __import__(main_module_name)
 
-description = gracie.__doc__.split('\n\n', 1)
+description = main_module.__doc__.split('\n\n', 1)
 
 setup(
-    name = "gracie",
-    version = gracie.__version__,
+    name = main_module_name,
+    version = main_module.__version__,
     packages = find_packages(
         exclude = ['test'],
     ),
@@ -36,12 +37,12 @@ setup(
     """,
 
     # PyPI metadata
-    author = "Ben Finney",
-    author_email = "ben+python@benfinney.id.au",
+    author = main_module.__author_name__,
+    author_email = main_module.__author_email__,
     description = description[0].strip(),
-    license = "GPL",
+    license = main_module.__license__,
     keywords = "gracie openid identity authentication provider",
-    ### url = "http://example.org/projects/gracie/",
+    url = main_module.__url__,
     long_description = description[1],
     classifiers = [
         "Development Status :: 3 - Alpha",
