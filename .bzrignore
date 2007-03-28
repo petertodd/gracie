@@ -12,4 +12,6 @@ semantic.cache
 ./doc/*.png
 ./src/build
 ./src/dist
+./src/MANIFEST
+./src/MANIFEST.in
 ./*.egg
