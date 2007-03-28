@@ -13,3 +13,5 @@ PKG-INFO
 ./src/dist
 ./*.egg
 ./doc/*.png
+src/MANIFEST
+src/MANIFEST.in
