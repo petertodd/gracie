@@ -20,6 +20,11 @@ import scaffold
 from scaffold import Mock
 from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import stub_server_bind, make_default_opts
+from test_server import (
+    Stub_ConsumerAuthStore,
+    Stub_ConsumerAuthStore_always_auth,
+    Stub_ConsumerAuthStore_never_auth,
+)
 from test_gracied import Stub_GracieServer
 
 from gracie import httpserver
@@ -52,31 +57,6 @@ class Test_net_location(scaffold.TestCase):
         for (host, port), expect_location in locations.items():
             location = httpserver.net_location(host, port)
             self.failUnlessEqual(expect_location, location)
-
-
-class Stub_ConsumerAuthStore(object):
-    """ Stub class for ConsumerAuthStore """
-
-    def __init__(self):
-        self._authorisations = dict()
-
-    def store_authorisation(self, auth_tuple, status):
-        self._authorisations[auth_tuple] = status
-
-    def is_authorised(self, auth_tuple):
-        return self._authorisations.get(auth_tuple, False)
-
-class Stub_ConsumerAuthStore_always_auth(Stub_ConsumerAuthStore):
-    """ ConsumerAuthStore stub that always authorises """
-
-    def is_authorised(self, auth_tuple):
-        return True
-
-class Stub_ConsumerAuthStore_never_auth(Stub_ConsumerAuthStore):
-    """ ConsumerAuthStore stub that never authorises """
-
-    def is_authorised(self, auth_tuple):
-        return False
 
 
 class Stub_HTTPRequestHandler(object):

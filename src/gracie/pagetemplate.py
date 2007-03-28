@@ -258,7 +258,6 @@ def about_site_view_page():
         <a href="%(openid_project_url)s">OpenID</a> provider.</p>
 
         <p>It provides OpenID identities for local accounts,
-        maintains authorisation of site requests,
         and allows authentication against the local PAM system.</p>
     """ % locals()
     return page
@@ -346,58 +345,30 @@ def login_cancelled_page():
 
 def login_submit_failed_page(message, name):
     title = "Login Failed"
+    page = Page(title)
     form_text = _login_form(message, name)
-    page = Page(title)
     page.values.update(dict(form=form_text))
     page.content = """
         $form
     """
     return page
 
-def _authorise_consumer_form(trust_root, want_id_url):
-    form_text = """
-        <form id="authorise_consumer"
-            action="/authorise" method="POST">
-        <p><label for="trust_root">Requesting site:</label>
-            <strong name="trust_root">$trust_root</strong>
-            <input type="hidden"
-                name="trust_root" value="$trust_root" />
-        </p>
-        <p><label for="want_id_url">Requested identity:</label>
-            <strong name="want_id_url">$want_id_url</strong>
-            <input type="hidden"
-                name="identity" value="$want_id_url" />
-        </p>
-        <p>Approve this request?
-        <input type="submit" name="submit_approve"
-            value="Approve this request" />
-        <input type="submit" name="submit_deny"
-            value="Deny this request" />
-        </p>
-        </form>
-    """
-    form_text = Template(form_text).substitute(locals())
-    return form_text
-
-def authorise_consumer_query_page(trust_root, want_id_url):
-    title = "Approve OpenID Request?"
+def wrong_authentication_page(want_username, want_id_url):
+    title = "Authentication Required"
     page = Page(title)
-    form_text = _authorise_consumer_form(trust_root, want_id_url)
-    page.values.update(dict(form=form_text))
+    message_template = Template("""
+        The requested action can only be performed if you log in
+        as the identity <a href="$want_id">$want_id</a>
+    """)
+    message = message_template.substitute(dict(
+        want_username = want_username,
+        want_id = want_id_url,
+    ))
+    form_text = _login_form(message, want_username)
+    page.values.update(dict(
+        form = form_text,
+    ))
     page.content = """
-        <p>The following site has requested OpenID information.
-        Choose one of the options to respond.</p>
         $form
-    """
-    return page
-
-def wrong_authentication_page(want_id_url):
-    title = "Wrong Authorisation"
-    page = Page(title)
-    page.values.update(dict(want_id=want_id_url))
-    page.content = """
-        <p>The requested action can only be performed if you
-        <a href="$login_url">log in</a> as the identity
-        <a href="$want_id">$want_id</a>.</p>
     """
     return page

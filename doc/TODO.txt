@@ -2,11 +2,35 @@
 Development tasks to be done
 ============================
 
-:Updated: bignose 2007-03-15
+:Updated: bignose 2007-03-27
+
+Packaging
+=========
+
+* Package as a Python egg for setuptools
+
+* Put project in the Python Cheeseshop
+
+* Package as a Debian package
+
+Features
+========
 
 * Use TLS for login
+
+* Conform to OpenID 1.2 and/or 2.0
+
 * Use separate process for root-required PAM auth
-* Package as a Python egg for setuptools
-* Put project in the Python Cheeseshop
-* Package as a Debian package
+
+* Configuration via config file, read at startup
+
+* Configurable setting: Present user with confirmation form to
+  authorise or deny OpenID consumer asking for identity
+
+Wheel, reinvention, avoidance of
+================================
+
+* Use templating system for page generation
+
+* Use web framework for HTTP request handling
 

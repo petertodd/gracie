@@ -8,4 +8,8 @@ semantic.cache
 ./build-python[0-9]*
 ./bin
 ./sbin
-gracie.1
+./doc/*.html
+./doc/*.png
+./src/build
+./src/dist
+./*.egg

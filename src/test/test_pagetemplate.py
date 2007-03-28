@@ -289,37 +289,13 @@ class Test_PageTemplates(scaffold.TestCase):
             "...%(name)s..." % locals(), page_data
         )
 
-    def test_authorise_consumer_query_page_contains_url(self):
-        """ Resulting page should contain the specified URLs """
-        openid_url = "http://foo.example.org/id/fred"
-        trust_root = "http://bar.example.com/"
-        want_id = "http://foo.example.org/id/bill"
-        auth_entry = dict(
-            id = 1010,
-            name = "fred",
-            fullname = "Fred Nurk",
-        )
-        page = pagetemplate.authorise_consumer_query_page(
-            trust_root = trust_root,
-            want_id_url=want_id,
-        )
-        page.values.update(dict(
-            openid_url = openid_url,
-            auth_entry = auth_entry,
-        ))
-        page_data = page.serialise()
-        self.failUnlessOutputCheckerMatch(
-            "...%(trust_root)s..." % locals(), page_data
-        )
-        self.failUnlessOutputCheckerMatch(
-            "...%(want_id)s..." % locals(), page_data
-        )
-
     def test_wrong_authentication_page_contains_url(self):
         """ Resulting page should contain the specified URLs """
+        want_username = "bill"
         want_id = "http://foo.example.org/id/bill"
         page = pagetemplate.wrong_authentication_page(
-            want_id_url=want_id,
+            want_username = want_username,
+            want_id_url = want_id,
         )
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(

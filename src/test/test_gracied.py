@@ -9,7 +9,7 @@
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
-""" Unit test for gracied application module
+""" Unit test for gracied daemon module
 """
 
 import sys
@@ -34,6 +34,9 @@ class Stub_GracieServer(object):
 
     def __init__(self, socket_params, opts):
         """ Set up a new instance """
+
+    def serve_forever(self):
+        pass
 
 
 class Test_Gracie(scaffold.TestCase):
@@ -79,6 +82,21 @@ class Test_Gracie(scaffold.TestCase):
                 options = ["--host", "frobnitz", "--port", "9779"],
                 host = "frobnitz",
                 port = 9779,
+            ),
+            'change-root-url': dict(
+                args = dict(),
+                options = ["--root-url", "http://spudnik/spam"],
+                root_url = "http://spudnik/spam",
+            ),
+            'change-address-and-root-url': dict(
+                args = dict(),
+                options = [
+                    "--host", "frobnitz", "--port", "9779",
+                    "--root-url", "http://spudnik/spam",
+                ],
+                host = "frobnitz",
+                port = 9779,
+                root_url = "http://frobnitz/spam",
             ),
         }
 
@@ -183,6 +201,13 @@ class Test_Gracie(scaffold.TestCase):
         instance = self.app_class(argv=argv)
         self.failUnlessEqual(want_port, instance.opts.port)
 
+    def test_opts_root_url(self):
+        """ Gracie instance should accept root_url setting """
+        want_url = "http://spudnik/spam"
+        argv = ["--root-url", want_url]
+        instance = self.app_class(argv=argv)
+        self.failUnlessEqual(want_url, instance.opts.root_url)
+
     def test_instantiates_server(self):
         """ Gracie instance should create a new server instance """
         params = self.valid_apps['simple']
@@ -228,8 +253,21 @@ class Test_Gracie(scaffold.TestCase):
         """ Gracie.run should be callable """
         self.failUnless(callable(self.app_class.run))
 
+    def test_run_calls_become_daemon(self):
+        """ Gracie.run should attempt to become a daemon """
+        params = self.valid_apps['simple']
+        gracied.become_daemon = Mock('become_daemon')
+        expect_stdout = """\
+            Called become_daemon()
+            """
+        instance = params['instance']
+        instance.run()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue()
+        )
+
     def test_run_starts_server(self):
-        """ Gracie.run should start GracieServer """
+        """ Gracie.run should start GracieServer if child fork """
         args = self.valid_apps['simple']['args']
         port = gracied.default_port
         expect_stdout = """\
