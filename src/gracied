@@ -47,7 +47,7 @@ class OptionParser(optparse.OptionParser):
         self.add_option('--data-dir',
             action='store', type='string', default="/var/lib/gracie",
             dest='datadir', metavar='LEVEL',
-            help="Set logging verbosity level to LEVEL"
+            help="Set directory for server runtime data"
                  " (default %default)",
         )
         self.add_option('--host',
