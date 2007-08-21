@@ -31,7 +31,6 @@ _logger = logging.getLogger("gracie.server")
 
 def remove_standard_files():
     """ Close stdin, redirect stdout & stderr to null """
-    return
     class NullDevice:
         def write(self, s):
             pass
