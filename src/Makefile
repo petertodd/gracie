@@ -85,6 +85,7 @@ bdist-stamp: ${BDIST_TARGETS}
 .PHONY: ${BDIST_TARGETS}
 ${BDIST_TARGETS}:
 	$(SETUP_PY24) $@
+	$(SETUP_PY25) $@
 
 .PHONY: sdist
 sdist: sdist-stamp
