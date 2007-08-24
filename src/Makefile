@@ -41,7 +41,8 @@ build-stamp:
 	install -d ${BIN_DEST} ${SBIN_DEST}
 	### install -m 755 -t ${BIN_DEST} ${BIN_FILES}
 	install -m 755 -t ${SBIN_DEST} ${SBIN_FILES}
-	$(SETUP) bdist_egg
+	$(SETUP_PY24) bdist_egg
+	$(SETUP_PY25) bdist_egg
 	cp dist/*.egg ${EGG_DEST}/.
 	touch "$@"
 
@@ -68,7 +69,7 @@ dist: sdist bdist upload
 upload: upload-stamp
 upload-stamp: test register
 	$(SETUP) sdist upload
-	$(SETUP_PY24) ${BDIST_TARGETS} upload
+	$(SETUP) ${BDIST_TARGETS} upload
 	touch $@
 
 .PHONY: register
