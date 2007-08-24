@@ -2,14 +2,15 @@
 Development tasks to be done
 ============================
 
-:Updated: bignose 2007-03-27
+:Updated: bignose 2007-08-22
+
+Documentation
+=============
+
+* Detailed installation and configuration docs
 
 Packaging
 =========
-
-* Package as a Python egg for setuptools
-
-* Put project in the Python Cheeseshop
 
 * Package as a Debian package
 

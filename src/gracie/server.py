@@ -23,7 +23,7 @@ from authservice import PamAuthService as AuthService
 from authorisation import ConsumerAuthStore
 from session import SessionManager
 
-__version__ = "0.2.1"
+__version__ = "0.2.3"
 
 # Get the Python logging instance for this module
 _logger = logging.getLogger("gracie.server")
@@ -31,7 +31,6 @@ _logger = logging.getLogger("gracie.server")
 
 def remove_standard_files():
     """ Close stdin, redirect stdout & stderr to null """
-    return
     class NullDevice:
         def write(self, s):
             pass

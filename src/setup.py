@@ -67,9 +67,10 @@ setup(
     # setuptools metadata
     zip_safe = True,
     test_suite = "test.suite.suite",
-    install_requires = """
-        python-openid >= 1.2
-    """,
+    install_requires = [
+        "python-openid >= 1.2",
+        "Routes >= 1.6.3",
+    ],
 
     # PyPI metadata
     author = main_module.__author_name__,

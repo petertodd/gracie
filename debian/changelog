@@ -1,6 +1,5 @@
-gracie (0.1-1) unstable; urgency=low
+gracie (0.2.3-1) unstable; urgency=low
 
   * Initial release
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Mon, 19 Mar 2007 12:08:28 +1100
-
+ -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 24 Aug 2007 10:47:31 +1000
