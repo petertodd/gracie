@@ -1,3 +1,5 @@
+..  vim: filetype=rst : -*- coding: utf-8; mode: rst -*-
+
 ======
 Gracie
 ======
@@ -39,10 +41,39 @@ configuration::
     auth    required    pam_unix.so
     account required    pam_access.so
 
+Installation
+------------
+
+Install the code library by using Python distutils::
+
+    $ python ./setup.py install
+
+Copy the `bin/gracied` program to a location on the superuser's
+execution path (such as `/usr/bin/`), and ensure it is executable::
+
+    $ chmod a+x ./bin/gracied
+    $ sudo cp ./bin/gracied /usr/bin/.
+
+Create a directory where Gracie can store its runtime data files::
+
+    $ sudo mkdir /var/lib/gracie
+
+Running `gracied`
+-----------------
+
+For invocation options, see the built-in help::
+
+    $ /usr/bin/gracied --help
+
+Note that the `gracied` daemon must run as the superuser to access the
+PAM system::
+
+    $ sudo /usr/bin/gracied --data-dir /var/lib/gracie --port 8000
+
 Copyright and License
 ---------------------
 
-Gracie is copyright © 2007 Ben Finney <ben+python@benfinney.id.au>.
+Gracie is copyright © 2007 Ben Finney <ben+openid@benfinney.id.au>.
 
 This is free software; you may copy, modify and/or distribute this
 work under the terms of the `GNU General Public License`_, version 2
