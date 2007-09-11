@@ -21,7 +21,7 @@ from scaffold import Mock
 from test_httprequest import Stub_GracieServer
 
 module_name = 'gracied'
-module_file_under_test = os.path.join(scaffold.code_dir, module_name)
+module_file_under_test = os.path.join(scaffold.parent_dir, module_name)
 gracied = scaffold.make_module_from_file(
     module_name, module_file_under_test
 )

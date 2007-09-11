@@ -20,11 +20,12 @@ import textwrap
 from minimock import Mock
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
-code_dir = os.path.dirname(test_dir)
+parent_dir = os.path.dirname(test_dir)
 if not test_dir in sys.path:
     sys.path.insert(1, test_dir)
-if not code_dir in sys.path:
-    sys.path.insert(1, code_dir)
+if not parent_dir in sys.path:
+    sys.path.insert(1, parent_dir)
+bin_dir = os.path.join(parent_dir, "bin")
 
 # Disable all but the most critical logging messages
 logging.disable(logging.CRITICAL)
@@ -85,6 +86,7 @@ class TestCase(unittest.TestCase):
         """ Fail the test unless output matches via doctest OutputChecker """
         checker = doctest.OutputChecker()
         want = textwrap.dedent(want)
+        got = textwrap.dedent(got)
         self.failUnlessEqual(True,
             checker.check_output(want, got, doctest.ELLIPSIS),
             "Expected %(want)r, got %(got)r:"
@@ -99,7 +101,7 @@ class Test_Exception(TestCase):
     def __init__(self, *args, **kwargs):
         """ Set up a new instance """
         self.valid_exceptions = NotImplemented
-        unittest.TestCase.__init__(self, *args, **kwargs)
+        super(Test_Exception, self).__init__(*args, **kwargs)
 
     def setUp(self):
         """ Set up test fixtures """
@@ -115,11 +117,16 @@ class Test_Exception(TestCase):
     def test_exception_instance(self):
         """ Exception instance should be created """
         for key, params in self.iterate_params():
-            self.failUnless(params['instance'])
+            instance = params['instance']
+            self.failUnless(instance is not None)
 
     def test_exception_types(self):
         """ Exception instances should match expected types """
         for key, params in self.iterate_params():
             instance = params['instance']
             for match_type in params['types']:
-                self.failUnless(isinstance(instance, match_type))
+                match_type_name = match_type.__name__
+                self.failUnless(isinstance(instance, match_type),
+                    "%(instance)r is not an instance of %(match_type_name)s"
+                        % locals()
+                )
