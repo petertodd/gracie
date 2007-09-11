@@ -61,35 +61,28 @@ class Test_Gracie(scaffold.TestCase):
 
         self.valid_apps = {
             'simple': dict(
-                args = dict(),
             ),
             'argv_loglevel_debug': dict(
-                args = dict(),
                 options = ["--log-level", "debug"],
             ),
             'change-host': dict(
-                args = dict(),
                 options = ["--host", "frobnitz"],
                 host = "frobnitz",
             ),
             'change-port': dict(
-                args = dict(),
                 options = ["--port", "9779"],
                 port = 9779,
             ),
             'change-address': dict(
-                args = dict(),
                 options = ["--host", "frobnitz", "--port", "9779"],
                 host = "frobnitz",
                 port = 9779,
             ),
             'change-root-url': dict(
-                args = dict(),
                 options = ["--root-url", "http://spudnik/spam"],
                 root_url = "http://spudnik/spam",
             ),
             'change-address-and-root-url': dict(
-                args = dict(),
                 options = [
                     "--host", "frobnitz", "--port", "9779",
                     "--root-url", "http://spudnik/spam",
@@ -101,12 +94,15 @@ class Test_Gracie(scaffold.TestCase):
         }
 
         for key, params in self.valid_apps.items():
-            args = params['args']
             argv = []
             options = params.get('options', None)
             if options:
                 argv.extend(options)
-            args['argv'] = argv
+            params['argv'] = argv
+            args = dict(
+                argv=argv
+            )
+            params['args'] = args
             instance = self.app_class(**args)
             params['instance'] = instance
 
@@ -116,6 +112,7 @@ class Test_Gracie(scaffold.TestCase):
 
     def tearDown(self):
         """ Tear down test fixtures """
+        self.stdout_test.truncate(0)
         sys.stdout = self.stdout_prev
         gracied.GracieServer = self.server_class_prev
         gracied.default_port = self.default_port_prev
@@ -126,8 +123,8 @@ class Test_Gracie(scaffold.TestCase):
             instance = params['instance']
             self.failUnless(instance is not None)
 
-    def test_configures_logging(self):
-        """ New Gracie instance should configure logging """
+    def test_init_configures_logging(self):
+        """ Gracie instance should configure logging """
         params = self.valid_apps['simple']
         args = params['args']
         logging_prev = gracied.logging
@@ -141,10 +138,10 @@ class Test_Gracie(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_opts_version(self):
+    def test_opts_version_performs_version_action(self):
         """ Gracie instance should perform version action """
-
         argv = ["--version"]
+        args = dict(argv=argv)
         version_prev = gracied.__version__
         version_test = "Foo.Boo"
         gracied.__version__ = version_test
@@ -152,84 +149,94 @@ class Test_Gracie(scaffold.TestCase):
             ...%(version)s...
             """ % dict(version=version_test)
         self.failUnlessRaises(SystemExit,
-            self.app_class, argv=argv
+            self.app_class, **args
         )
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
         gracied.__version__ = version_prev
 
-    def test_opts_help(self):
+    def test_opts_help_performs_help_action(self):
         """ Gracie instance should perform help action """
         argv = ["--help"]
+        args = dict(argv=argv)
         expect_stdout = """\
             usage: ...
             """
         gracied.GracieServer = self.mock_server_class
         self.failUnlessRaises(SystemExit,
-            self.app_class, argv=argv
+            self.app_class, **args
         )
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_opts_loglevel(self):
+    def test_opts_loglevel_accepts_specified_value(self):
         """ Gracie instance should accept log-level setting """
         want_loglevel = "DEBUG"
         argv = ["--log-level", want_loglevel]
-        instance = self.app_class(argv=argv)
+        args = dict(argv=argv)
+        instance = self.app_class(**args)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
 
-    def test_opts_datadir(self):
+    def test_opts_datadir_accepts_specified_value(self):
         """ Gracie instance should accept data-dir setting """
         want_dir = "/foo/bar"
         argv = ["--data-dir", want_dir]
-        instance = self.app_class(argv=argv)
+        args = dict(argv=argv)
+        instance = self.app_class(**args)
         self.failUnlessEqual(want_dir, instance.opts.datadir)
 
-    def test_opts_host(self):
+    def test_opts_host_accepts_specified_value(self):
         """ Gracie instance should accept host setting """
         want_host = "frobnitz"
         argv = ["--host", want_host]
-        instance = self.app_class(argv=argv)
+        args = dict(argv=argv)
+        instance = self.app_class(**args)
         self.failUnlessEqual(want_host, instance.opts.host)
 
-    def test_opts_port(self):
+    def test_opts_port_accepts_specified_value(self):
         """ Gracie instance should accept port setting """
         want_port = 9779
         argv = ["--port", want_port]
-        instance = self.app_class(argv=argv)
+        args = dict(argv=argv)
+        instance = self.app_class(**args)
         self.failUnlessEqual(want_port, instance.opts.port)
 
-    def test_opts_root_url(self):
+    def test_opts_root_url_accepts_specified_value(self):
         """ Gracie instance should accept root_url setting """
         want_url = "http://spudnik/spam"
         argv = ["--root-url", want_url]
-        instance = self.app_class(argv=argv)
+        args = dict(argv=argv)
+        instance = self.app_class(**args)
         self.failUnlessEqual(want_url, instance.opts.root_url)
 
-    def test_instantiates_server(self):
-        """ Gracie instance should create a new server instance """
+    def test_main_is_callable(self):
+        """ main() should be callable """
+        self.failUnless(callable(self.app_class.main))
+
+    def test_main_instantiates_server(self):
+        """ main() should create a new server instance """
         params = self.valid_apps['simple']
-        args = params['args']
+        instance = params['instance']
         host = gracied.default_host
         port = gracied.default_port
         expect_stdout = """\
             Called GracieServer_class(
                 (%(host)r, %(port)r),
-                <Values ...>)
+                <Values at ...: {...}>)
             ...""" % locals()
         gracied.GracieServer = self.mock_server_class
-        instance = self.app_class(**args)
+        instance.main()
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
         self.failUnless(instance.server is not None)
 
-    def test_sets_specified_socket_params(self):
-        """ Should set the server on the specified host:port """
+    def test_main_sets_specified_socket_params(self):
+        """ main() should set the server on the specified host:port """
         for key, params in self.iterate_params():
-            args = params['args']
+            instance = params['instance']
             default_address = (
                 gracied.default_host, gracied.default_port
             )
@@ -240,121 +247,52 @@ class Test_Gracie(scaffold.TestCase):
             expect_stdout = """\
                 Called GracieServer_class(
                     (%(host)r, %(port)r),
-                    <Values ...>)
+                    <Values at ...: {...}>)
                 ...""" % locals()
             gracied.GracieServer = self.mock_server_class
-            instance = self.app_class(**args)
+            instance.main()
             self.failUnlessOutputCheckerMatch(
                 expect_stdout, self.stdout_test.getvalue()
             )
             self.stdout_test.truncate(0)
 
-    def test_run_is_callable(self):
-        """ Gracie.run should be callable """
-        self.failUnless(callable(self.app_class.run))
-
-    def test_run_calls_become_daemon(self):
-        """ Gracie.run should attempt to become a daemon """
+    def test_main_calls_become_daemon(self):
+        """ main() should attempt to become a daemon """
         params = self.valid_apps['simple']
+        instance = params['instance']
         gracied.become_daemon = Mock('become_daemon')
         expect_stdout = """\
             Called become_daemon()
             """
-        instance = params['instance']
-        instance.run()
+        instance.main()
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
 
-    def test_run_starts_server(self):
-        """ Gracie.run should start GracieServer if child fork """
-        args = self.valid_apps['simple']['args']
+    def test_main_starts_server(self):
+        """ main() should start GracieServer if child fork """
+        params = self.valid_apps['simple']
+        instance = params['instance']
         port = gracied.default_port
         expect_stdout = """\
             ...
             Called GracieServer.serve_forever()
             """
         gracied.GracieServer = self.mock_server_class
-        instance = self.app_class(**args)
-        instance.run()
+        instance.main()
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
 
 
-class Test_main(scaffold.TestCase):
-    """ Test cases for __main__ function """
+class Test_ProgramMain(scaffold.Test_ProgramMain):
+    """ Test cases for module __main__ function """
 
     def setUp(self):
         """ Set up test fixtures """
-        mock_app_class = Mock('Gracie_class')
-        mock_app_class.mock_returns = Mock('Gracie')
-        self.mainfunc = gracied.__main__
-
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
-
-        self.app_class_prev = gracied.Gracie
-        gracied.Gracie = mock_app_class
-
-    def tearDown(self):
-        """ Tear down test fixtures """
-        sys.stdout = self.stdout_prev
-        gracied.Gracie = self.app_class_prev
-
-    def test_is_callable(self):
-        """ __main__ function should be callable """
-        self.failUnless(callable(self.mainfunc))
-
-    def test_instantiates_app_class(self):
-        """ __main__() should instantiate the application class """
-        args = dict()
-        expect_stdout = """\
-            Called Gracie_class(...)
-            ..."""
-        self.mainfunc(**args)
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_defaults_argv_to_sys_argv(self):
-        """ __main__() should default commandline arguments to sys.argv """
-        args = dict()
-        expect_stdout = """\
-            Called Gracie_class(%(argv)s)
-            ...""" % dict(argv=sys.argv)
-        self.mainfunc(**args)
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_passes_argv_to_server(self):
-        """ __main__() should pass commandline arguments to application """
-        argv = ["foo"]
-        args = dict(
-            argv=argv,
-        )
-        expect_stdout = """\
-            Called Gracie_class(%(argv)s)
-            ...""" % dict(argv=argv)
-        self.mainfunc(**args)
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
-
-    def test_invokes_run(self):
-        """ __main__() should invoke app's run() method """
-        argv = ["foo"]
-        args = dict(argv=argv)
-        expect_stdout = """\
-            Called Gracie_class(%(argv)s)
-            Called Gracie.run(...)
-        """ % dict(argv=argv)
-        self.mainfunc(**args)
-        self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
-        )
+        self.program_module = gracied
+        self.application_class = gracied.Gracie
+        super(Test_ProgramMain, self).setUp()
 
 
 suite = scaffold.suite(__name__)

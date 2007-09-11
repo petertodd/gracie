@@ -17,6 +17,7 @@ import logging
 import os
 import sys
 import textwrap
+from StringIO import StringIO
 from minimock import Mock
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -130,3 +131,105 @@ class Test_Exception(TestCase):
                     "%(instance)r is not an instance of %(match_type_name)s"
                         % locals()
                 )
+
+
+class Test_ProgramMain(TestCase):
+    """ Test cases for program __main__ function
+
+    Tests a module-level function named __main__ with behaviour
+    inspired by Guido van Rossum's post "Python main() functions"
+    <URL:http://www.artima.com/weblogs/viewpost.jsp?thread=4829>.
+    
+    It expects:
+      * the program module has a __main__ function, that:
+          * accepts an 'argv' argument, defaulting to sys.argv
+          * instantiates a program application class
+          * calls the application's main() method, passing argv
+          * catches SystemExit and returns the error code
+      * the application behaviour is defined in a class, that:
+          * has an __init__() method accepting an 'argv' argument as
+            the commandline argument list to parse
+          * has a main() method responsible for running the program,
+            and returning on successful program completion
+          * raises SystemExit when an abnormal exit is required
+    """
+
+    def __init__(self, *args, **kwargs):
+        """ Set up a new instance """
+        self.program_module = NotImplemented
+        self.application_class = NotImplemented
+        super(Test_ProgramMain, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        """ Set up test fixtures """
+        self.sys_argv_prev = sys.argv
+        self.stdout_prev = sys.stdout
+        self.stdout_test = StringIO()
+        sys.stdout = self.stdout_test
+        self.app_class_prev = self.application_class
+
+        self.app_class_name = self.application_class.__name__
+        self.mock_app = Mock(self.app_class_name)
+        self.mock_app_class = Mock("%s_class" % self.app_class_name)
+        self.mock_app_class.mock_returns = self.mock_app
+        setattr(self.program_module,
+            self.app_class_name, self.mock_app_class)
+
+    def tearDown(self):
+        """ Tear down test fixtures """
+        sys.argv = self.sys_argv_prev
+        sys.stdout = self.stdout_prev
+        setattr(self.program_module,
+            self.app_class_name, self.app_class_prev)
+
+    def test_main_should_instantiate_app(self):
+        """ __main__() should instantiate application class """
+        app_class_name = self.app_class_name
+        argv = ["foo", "bar"]
+        expect_stdout = """\
+            Called %(app_class_name)s_class(%(argv)r)...
+            """ % locals()
+        self.program_module.__main__(argv)
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue())
+
+    def test_main_should_call_app_main(self):
+        """ __main__() should call the application main method """
+        argv = ["foo", "bar"]
+        app_class_name = self.app_class_name
+        expect_stdout = """\
+            Called %(app_class_name)s_class(%(argv)r)
+            Called %(app_class_name)s.main()
+            """ % locals()
+        self.program_module.__main__(argv)
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue())
+
+    def test_main_no_argv_should_supply_sys_argv(self):
+        """ __main__() with no argv should supply sys.argv to application """
+        sys_argv_test = ["foo", "bar"]
+        sys.argv = sys_argv_test
+        app_class_name = self.app_class_name
+        expect_stdout = """\
+            Called %(app_class_name)s_class(%(sys_argv_test)r)
+            Called %(app_class_name)s.main()
+            """ % locals()
+        self.program_module.__main__()
+        self.failUnlessOutputCheckerMatch(
+            expect_stdout, self.stdout_test.getvalue())
+
+    def test_main_should_return_none_on_success(self):
+        """ __main__() should return None when no SystemExit raised """
+        expect_exit_code = None
+        exit_code = self.program_module.__main__()
+        self.failUnlessEqual(expect_exit_code, exit_code)
+
+    def test_main_should_return_exit_code_on_system_exit(self):
+        """ __main__() should return application SystemExit code """
+        expect_exit_code = object()
+        def raise_system_exit(*args, **kwargs):
+            raise SystemExit(expect_exit_code)
+        self.mock_app.main = raise_system_exit
+        exit_code = self.program_module.__main__()
+        self.failUnlessEqual(expect_exit_code, exit_code)
+
