@@ -13,22 +13,24 @@
 PREFIX ?= /usr/local
 
 BIN_DEST = ${PREFIX}/bin
-SBIN_DEST = ${PREFIX}/sbin
 
-SRC_DIR = src
 DOC_DIR = doc
 BIN_DIR = bin
-SBIN_DIR = sbin
 
-BIN_FILES =
-SBIN_FILES = \
-	${SBIN_DIR}/gracied
+BIN_FILES = ${BIN_DIR}/gracied
 
-PROJECT_DIRS = ${SRC_DIR} ${DOC_DIR}
+SETUP_SCRIPT = ./setup.py
+SETUP_PY24 = python2.4 ${SETUP_SCRIPT}
+SETUP_PY25 = python2.5 ${SETUP_SCRIPT}
+SETUP = $(PYTHON) ${SETUP_SCRIPT}
+
+BDIST_TARGETS = bdist_egg
+SETUP_TARGETS = test register sign install
 
 RM = rm
 PYTHON = python
-EASY_INSTALL = easy_install
+
+VCS_INVENTORY = bzr inventory
 
 
 .PHONY: all
@@ -41,24 +43,64 @@ doc:
 .PHONY: build
 build: build-stamp
 build-stamp:
-	$(MAKE) --directory=${SRC_DIR} "$@"
+	install -d ${BIN_DEST}
+	install -m 755 -t ${BIN_DEST} ${BIN_FILES}
+	$(SETUP_PY24) bdist_egg
+	$(SETUP_PY25) bdist_egg
+	cp dist/*.egg ${EGG_DEST}/.
 	touch "$@"
 
 .PHONY: install
-install: build
-	install -d ${BIN_DEST} ${SBIN_DEST}
-	### install -m 755 -t ${BIN_DEST} ${BIN_FILES}
-	install -m 755 -t ${SBIN_DEST} ${SBIN_FILES}
-	echo Install the Python egg using easy_install.
+install:
+	$(SETUP) install --prefix=${PREFIX}
 
 .PHONY: test
 test:
-	$(MAKE) --directory=${SRC_DIR} "$@"
+	@ $(PYTHON) ./test/suite.py
 
 .PHONY: clean
 clean:
 	- $(RM) *-stamp
-	- $(RM) *.egg
-	for dir in ${PROJECT_DIRS} ; do \
-		$(MAKE) --directory=$${dir} "$@" ; \
-	done
+	- $(RM) -rf ${BIN_DEST}
+	- $(RM) MANIFEST MANIFEST.in
+	- $(RM) -rf *.egg-info/
+	- $(RM) -rf build/ dist/
+
+.PHONY: dist
+dist: sdist bdist upload
+
+.PHONY: upload
+upload: upload-stamp
+upload-stamp: test register
+	$(SETUP) sdist upload
+	$(SETUP) ${BDIST_TARGETS} upload
+	touch $@
+
+.PHONY: register
+register: register-stamp
+register-stamp:
+	$(SETUP) register
+	touch $@
+
+.PHONY: bdist
+bdist: bdist-stamp
+bdist-stamp: ${BDIST_TARGETS}
+	touch $@
+
+.PHONY: ${BDIST_TARGETS}
+${BDIST_TARGETS}:
+	$(SETUP_PY24) $@
+	$(SETUP_PY25) $@
+
+.PHONY: sdist
+sdist: sdist-stamp
+sdist-stamp: MANIFEST.in
+	$(SETUP) sdist
+	touch $@
+
+MANIFEST.in:
+	( \
+		$(VCS_INVENTORY) \
+		| sed -e 's/^/include /' \
+	) > $@
+
