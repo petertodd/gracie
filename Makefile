@@ -73,7 +73,8 @@ dist: sdist bdist upload
 upload: upload-stamp
 upload-stamp: test register
 	$(SETUP) sdist upload
-	$(SETUP) ${BDIST_TARGETS} upload
+	$(SETUP_PY24) ${BDIST_TARGETS} upload
+	$(SETUP_PY25) ${BDIST_TARGETS} upload
 	touch $@
 
 .PHONY: register
