@@ -39,7 +39,7 @@ class gracie_install_scripts(install_scripts):
         self.outfiles = []
         _p = os.path.join
         scripts = {
-            _p(self.build_dir, "gracied"): self.install_dir,
+            _p(self.build_dir, "bin/gracied"): self.install_dir,
         }
         for src_file, dest_dir in scripts.items():
             ofile, copied = self.copy_file(src_file, dest_dir)
