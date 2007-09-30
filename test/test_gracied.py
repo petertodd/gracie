@@ -18,7 +18,6 @@ from StringIO import StringIO
 
 import scaffold
 from scaffold import Mock
-from test_httprequest import Stub_GracieServer
 
 module_name = 'gracied'
 module_file_under_test = os.path.join(scaffold.bin_dir, module_name)
@@ -300,6 +299,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

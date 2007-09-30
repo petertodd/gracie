@@ -17,18 +17,13 @@ from StringIO import StringIO
 
 import scaffold
 from scaffold import Mock
+from test_server import (
+    Stub_ResponseHeader,
+)
 
 from gracie import httpresponse
 
 
-class Stub_Response(object):
-    """ Stub class for Response """
-
-    def __init__(self, header, data=None):
-        """ Set up a new instance """
-        self.header = header
-        self.data = data
-
 class Test_ResponseHeader(scaffold.TestCase):
     """ Test cases for ResponseHeader class """
 
@@ -119,14 +114,6 @@ class Test_ResponseHeader(scaffold.TestCase):
             self.failUnless(expect_field in instance.fields)
 
 
-class Stub_ResponseHeader(object):
-    """ Stub class for response header """
-
-    def __init__(self, code, protocol=None):
-        self.code = code
-        self.protocol = protocol
-        self.fields = dict()
-
 class Stub_RequestHandler(object):
     """ Stub class for BaseHTTPRequestHandler """
 
@@ -214,6 +201,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

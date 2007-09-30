@@ -16,7 +16,6 @@ from string import Template
 import textwrap
 
 import scaffold
-from scaffold import Mock
 
 from gracie import pagetemplate
 

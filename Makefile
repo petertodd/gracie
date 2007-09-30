@@ -29,6 +29,7 @@ SETUP_TARGETS = test register sign install
 
 RM = rm
 PYTHON = python
+PYFLAKES = pyflakes
 
 VCS_INVENTORY = bzr inventory
 
@@ -56,7 +57,11 @@ install:
 
 .PHONY: test
 test:
-	@ $(PYTHON) ./test/suite.py
+	$(SETUP) test --quiet
+
+.PHONY: qa
+qa: test
+	$(PYFLAKES) .
 
 .PHONY: clean
 clean:

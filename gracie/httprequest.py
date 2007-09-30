@@ -11,7 +11,7 @@
 """ HTTP request handling
 """
 
-from BaseHTTPServer import BaseHTTPRequestHandler
+import BaseHTTPServer
 import logging
 import time
 import cgi
@@ -30,7 +30,8 @@ session_cookie_name = "gracie_session"
 _logger = logging.getLogger("gracie.httprequest")
 
 
-class BaseHTTPRequestHandler(BaseHTTPRequestHandler, object):
+class BaseHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
+                             object):
     """ Shim to insert base object type into hierarchy """
 
 

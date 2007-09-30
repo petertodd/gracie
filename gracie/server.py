@@ -18,7 +18,7 @@ from openid.server.server import Server as OpenIDServer
 from openid.store.filestore import FileOpenIDStore as OpenIDStore
 
 from httprequest import HTTPRequestHandler
-from httpserver import HTTPServer, default_host, default_port
+from httpserver import HTTPServer
 from authservice import PamAuthService as AuthService
 from authorisation import ConsumerAuthStore
 from session import SessionManager
