@@ -1,5 +1,6 @@
 .bzr-commit
 semantic.cache
+.coverage
 MANIFEST
 MANIFEST.in
 *.egg-info

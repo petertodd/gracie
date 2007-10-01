@@ -27,9 +27,13 @@ SETUP = $(PYTHON) ${SETUP_SCRIPT}
 BDIST_TARGETS = bdist_egg
 SETUP_TARGETS = test register sign install
 
+TEST_SUITE = ./test/suite.py
+CODE_MODULES = ./gracie/*.py ./bin/gracied
+
 RM = rm
 PYTHON = python
 PYFLAKES = pyflakes
+COVERAGE = python-coverage
 
 VCS_INVENTORY = bzr inventory
 
@@ -59,9 +63,17 @@ install:
 test:
 	$(SETUP) test --quiet
 
-.PHONY: qa
-qa: test
+.PHONY: flakes
+flakes:
 	$(PYFLAKES) .
+
+.PHONY: coverage
+coverage:
+	$(COVERAGE) -x ${TEST_SUITE}
+	$(COVERAGE) -r -m ${CODE_MODULES}
+
+.PHONY: qa
+qa: flakes coverage
 
 .PHONY: clean
 clean:
