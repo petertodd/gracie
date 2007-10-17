@@ -95,7 +95,7 @@ class GracieServer(object):
 
     def _setup_logging(self):
         """ Set up logging for this server """
-        server_version = __version__
+        server_version = self.version
         _logger.info(
             "Starting Gracie server (version %(server_version)s)"
             % locals()
