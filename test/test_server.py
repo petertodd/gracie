@@ -13,15 +13,11 @@
 """
 
 import sys
-import os
 from StringIO import StringIO
-import logging
 import optparse
 
 import scaffold
 from scaffold import Mock
-from test_authservice import Stub_AuthService
-from test_httpresponse import Stub_ResponseHeader, Stub_Response
 
 from gracie import server
 
@@ -182,6 +178,22 @@ class Stub_HTTPServer(object):
 
     server_bind = stub_server_bind
 
+class Stub_ResponseHeader(object):
+    """ Stub class for response header """
+
+    def __init__(self, code, protocol=None):
+        self.code = code
+        self.protocol = protocol
+        self.fields = dict()
+
+class Stub_Response(object):
+    """ Stub class for Response """
+
+    def __init__(self, header, data=None):
+        """ Set up a new instance """
+        self.header = header
+        self.data = data
+
 
 class Stub_ConsumerAuthStore(object):
     """ Stub class for ConsumerAuthStore """
@@ -325,8 +337,6 @@ class Test_GracieServer(scaffold.TestCase):
         server.HTTPServer = Stub_HTTPServer
         self.handler_class_prev = server.HTTPRequestHandler
         server.RequestHandlerClass = Stub_HTTPRequestHandler
-        self.default_port_prev = server.default_port
-        server.default_port = 7654
 
         self.valid_servers = {
             'simple': dict(
@@ -369,7 +379,6 @@ class Test_GracieServer(scaffold.TestCase):
         sys.stdout = self.stdout_prev
         server.HTTPServer = self.httpserver_class_prev
         server.HTTPRequestHandler = self.handler_class_prev
-        server.default_port = self.default_port_prev
         server.OpenIDServer = self.openid_server_prev
         server.OpenIDStore = self.openid_store_prev
         server.ConsumerAuthStore = self.consumer_store_prev
@@ -471,6 +480,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

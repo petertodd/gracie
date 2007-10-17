@@ -12,8 +12,9 @@
 """ Unit test for session module
 """
 
+import sys
+
 import scaffold
-from scaffold import Mock
 
 from gracie import session
 
@@ -109,6 +110,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

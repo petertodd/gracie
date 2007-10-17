@@ -13,18 +13,11 @@
 """
 
 import sys
-import os
 from StringIO import StringIO
 
 import scaffold
 from scaffold import Mock
-from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import stub_server_bind, make_default_opts
-from test_server import (
-    Stub_ConsumerAuthStore,
-    Stub_ConsumerAuthStore_always_auth,
-    Stub_ConsumerAuthStore_never_auth,
-)
 from test_gracied import Stub_GracieServer
 
 from gracie import httpserver
@@ -124,12 +117,13 @@ class Test_HTTPServer(scaffold.TestCase):
     def test_version_as_specified(self):
         """ HTTPServer should have specified version string """
         params = self.valid_servers['simple']
-        version_prev = httpserver.server.__version__
+        server_module = sys.modules['gracie.server']
+        version_prev = server_module.__version__
         version_test = Stub_GracieServer.version
-        httpserver.server.__version__ = version_test
+        server_module.__version__ = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
-        httpserver.server.__version__ = version_prev
+        server_module.__version__ = version_prev
 
     def test_request_handler_class_as_specified(self):
         """ HTTPServer should have specified RequestHandlerClass """
@@ -159,6 +153,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

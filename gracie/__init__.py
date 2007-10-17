@@ -17,9 +17,10 @@ authenticates users with a username/password challenge.
 The OpenID protocol is documented at <URL:http://openid.net/>.
 """
 
-from server import __version__
+import server
 
-__date__ = "2007-03-28"
+__version__ = server.__version__
+__date__ = "2007-10-17"
 __author_name__ = "Ben Finney"
 __author_email__ = "ben+python@benfinney.id.au"
 __author__ = "%s <%s>" % (__author_name__, __author_email__)

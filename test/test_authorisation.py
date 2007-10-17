@@ -12,8 +12,9 @@
 """ Unit test for authorisation module
 """
 
+import sys
+
 import scaffold
-from scaffold import Mock
 
 from gracie import authorisation
 
@@ -74,6 +75,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

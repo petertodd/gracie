@@ -13,9 +13,7 @@
 
 import logging
 import urlparse
-from BaseHTTPServer import HTTPServer as BaseHTTPServer
-
-import server
+from BaseHTTPServer import HTTPServer
 
 # Get the Python logging instance for this module
 _logger = logging.getLogger("gracie.httpserver")
@@ -24,7 +22,7 @@ default_host = "localhost"
 default_port = 8000
 
 
-class BaseHTTPServer(BaseHTTPServer, object):
+class BaseHTTPServer(HTTPServer, object):
     """ Shim to insert base object type into hierarchy """
 
 

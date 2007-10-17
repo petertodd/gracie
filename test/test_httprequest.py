@@ -20,7 +20,6 @@ import urllib
 import scaffold
 from scaffold import Mock
 from test_authservice import Stub_AuthService
-from test_httpresponse import Stub_ResponseHeader, Stub_Response
 from test_server import (
     Stub_OpenIDStore, Stub_OpenIDServer, Stub_OpenIDError,
     Stub_OpenIDRequest, Stub_OpenIDResponse, Stub_OpenIDWebResponse,
@@ -995,6 +994,5 @@ suite = scaffold.suite(__name__)
 __main__ = scaffold.unittest_main
 
 if __name__ == '__main__':
-    import sys
     exitcode = __main__(sys.argv)
     sys.exit(exitcode)

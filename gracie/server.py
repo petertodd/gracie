@@ -18,12 +18,12 @@ from openid.server.server import Server as OpenIDServer
 from openid.store.filestore import FileOpenIDStore as OpenIDStore
 
 from httprequest import HTTPRequestHandler
-from httpserver import HTTPServer, default_host, default_port
+from httpserver import HTTPServer
 from authservice import PamAuthService as AuthService
 from authorisation import ConsumerAuthStore
 from session import SessionManager
 
-__version__ = "0.2.3"
+__version__ = "0.2.6"
 
 # Get the Python logging instance for this module
 _logger = logging.getLogger("gracie.server")
@@ -95,7 +95,7 @@ class GracieServer(object):
 
     def _setup_logging(self):
         """ Set up logging for this server """
-        server_version = __version__
+        server_version = self.version
         _logger.info(
             "Starting Gracie server (version %(server_version)s)"
             % locals()

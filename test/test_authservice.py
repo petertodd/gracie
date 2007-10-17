@@ -13,7 +13,6 @@
 """
 
 import scaffold
-from scaffold import Mock
 
 from gracie import authservice
 

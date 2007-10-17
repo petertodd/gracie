@@ -46,8 +46,8 @@ class OptionParser(optparse.OptionParser):
         )
         self.add_option('--data-dir',
             action='store', type='string', default="/var/lib/gracie",
-            dest='datadir', metavar='LEVEL',
-            help="Set directory for server runtime data"
+            dest='datadir', metavar='DIR',
+            help="Store server runtime data in directory DIR"
                  " (default %default)",
         )
         self.add_option('--host',
@@ -76,9 +76,7 @@ class Gracie(object):
     def __init__(self, argv):
         """ Set up a new instance """
         self._process_commandline(argv)
-        socket_params = self._get_socket_params()
         self._init_logging()
-        self.server = GracieServer(socket_params, self.opts)
 
     def _process_commandline(self, argv):
         """ Process command line to this application """
@@ -100,8 +98,11 @@ class Gracie(object):
         params = (self.opts.host, self.opts.port)
         return params
 
-    def run(self):
+    def main(self):
         """ Run the Gracie application """
+        socket_params = self._get_socket_params()
+        self.server = GracieServer(socket_params, self.opts)
+
         become_daemon()
         self.server.serve_forever()
 
@@ -116,7 +117,7 @@ def __main__(argv=None):
     app = Gracie(argv)
     exitcode = None
     try:
-        app.run()
+        app.main()
     except SystemExit, e:
         exitcode = e.code
 
