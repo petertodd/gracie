@@ -33,7 +33,8 @@ CODE_MODULES = ./gracie/*.py ./bin/gracied
 RM = rm
 PYTHON = python
 PYFLAKES = pyflakes
-COVERAGE = python-coverage
+### COVERAGE = python-coverage
+COVERAGE = ./test/coverage.py
 
 VCS_INVENTORY = bzr inventory
 
