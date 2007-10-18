@@ -19,9 +19,9 @@ BIN_DIR = bin
 
 BIN_FILES = ${BIN_DIR}/gracied
 
+PYVERS = 2.4 2.5
+PYTHON = python
 SETUP_SCRIPT = ./setup.py
-SETUP_PY24 = python2.4 ${SETUP_SCRIPT}
-SETUP_PY25 = python2.5 ${SETUP_SCRIPT}
 SETUP = $(PYTHON) ${SETUP_SCRIPT}
 
 BDIST_TARGETS = bdist_egg
@@ -31,9 +31,9 @@ TEST_SUITE = ./test/suite.py
 CODE_MODULES = ./gracie/*.py ./bin/gracied
 
 RM = rm
-PYTHON = python
 PYFLAKES = pyflakes
-COVERAGE = python-coverage
+### COVERAGE = python-coverage
+COVERAGE = ./test/coverage.py
 
 VCS_INVENTORY = bzr inventory
 
@@ -43,21 +43,25 @@ all: build
 
 .PHONY: doc
 doc:
-	$(MAKE) --directory=${DOC_DIR} "$@"
+	$(MAKE) --directory=${DOC_DIR} $@
 
 .PHONY: build
 build: build-stamp
-build-stamp:
-	install -d ${BIN_DEST}
-	install -m 755 -t ${BIN_DEST} ${BIN_FILES}
-	$(SETUP_PY24) bdist_egg
-	$(SETUP_PY25) bdist_egg
-	cp dist/*.egg ${EGG_DEST}/.
-	touch "$@"
+build-stamp: ${PYVERS:%=build-python%-stamp}
+	touch $@
+
+build-python%-stamp:
+	python$* ${SETUP_SCRIPT} build
+	touch $@
 
 .PHONY: install
-install:
-	$(SETUP) install --prefix=${PREFIX}
+install: install-stamp
+install-stamp: ${PYVERS:%=install-python%-stamp}
+	touch $@
+
+install-python%-stamp:
+	python$* ${SETUP_SCRIPT} install --prefix=${PREFIX}
+	touch $@
 
 .PHONY: test
 test:
@@ -87,12 +91,7 @@ clean:
 dist: sdist bdist upload
 
 .PHONY: upload
-upload: upload-stamp
-upload-stamp: test register
-	$(SETUP) sdist upload
-	$(SETUP_PY24) ${BDIST_TARGETS} upload
-	$(SETUP_PY25) ${BDIST_TARGETS} upload
-	touch $@
+upload: sdist-upload bdist-upload
 
 .PHONY: register
 register: register-stamp
@@ -101,20 +100,28 @@ register-stamp:
 	touch $@
 
 .PHONY: bdist
-bdist: bdist-stamp
-bdist-stamp: ${BDIST_TARGETS}
+bdist: test ${PYVERS:%=bdist-python%-stamp}
+
+bdist-python%-stamp:
+	python$* ${SETUP_SCRIPT} ${BDIST_TARGETS}
 	touch $@
 
-.PHONY: ${BDIST_TARGETS}
-${BDIST_TARGETS}:
-	$(SETUP_PY24) $@
-	$(SETUP_PY25) $@
+.PHONY: bdist-upload
+bdist-upload: test register ${PYVERS:%=bdist-python%-upload-stamp}
+
+bdist-python%-upload-stamp:
+	python$* ${SETUP_SCRIPT} ${BDIST_TARGETS} upload
+	touch $@
 
 .PHONY: sdist
 sdist: sdist-stamp
 sdist-stamp: MANIFEST.in
 	$(SETUP) sdist
 	touch $@
+
+.PHONY: sdist-upload
+sdist-upload: MANIFEST.in test register
+	$(SETUP) sdist upload
 
 MANIFEST.in:
 	( \
