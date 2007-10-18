@@ -15,11 +15,7 @@
 import ez_setup
 ez_setup.use_setuptools()
 
-import os
-import stat
-
 from setuptools import setup, find_packages
-from setuptools.command.install_scripts import install_scripts
 
 main_module_name = 'gracie'
 main_module = __import__(main_module_name)
