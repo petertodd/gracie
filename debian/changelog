@@ -1,3 +1,9 @@
+gracie (0.2.6-1) unstable; urgency=low
+
+  * New upstream version
+
+ -- Ben Finney <ben+debian@benfinney.id.au>  Wed, 17 Oct 2007 16:02:01 +1000
+
 gracie (0.2.3-1) unstable; urgency=low
 
   * Initial release
