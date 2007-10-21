@@ -1,6 +1,6 @@
 #!/bin/sh -e
 #
-# gracie        Startup script for the Gracie OpenID server.
+# gracie        Startup script for the Gracie OpenID provider.
 #
 # Version:      $Id$
 #
@@ -12,21 +12,20 @@
 # Should-Stop:       $local_fs
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Start the stand-alone Gracie OpenID server
-# Description:       Start the stand-alone Gracie OpenID server
+# Short-Description: Start the stand-alone Gracie OpenID provider
+# Description:       Start the stand-alone Gracie OpenID provider
 ### END INIT INFO
 
 
-DESC='Gracie OpenID server'
+DESC='Gracie OpenID provider'
 
-BINFILE=gracie
+BINFILE=gracied
 EXECUTABLE=/usr/bin/$BINFILE
-### to be taken from /etc/roundup/roundup-server.ini:
 PIDFILE=/var/run/gracie/server.pid
-OPTIONS=--data-dir /var/lib/gracie
 
-if test -f /etc/default/gracie; then
-    . /etc/default/gracie
+DEFAULTS_FILE=/etc/default/gracie
+if test -f $DEFAULTS_FILE; then
+    . $DEFAULTS_FILE
 fi
 
 test -x $EXECUTABLE || exit 0
@@ -37,7 +36,7 @@ start_stop() {
         printf "Starting $DESC:"
         start-stop-daemon --start --oknodo --quiet \
             --pidfile $PIDFILE \
-            --exec $EXECUTABLE $OPTIONS
+            --exec $EXECUTABLE -- $DAEMON_OPTS
         printf " $BINFILE"
         printf ".\n"
         ;;
