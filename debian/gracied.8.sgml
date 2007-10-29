@@ -8,7 +8,6 @@
 manpage.1: manpage.sgml
 	docbook-to-man $< > $@
 
-    
 	The docbook-to-man binary is found in the docbook-to-man package.
 	Please remember that if you create the nroff version in one of the
 	debian/rules file targets (such as build), you will need to include
@@ -20,14 +19,14 @@ manpage.1: manpage.sgml
   <!ENTITY dhfirstname "<firstname>Ben</firstname>">
   <!ENTITY dhsurname   "<surname>Finney</surname>">
   <!-- Please adjust the date whenever revising the manpage. -->
-  <!ENTITY dhdate      "<date>2007-03-20</date>">
+  <!ENTITY dhdate      "<date>2007-010-28</date>">
   <!-- SECTION should be 1-8, maybe w/ subsection other parameters are
        allowed: see man(7), man(1). -->
   <!ENTITY dhsection   "<manvolnum>8</manvolnum>">
   <!ENTITY dhemail     "<email>ben+debian@benfinney.id.au</email>">
   <!ENTITY dhusername  "Ben Finney">
-  <!ENTITY dhucpackage "<refentrytitle>GRACIE</refentrytitle>">
-  <!ENTITY dhpackage   "gracie">
+  <!ENTITY dhuccommand "<refentrytitle>GRACIED</refentrytitle>">
+  <!ENTITY command     "gracied">
 
   <!ENTITY debian      "<productname>Debian</productname>">
   <!ENTITY gnu         "<acronym>GNU</acronym>">
@@ -50,18 +49,18 @@ manpage.1: manpage.sgml
     &dhdate;
   </refentryinfo>
   <refmeta>
-    &dhucpackage;
+    &dhuccommand;
 
     &dhsection;
   </refmeta>
   <refnamediv>
-    <refname>&dhpackage;</refname>
+    <refname>&command;</refname>
 
     <refpurpose>local-authentication OpenID server</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <cmdsynopsis>
-      <command>&dhpackage;</command>
+      <command>&command;</command>
 
       <arg><option>--data-dir <replaceable>DIR</replaceable></option></arg>
 
@@ -75,9 +74,9 @@ manpage.1: manpage.sgml
     <title>DESCRIPTION</title>
 
     <para>This manual page documents briefly the
-      <command>&dhpackage;</command> command.</para>
+      <command>&command;</command> command.</para>
 
-    <para><command>&dhpackage;</command> is the Gracie server program.
+    <para><command>&command;</command> is the Gracie server program.
       It runs an OpenID provider service for local system users, and
       allows those users to authenticate against the local PAM system
       via a web interface.</para>

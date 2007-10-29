@@ -20,14 +20,21 @@ DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog \
 	| grep '^Version:' | cut -d ' ' -f 2 \
 	| cut -d '-' -f 1)
 
+MANPAGES = $(shell cat $(CURDIR)/debian/${PACKAGE_NAME}.manpages)
+
 .PHONY: build
 build: build-stamp
 
-build-stamp: ${PYVERS:%=build-python%}
+build-stamp: ${PYVERS:%=build-python%} ${MANPAGES}
 	dh_testdir
 	$(MAKE)
-	docbook-to-man debian/gracie.sgml > gracie.1
 	touch $@
+
+%.1: %.1.sgml
+	docbook-to-man $< > $@
+
+%.8: %.8.sgml
+	docbook-to-man $< > $@
 
 build-python%:
 	dh_testdir
@@ -39,7 +46,8 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp build-python*
-	-$(MAKE) clean
+	rm -f ${MANPAGES}
+	$(MAKE) clean
 	dh_clean
 
 .PHONY: install
@@ -66,7 +74,7 @@ binary-indep: build install
 binary-arch: build install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs 
+	dh_installchangelogs
 	dh_installdocs
 	dh_installexamples
 	dh_installman
@@ -83,5 +91,5 @@ binary-arch: build install
 
 .PHONY: binary
 binary: binary-indep binary-arch
-	dh_clean -k 
+	dh_clean -k
 
