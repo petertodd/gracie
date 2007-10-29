@@ -57,7 +57,6 @@ COVERAGE_FILE environment variable to save it somewhere else."""
 __version__ = "2.78.20070930"    # see detailed history at the end of this file.
 
 import compiler
-import compiler.visitor
 import glob
 import os
 import re
