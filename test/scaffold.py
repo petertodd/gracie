@@ -137,7 +137,7 @@ class Test_Exception(TestCase):
         """ Exception instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(instance, None)
 
     def test_exception_types(self):
         """ Exception instances should match expected types """

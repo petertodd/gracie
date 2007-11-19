@@ -388,7 +388,7 @@ class Test_GracieServer(scaffold.TestCase):
         """ New GracieServer instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_version_as_specified(self):
         """ GracieServer should have specified version string """
@@ -454,21 +454,21 @@ class Test_GracieServer(scaffold.TestCase):
         params = self.valid_servers['simple']
         instance = params['instance']
         auth_service = instance.auth_service
-        self.failUnless(auth_service is not None)
+        self.failIfIs(None, auth_service)
 
     def test_server_has_session_manager(self):
         """ GracieServer should have a sess_manager attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         sess_manager = instance.sess_manager
-        self.failUnless(sess_manager is not None)
+        self.failIfIs(None, sess_manager)
 
     def test_server_has_authorisation_store(self):
         """ GracieServer should have a consumer_auth_store attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         consumer_auth_store = instance.consumer_auth_store
-        self.failUnless(consumer_auth_store is not None)
+        self.failIfIs(None, consumer_auth_store)
 
     def test_serve_forever_is_callable(self):
         """ GracieServer.serve_forever should be callable """

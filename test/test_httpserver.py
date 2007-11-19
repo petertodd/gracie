@@ -112,7 +112,7 @@ class Test_HTTPServer(scaffold.TestCase):
         """ New HTTPServer instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_version_as_specified(self):
         """ HTTPServer should have specified version string """

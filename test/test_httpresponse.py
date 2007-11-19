@@ -71,7 +71,7 @@ class Test_ResponseHeader(scaffold.TestCase):
         """ New ResponseHeader instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_code_as_specified(self):
         """ ResponseHeader should have specified status code """
@@ -159,7 +159,7 @@ class Test_Response(scaffold.TestCase):
         """ New Response instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_header_as_specified(self):
         """ Response should have specified header """

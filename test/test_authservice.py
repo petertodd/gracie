@@ -56,7 +56,7 @@ class Test_BaseAuthService(scaffold.TestCase):
     def test_instantiate(self):
         """ New BaseAuthService instance should be created """
         instance = self.service_class()
-        self.failUnless(instance is not None)
+        self.failIfIs(instance, None)
 
     def test_name_is_not_implemented(self):
         """ BaseAuthService should have name NotImplemented """
@@ -158,7 +158,7 @@ class Test_PosixAuthService(scaffold.TestCase):
     def test_instantiate(self):
         """ New PosixAuthService instance should be created """
         instance = self.service_class()
-        self.failUnless(instance is not None)
+        self.failIfIs(instance, None)
 
     def test_get_entry_name_unknown_raises_keyerror(self):
         """ get_entry for a bogus name should raise KeyError """
@@ -311,7 +311,7 @@ class Test_PamAuthService(scaffold.TestCase):
     def test_instantiate(self):
         """ New PosixAuthService instance should be created """
         instance = self.service_class()
-        self.failUnless(instance is not None)
+        self.failIfIs(instance, None)
 
     def test_authenticate_unknown_user_raises_autherror(self):
         """ Auth for unknown user should raise AuthenticationError """

@@ -31,7 +31,7 @@ class Test_SessionManager(scaffold.TestCase):
         """ Creating a session should return session ID """
         instance = self.manager_class()
         session_id = instance.create_session()
-        self.failUnless(session_id is not None)
+        self.failIfIs(None, session_id)
 
     def test_get_session_unknown_id_raises_keyerror(self):
         """ Getting an unknown session ID should raise KeyError """
