@@ -83,17 +83,35 @@ def make_params_iterator(default_params_dict):
 class TestCase(unittest.TestCase):
     """ Test case behaviour """
 
-    def failUnlessOutputCheckerMatch(self, want, got):
+    def failUnlessIs(self, first, second, msg=None):
+        """ Fail if the two objects are not identical as determined by
+            the 'is' operator.
+        """
+        if not first is second:
+            if msg is None:
+                msg = "%(first)r is not %(second)r" % locals()
+            raise self.failureException(msg)
+
+    def failIfIs(self, first, second, msg=None):
+        """ Fail if the two objects are identical as determined by the
+            'is' operator.
+        """
+        if first is second:
+            if msg is None:
+                msg = "%(first)r is %(second)r" % locals()
+            raise self.failureException(msg)
+
+    def failUnlessOutputCheckerMatch(self, want, got, msg=None):
         """ Fail the test unless output matches via doctest OutputChecker """
         checker = doctest.OutputChecker()
         want = textwrap.dedent(want)
         got = textwrap.dedent(got)
-        self.failUnlessEqual(True,
-            checker.check_output(want, got, doctest.ELLIPSIS),
-            "Expected %(want)r, got %(got)r:"
-            "\n--- want: ---\n%(want)s"
-            "\n--- got: ---\n%(got)s" % locals()
-        )
+        if not checker.check_output(want, got, doctest.ELLIPSIS):
+            if msg is None:
+                msg = ("Expected %(want)r, got %(got)r:"
+                       "\n--- want: ---\n%(want)s"
+                       "\n--- got: ---\n%(got)s") % locals()
+            raise self.failureException(msg)
 
 
 class Test_Exception(TestCase):
