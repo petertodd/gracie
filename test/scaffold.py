@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # scaffold.py
-# Part of Gracie, an OpenID provider
 #
 # Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
@@ -19,6 +18,10 @@ import sys
 import textwrap
 from StringIO import StringIO
 from minimock import Mock
+from minimock import (
+    mock,
+    restore as mock_restore,
+)
 
 test_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(test_dir)
@@ -30,6 +33,10 @@ bin_dir = os.path.join(parent_dir, "bin")
 
 # Disable all but the most critical logging messages
 logging.disable(logging.CRITICAL)
+
+
+class Container(object):
+    """ Simple container class for attributes """
 
 
 def suite(module_name):
@@ -83,26 +90,65 @@ def make_params_iterator(default_params_dict):
 class TestCase(unittest.TestCase):
     """ Test case behaviour """
 
-    def failUnlessIs(self, first, second, msg=None):
-        """ Fail if the two objects are not identical as determined by
-            the 'is' operator.
-        """
-        if not first is second:
-            if msg is None:
-                msg = "%(first)r is not %(second)r" % locals()
+    def failUnlessRaises(self, exc_class, func, *args, **kwargs):
+        """ Fail if the function call does not raise the specified exception
+        class """
+        try:
+            super(TestCase, self).failUnlessRaises(exc_class, func, *args, **kwargs)
+        except self.failureException:
+            exc_class_name = exc_class.__name__
+            msg = ("Exception %(exc_class_name)s not raised"
+                " for function call: args=%(args)r kwargs=%(kwargs)r"
+            ) % locals()
             raise self.failureException(msg)
+
 
     def failIfIs(self, first, second, msg=None):
         """ Fail if the two objects are identical as determined by the
-            'is' operator.
+            'is' operator
         """
         if first is second:
             if msg is None:
                 msg = "%(first)r is %(second)r" % locals()
             raise self.failureException(msg)
 
+    def failUnlessIs(self, first, second, msg=None):
+        """ Fail unless the two objects are identical as determined by
+            the 'is' operator
+        """
+        if first is not second:
+            if msg is None:
+                msg = "%(first)r is not %(second)r" % locals()
+            raise self.failureException(msg)
+
+    assertIs = failUnlessIs
+    assertNotIs = failIfIs
+
+    def failIfIn(self, first, second, msg=None):
+        """ Fail if the second object is contained by the first,
+        as determined by the 'in' operator
+        """
+        if second in first:
+            if msg is None:
+                msg = "%(second)r is in %(first)r" % locals()
+            raise self.failureException(msg)
+
+    def failUnlessIn(self, first, second, msg=None):
+        """ Fail unless the second object is contained by the first,
+        as determined by the 'in' operator
+        """
+        if second not in first:
+            if msg is None:
+                msg = "%(second)r is not in %(first)r" % locals()
+            raise self.failureException(msg)
+
+    assertIn = failUnlessIn
+    assertNotIn = failIfIn
+
     def failUnlessOutputCheckerMatch(self, want, got, msg=None):
-        """ Fail the test unless output matches via doctest OutputChecker """
+        """ Fail unless 'want' matches 'got' as determined by doctest
+            OutputChecker
+        """
         checker = doctest.OutputChecker()
         want = textwrap.dedent(want)
         got = textwrap.dedent(got)
@@ -112,6 +158,23 @@ class TestCase(unittest.TestCase):
                        "\n--- want: ---\n%(want)s"
                        "\n--- got: ---\n%(got)s") % locals()
             raise self.failureException(msg)
+
+    assertOutputCheckerMatch = failUnlessOutputCheckerMatch
+
+    def failIfIsInstance(self, obj, classes):
+        """ Fail if the object 'obj' is an instance of any of 'classes' """
+        if isinstance(obj, classes):
+            msg = "%(obj)r is an instance of one of %(classes)r" % locals()
+            raise self.failureException(msg)
+
+    def failUnlessIsInstance(self, obj, classes):
+        """ Fail if the object 'obj' is not an instance of any of 'classes' """
+        if not isinstance(obj, classes):
+            msg = "%(obj)r is not an instance of any of %(classes)r" % locals()
+            raise self.failureException(msg)
+
+    assertIsInstance = failUnlessIsInstance
+    assertNotIsInstance = failIfIsInstance
 
 
 class Test_Exception(TestCase):
@@ -126,8 +189,9 @@ class Test_Exception(TestCase):
         """ Set up test fixtures """
         for exc_type, params in self.valid_exceptions.items():
             args = (None,) * params['min_args']
+            params['args'] = args
             instance = exc_type(*args)
-            self.valid_exceptions[exc_type]['instance'] = instance
+            params['instance'] = instance
 
         self.iterate_params = make_params_iterator(
             default_params_dict = self.valid_exceptions
@@ -137,7 +201,7 @@ class Test_Exception(TestCase):
         """ Exception instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failIfIs(instance, None)
+            self.failIfIs(None, instance)
 
     def test_exception_types(self):
         """ Exception instances should match expected types """
@@ -157,7 +221,7 @@ class Test_ProgramMain(TestCase):
     Tests a module-level function named __main__ with behaviour
     inspired by Guido van Rossum's post "Python main() functions"
     <URL:http://www.artima.com/weblogs/viewpost.jsp?thread=4829>.
-    
+
     It expects:
       * the program module has a __main__ function, that:
           * accepts an 'argv' argument, defaulting to sys.argv
@@ -180,61 +244,55 @@ class Test_ProgramMain(TestCase):
 
     def setUp(self):
         """ Set up test fixtures """
-        self.sys_argv_prev = sys.argv
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
-        self.app_class_prev = self.application_class
+        self.mock_outfile = StringIO()
 
         self.app_class_name = self.application_class.__name__
-        self.mock_app = Mock(self.app_class_name)
-        self.mock_app_class = Mock("%s_class" % self.app_class_name)
+        self.mock_app = Mock("test_app", outfile=self.mock_outfile)
+        self.mock_app_class = Mock(self.app_class_name,
+            outfile=self.mock_outfile)
         self.mock_app_class.mock_returns = self.mock_app
-        setattr(self.program_module,
-            self.app_class_name, self.mock_app_class)
+        mock(self.app_class_name, mock_obj=self.mock_app_class,
+            nsdicts=[self.program_module.__dict__])
 
     def tearDown(self):
         """ Tear down test fixtures """
-        sys.argv = self.sys_argv_prev
-        sys.stdout = self.stdout_prev
-        setattr(self.program_module,
-            self.app_class_name, self.app_class_prev)
+        mock_restore()
 
     def test_main_should_instantiate_app(self):
         """ __main__() should instantiate application class """
         app_class_name = self.app_class_name
         argv = ["foo", "bar"]
-        expect_stdout = """\
-            Called %(app_class_name)s_class(%(argv)r)...
+        expect_mock_output = """\
+            Called %(app_class_name)s(%(argv)r)...
             """ % locals()
         self.program_module.__main__(argv)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue())
+            expect_mock_output, self.mock_outfile.getvalue())
 
     def test_main_should_call_app_main(self):
         """ __main__() should call the application main method """
         argv = ["foo", "bar"]
         app_class_name = self.app_class_name
-        expect_stdout = """\
-            Called %(app_class_name)s_class(%(argv)r)
-            Called %(app_class_name)s.main()
+        expect_mock_output = """\
+            Called %(app_class_name)s(%(argv)r)
+            Called test_app.main()
             """ % locals()
         self.program_module.__main__(argv)
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue())
+            expect_mock_output, self.mock_outfile.getvalue())
 
     def test_main_no_argv_should_supply_sys_argv(self):
         """ __main__() with no argv should supply sys.argv to application """
         sys_argv_test = ["foo", "bar"]
-        sys.argv = sys_argv_test
+        mock("sys.argv", mock_obj=sys_argv_test)
         app_class_name = self.app_class_name
-        expect_stdout = """\
-            Called %(app_class_name)s_class(%(sys_argv_test)r)
-            Called %(app_class_name)s.main()
+        expect_mock_output = """\
+            Called %(app_class_name)s(%(sys_argv_test)r)
+            Called test_app.main()
             """ % locals()
         self.program_module.__main__()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue())
+            expect_mock_output, self.mock_outfile.getvalue())
 
     def test_main_should_return_none_on_success(self):
         """ __main__() should return None when no SystemExit raised """
@@ -245,9 +303,7 @@ class Test_ProgramMain(TestCase):
     def test_main_should_return_exit_code_on_system_exit(self):
         """ __main__() should return application SystemExit code """
         expect_exit_code = object()
-        def raise_system_exit(*args, **kwargs):
-            raise SystemExit(expect_exit_code)
-        self.mock_app.main = raise_system_exit
+        self.mock_app.main.mock_raises = SystemExit(expect_exit_code)
         exit_code = self.program_module.__main__()
         self.failUnlessEqual(expect_exit_code, exit_code)
 
