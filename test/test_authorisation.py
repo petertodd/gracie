@@ -29,7 +29,7 @@ class Test_ConsumerAuthStore(scaffold.TestCase):
     def test_instantiate(self):
         """ New ConsumerAuthStore instance should be created """
         instance = self.store_class()
-        self.failUnless(instance is not None)
+        self.failIfIs(instance, None)
 
     def test_is_authorised_unknown_returns_false(self):
         """ is_authorised for unknown args should return False """

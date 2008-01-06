@@ -553,7 +553,7 @@ class Test_HTTPRequestHandler(scaffold.TestCase):
         """ New HTTPRequestHandler instance should be created """
         for key, params in self.iterate_params():
             instance = self.handler_class(**params['args'])
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_server_as_specified(self):
         """ HTTPRequestHandler should have specified server attribute """

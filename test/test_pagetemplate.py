@@ -118,7 +118,7 @@ class Test_Page(scaffold.TestCase,
         """ New Page instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_title_as_specified(self):
         """ Page title should be as specified """

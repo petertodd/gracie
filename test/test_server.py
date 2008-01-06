@@ -13,6 +13,7 @@
 """
 
 import sys
+import os
 from StringIO import StringIO
 import optparse
 
@@ -27,107 +28,76 @@ class Test_remove_standard_files(scaffold.TestCase):
 
     def setUp(self):
         """ Set up test fixtures """
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
+        self.mock_outfile = StringIO()
 
-        self.server_stdin_prev = server.sys.stdin
-        server.sys.stdin = Mock('sys.stdin')
-        self.server_stdout_prev = server.sys.stdout
-        server.sys.stdout = Mock('sys.stdout')
-        self.server_stderr_prev = server.sys.stderr
-        server.sys.stderr = Mock('sys.stderr')
+        scaffold.mock("sys.stdin",
+            outfile=self.mock_outfile)
+        scaffold.mock("sys.stdout",
+            outfile=self.mock_outfile)
+        scaffold.mock("sys.stderr",
+            outfile=self.mock_outfile)
 
     def tearDown(self):
         """ Tear down test fixtures """
-        sys.stdout = self.stdout_prev
-        server.sys.stdin = self.server_stdin_prev
-        server.sys.stdout = self.server_stdout_prev
-        server.sys.stderr = self.server_stderr_prev
+        scaffold.mock_restore()
 
 
-class Mock_fork(object):
-    """ Mock callable for os.fork() """
-
-    def __init__(self, name, pids):
-        self.mock_name = name
-        self._return_pids = iter(pids)
-
-    def _make_message(self, args, kwargs):
-        parts = [repr(a) for a in args]
-        parts.extend(
-            '%s=%r' % (items) for items in sorted(kwargs.items()))
-        msg = 'Called %s(%s)' % (self.mock_name, ', '.join(parts))
-        if len(msg) > 80:
-            msg = 'Called %s(\n    %s)' % (
-                self.mock_name, ',\n    '.join(parts))
-        return msg
-
-    def __call__(self, *args, **kwargs):
-        print self._make_message(args, kwargs)
-        return self._return_pids.next()
-
 class Test_become_daemon(scaffold.TestCase):
     """ Test cases for become_daemon function """
 
     def setUp(self):
         """ Set up test fixtures """
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
+        self.mock_outfile = StringIO()
 
-        self.fork_prev = server.os.fork
         test_pids = [0, 0]
-        server.os.fork = Mock_fork('os.fork', test_pids)
-        self.setsid_prev = server.os.setsid
-        server.os.setsid = Mock('os.setsid')
-        self._exit_prev = server.os._exit
-        server.os._exit = Mock('os._exit')
-        self.exit_prev = server.sys.exit
-        server.sys.exit = Mock('sys.exit')
-        self.remove_files_prev = server.remove_standard_files
-        server.remove_standard_files = Mock('remove_standard_files')
+        scaffold.mock("os.fork", returns_iter=test_pids,
+            outfile=self.mock_outfile)
+        scaffold.mock("os.setsid",
+            outfile=self.mock_outfile)
+        scaffold.mock("os._exit",
+            outfile=self.mock_outfile)
+        scaffold.mock("sys.exit",
+            outfile=self.mock_outfile)
+        scaffold.mock("server.remove_standard_files",
+            outfile=self.mock_outfile)
 
     def tearDown(self):
         """ Tear down test fixtures """
-        sys.stdout = self.stdout_prev
-        server.os.fork = self.fork_prev
-        server.os.setsid = self.setsid_prev
-        server.os._exit = self._exit_prev
-        server.sys.exit = self.exit_prev
-        server.remove_standard_files = self.remove_files_prev
+        scaffold.mock_restore()
 
     def test_parent_exits(self):
         """ become_daemon parent process should exit """
         parent_pid = 23
-        server.os.fork = Mock_fork('os.fork', [parent_pid])
-        expect_stdout = """\
+        scaffold.mock("os.fork", returns_iter=[parent_pid],
+            outfile=self.mock_outfile)
+        expect_mock_output = """\
             Called os.fork()
             Called os._exit(0)
             ...
             """
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_child_starts_new_process_group(self):
         """ become_daemon child should start new process group """
-        expect_stdout = """\
+        expect_mock_output = """\
             Called os.fork()
             Called os.setsid()
             ...
             """
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_child_forks_next_parent_exits(self):
         """ become_daemon should fork, then exit if parent """
         test_pids = [0, 42]
-        server.os.fork = Mock_fork('os.fork', test_pids)
-        expect_stdout = """\
+        scaffold.mock("os.fork", returns_iter=test_pids,
+            outfile=self.mock_outfile)
+        expect_mock_output = """\
             Called os.fork()
             Called os.setsid()
             Called os.fork()
@@ -136,31 +106,31 @@ class Test_become_daemon(scaffold.TestCase):
             """
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_child_forks_next_child_continues(self):
         """ become_daemon should fork, then continue if child """
-        expect_stdout = """\
+        expect_mock_output = """\
             Called os.fork()
             Called os.setsid()
             Called os.fork()
-            Called remove_standard_files()
+            Called server.remove_standard_files()
             """
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_removes_standard_files(self):
         """ become_daemon should request removal of standard files """
-        expect_stdout = """\
+        expect_mock_output = """\
             ...
-            Called remove_standard_files()
+            Called server.remove_standard_files()
             """
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
 
@@ -317,26 +287,29 @@ class Test_GracieServer(scaffold.TestCase):
 
     def setUp(self):
         """ Set up test fixtures """
+        self.mock_outfile = StringIO()
 
         self.server_class = server.GracieServer
 
-        self.stdout_prev = sys.stdout
-        self.stdout_test = StringIO()
-        sys.stdout = self.stdout_test
+        scaffold.mock("server.OpenIDServer",
+            mock_obj=Stub_OpenIDServer,
+            outfile=self.mock_outfile)
+        scaffold.mock("server.OpenIDStore",
+            mock_obj=Stub_OpenIDStore,
+            outfile=self.mock_outfile)
+        scaffold.mock("server.ConsumerAuthStore",
+            mock_obj=Stub_ConsumerAuthStore,
+            outfile=self.mock_outfile)
+        scaffold.mock("server.SessionManager",
+            mock_obj=Stub_SessionManager,
+            outfile=self.mock_outfile)
 
-        self.openid_server_prev = server.OpenIDServer
-        self.openid_store_prev = server.OpenIDStore
-        self.consumer_store_prev = server.ConsumerAuthStore
-        self.session_manager_prev = server.SessionManager
-        server.OpenIDServer = Stub_OpenIDServer
-        server.OpenIDStore = Stub_OpenIDStore
-        server.ConsumerAuthStore = Stub_ConsumerAuthStore
-        server.SessionManager = Stub_SessionManager
-
-        self.httpserver_class_prev = server.HTTPServer
-        server.HTTPServer = Stub_HTTPServer
-        self.handler_class_prev = server.HTTPRequestHandler
-        server.RequestHandlerClass = Stub_HTTPRequestHandler
+        scaffold.mock("server.HTTPServer",
+            mock_obj=Stub_HTTPServer,
+            outfile=self.mock_outfile)
+        scaffold.mock("server.HTTPRequestHandler",
+            mock_obj=Stub_HTTPRequestHandler,
+            outfile=self.mock_outfile)
 
         self.valid_servers = {
             'simple': dict(
@@ -376,19 +349,13 @@ class Test_GracieServer(scaffold.TestCase):
 
     def tearDown(self):
         """ Tear down test fixtures """
-        sys.stdout = self.stdout_prev
-        server.HTTPServer = self.httpserver_class_prev
-        server.HTTPRequestHandler = self.handler_class_prev
-        server.OpenIDServer = self.openid_server_prev
-        server.OpenIDStore = self.openid_store_prev
-        server.ConsumerAuthStore = self.consumer_store_prev
-        server.SessionManager = self.session_manager_prev
+        scaffold.mock_restore()
 
     def test_instantiate(self):
         """ New GracieServer instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(None, instance)
 
     def test_version_as_specified(self):
         """ GracieServer should have specified version string """
@@ -413,18 +380,17 @@ class Test_GracieServer(scaffold.TestCase):
         args = params['args']
         opts = params['opts']
         server_address = (opts.host, opts.port)
-        http_server_class_prev = server.HTTPServer
-        server.HTTPServer = Mock('HTTPServer_class')
-        expect_stdout = """\
-            Called HTTPServer_class(
+        scaffold.mock("server.HTTPServer",
+            outfile=self.mock_outfile)
+        expect_mock_output = """\
+            Called server.HTTPServer(
                 %(server_address)r,
                 <class '...HTTPRequestHandler'>,
                 <gracie.server.GracieServer object ...>)
             """ % locals()
         instance = self.server_class(**params['args'])
-        server.HTTPServer = http_server_class_prev
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_server_has_openid_server(self):
@@ -438,15 +404,14 @@ class Test_GracieServer(scaffold.TestCase):
         """ OpenIDStore should be created with specified datadir """
         params = self.valid_servers['datadir']
         datadir = params['datadir']
-        openid_store_class_prev = server.OpenIDStore
-        server.OpenIDStore = Mock('FileOpenIDStore_class')
-        expect_stdout = """\
-            Called FileOpenIDStore_class(%(datadir)r)
+        scaffold.mock("server.OpenIDStore",
+            outfile=self.mock_outfile)
+        expect_mock_output = """\
+            Called server.OpenIDStore(%(datadir)r)
             """ % locals()
         instance = self.server_class(**params['args'])
-        server.OpenIDStore = openid_store_class_prev
         self.failUnlessOutputCheckerMatch(
-            expect_stdout, self.stdout_test.getvalue()
+            expect_mock_output, self.mock_outfile.getvalue()
         )
 
     def test_server_has_auth_service(self):
@@ -454,21 +419,21 @@ class Test_GracieServer(scaffold.TestCase):
         params = self.valid_servers['simple']
         instance = params['instance']
         auth_service = instance.auth_service
-        self.failUnless(auth_service is not None)
+        self.failIfIs(None, auth_service)
 
     def test_server_has_session_manager(self):
         """ GracieServer should have a sess_manager attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         sess_manager = instance.sess_manager
-        self.failUnless(sess_manager is not None)
+        self.failIfIs(None, sess_manager)
 
     def test_server_has_authorisation_store(self):
         """ GracieServer should have a consumer_auth_store attribute """
         params = self.valid_servers['simple']
         instance = params['instance']
         consumer_auth_store = instance.consumer_auth_store
-        self.failUnless(consumer_auth_store is not None)
+        self.failIfIs(None, consumer_auth_store)
 
     def test_serve_forever_is_callable(self):
         """ GracieServer.serve_forever should be callable """

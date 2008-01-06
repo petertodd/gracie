@@ -120,7 +120,7 @@ class Test_Gracie(scaffold.TestCase):
         """ New Gracie instance should be created """
         for key, params in self.iterate_params():
             instance = params['instance']
-            self.failUnless(instance is not None)
+            self.failIfIs(instance, None)
 
     def test_init_configures_logging(self):
         """ Gracie instance should configure logging """
@@ -210,10 +210,6 @@ class Test_Gracie(scaffold.TestCase):
         instance = self.app_class(**args)
         self.failUnlessEqual(want_url, instance.opts.root_url)
 
-    def test_main_is_callable(self):
-        """ main() should be callable """
-        self.failUnless(callable(self.app_class.main))
-
     def test_main_instantiates_server(self):
         """ main() should create a new server instance """
         params = self.valid_apps['simple']
@@ -230,7 +226,7 @@ class Test_Gracie(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
         )
-        self.failUnless(instance.server is not None)
+        self.failIfIs(instance.server, None)
 
     def test_main_sets_specified_socket_params(self):
         """ main() should set the server on the specified host:port """
