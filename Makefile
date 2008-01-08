@@ -30,6 +30,12 @@ SETUP_TARGETS = test register sign install
 TEST_SUITE = ./test/suite.py
 CODE_MODULES = ./gracie/*.py ./bin/gracied
 
+GENERATED_FILES = *-stamp
+GENERATED_FILES += ${BIN_DEST}
+GENERATED_FILES += MANIFEST MANIFEST.in
+GENERATED_FILES += *.egg-info/
+GENERATED_FILES += build/ dist/
+
 RM = rm
 PYFLAKES = pyflakes
 ### COVERAGE = python-coverage
@@ -81,11 +87,7 @@ qa: flakes coverage
 
 .PHONY: clean
 clean:
-	- $(RM) *-stamp
-	- $(RM) -rf ${BIN_DEST}
-	- $(RM) MANIFEST MANIFEST.in
-	- $(RM) -rf *.egg-info/
-	- $(RM) -rf build/ dist/
+	$(RM) -rf ${GENERATED_FILES}
 
 .PHONY: dist
 dist: sdist bdist upload
