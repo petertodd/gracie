@@ -1,11 +1,17 @@
+gracie (0.2.6-2) unstable; urgency=high
+
+  * Fix debhelper configuration, to allow package to install.
+
+ -- Ben Finney <ben+debian@benfinney.id.au>  Tue, 08 Jan 2008 23:28:35 +1100
+
 gracie (0.2.6-1) unstable; urgency=low
 
-  * New upstream version
+  * New upstream version.
 
  -- Ben Finney <ben+debian@benfinney.id.au>  Wed, 17 Oct 2007 16:02:01 +1000
 
 gracie (0.2.3-1) unstable; urgency=low
 
-  * Initial release
+  * Initial release.
 
  -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 24 Aug 2007 10:47:31 +1000

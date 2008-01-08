@@ -53,8 +53,6 @@ install: build
 	dh_testdir
 	dh_testroot
 	dh_installdirs
-	dh_installinit
-	dh_installpam
 
 	python${PYVER} setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
 	# install only one Egg dir (without python's version number)
@@ -70,6 +68,8 @@ binary-indep: build install
 	dh_installexamples
 	dh_installman
 	dh_pycentral
+	dh_installinit
+	dh_installpam
 	dh_link
 	dh_strip
 	dh_compress
