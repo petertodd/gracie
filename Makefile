@@ -36,8 +36,6 @@ MODULES += ${TEST_DIR}
 
 DOC_DIR = doc
 
-CODE_MODULES = ./gracie/*.py
-
 
 
 RM = rm
