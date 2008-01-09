@@ -61,6 +61,7 @@ sdist: setuptools-sdist
 .PHONY: clean
 clean:
 	$(RM) -rf ${GENERATED_FILES}
+	find $(CURDIR) -name '*.pyc' -exec $(RM) {} +
 
 
 .PHONY: test
