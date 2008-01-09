@@ -27,6 +27,8 @@ LOGO_SIZES = 16 32 48 60 80 120
 LOGO_NAME = gracie-logo
 logo_files = $(addsuffix ${PNG_SUFFIX},$(addprefix ${LOGO_NAME}.,${LOGO_SIZES}))
 
+MANPAGES = gracied.8
+
 RM = rm
 
 RST2HTML = rst2html
@@ -39,7 +41,16 @@ CONVERT = convert
 all: doc
 
 .PHONY: doc
-doc: xhtml images
+doc: man xhtml images
+
+.PHONY: man
+man: ${MANPAGES}
+
+%.1: %.1.sgml
+	docbook-to-man $< > $@
+
+%.8: %.8.sgml
+	docbook-to-man $< > $@
 
 .PHONY: xhtml
 xhtml: ${XHTML_DOCS}
@@ -83,5 +94,4 @@ clean:
 	- $(RM) ${XHTML_DOCS}
 	- $(RM) ${png_files}
 	- $(RM) ${logo_files}
-
-
+	$(RM) -f ${MANPAGES}
