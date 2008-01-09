@@ -34,25 +34,9 @@ MODULES += ${TEST_DIR}
 
 
 
-BIN_DEST = ${PREFIX}/bin
-
 DOC_DIR = doc
 
-PYVERS = 2.4 2.5
-PYTHON = python
-SETUP_SCRIPT = ./setup.py
-SETUP = $(PYTHON) ${SETUP_SCRIPT}
-
-BDIST_TARGETS = bdist_egg
-SETUP_TARGETS = test register sign install
-
 CODE_MODULES = ./gracie/*.py
-
-GENERATED_FILES = *-stamp
-GENERATED_FILES += ${BIN_DEST}
-GENERATED_FILES += MANIFEST MANIFEST.in
-GENERATED_FILES += *.egg-info/
-GENERATED_FILES += build/ dist/
 
 
 
@@ -65,74 +49,33 @@ include $(patsubst %,%/module.mk,${MODULES})
 .PHONY: all
 all: build
 
+.PHONY: build
+build:
+
+.PHONY: install
+install:
+
+
+include setuptools.mk
+
+.PHONY: dist
+dist: sdist bdist
+
+.PHONY: bdist
+bdist: setuptools-bdist
+
+.PHONY: sdist
+sdist: setuptools-sdist
+
+
 .PHONY: doc
 doc:
 	$(MAKE) --directory=${DOC_DIR} $@
 
-.PHONY: build
-build: build-stamp
-build-stamp: ${PYVERS:%=build-python%-stamp}
-	touch $@
-
-build-python%-stamp:
-	python$* ${SETUP_SCRIPT} build
-	touch $@
-
-.PHONY: install
-install: install-stamp
-install-stamp: ${PYVERS:%=install-python%-stamp}
-	touch $@
-
-install-python%-stamp:
-	python$* ${SETUP_SCRIPT} install --prefix=${PREFIX}
-	touch $@
-
+
 .PHONY: clean
 clean:
 	$(RM) -rf ${GENERATED_FILES}
-
-.PHONY: dist
-dist: sdist bdist upload
-
-.PHONY: upload
-upload: sdist-upload bdist-upload
-
-.PHONY: register
-register: register-stamp
-register-stamp:
-	$(SETUP) register
-	touch $@
-
-.PHONY: bdist
-bdist: test ${PYVERS:%=bdist-python%-stamp}
-
-bdist-python%-stamp:
-	python$* ${SETUP_SCRIPT} ${BDIST_TARGETS}
-	touch $@
-
-.PHONY: bdist-upload
-bdist-upload: test register ${PYVERS:%=bdist-python%-upload-stamp}
-
-bdist-python%-upload-stamp:
-	python$* ${SETUP_SCRIPT} ${BDIST_TARGETS} upload
-	touch $@
-
-.PHONY: sdist
-sdist: sdist-stamp
-sdist-stamp: MANIFEST.in
-	$(SETUP) sdist
-	touch $@
-
-.PHONY: sdist-upload
-sdist-upload: MANIFEST.in test register
-	$(SETUP) sdist upload
-
-MANIFEST.in:
-	( \
-		$(VCS_INVENTORY) \
-		| sed -e 's/^/include /' \
-	) > $@
-
 
 
 .PHONY: test
