@@ -15,36 +15,32 @@
 PACKAGE_NAME = gracie
 MODULE_NAME = ${PACKAGE_NAME}
 
-PYVER = $(shell pyversions -dv)
+PYTHON_VERSIONS = $(shell pyversions -r debian/control)
+CURRENT_PYTHON_VERSION = $(shell pyversions -d)
+CURRENT_PYTHON_VERSION_NUMBER = $(shell pyversions -dv)
+
+site_packages_dir = $(CURDIR)/debian/${PACKAGE_NAME}/usr/lib/${CURRENT_PYTHON_VERSION}/site-packages
+upstream_basename = ${MODULE_NAME}-${DEB_UPSTREAM_VERSION}
+
 DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog \
 	| grep '^Version:' | cut -d ' ' -f 2 \
 	| cut -d '-' -f 1)
 DEB_PYTHON_INSTALL_ARGS_ALL += --single-version-externally-managed
 DEB_PYTHON_INSTALL_ARGS_ALL += --root $(CURDIR)/debian/${PACKAGE_NAME}
 
-MANPAGES = $(shell cat $(CURDIR)/debian/${PACKAGE_NAME}.manpages)
-
 .PHONY: build
 build: build-stamp
 
-build-stamp: ${MANPAGES}
+build-stamp:
 	dh_testdir
 	$(MAKE) build
-	python${PYVER} setup.py build
 	touch $@
-
-%.1: %.1.sgml
-	docbook-to-man $< > $@
-
-%.8: %.8.sgml
-	docbook-to-man $< > $@
 
 .PHONY: clean
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f *-stamp
-	rm -f ${MANPAGES}
 	$(MAKE) clean
 	dh_clean
 
@@ -54,10 +50,9 @@ install: build
 	dh_testroot
 	dh_installdirs
 
-	python${PYVER} setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
-	# install only one Egg dir (without python's version number)
-	mv debian/${PACKAGE_NAME}/usr/lib/python${PYVER}/site-packages/${MODULE_NAME}-${DEB_UPSTREAM_VERSION}-py${PYVER}.egg-info \
-		debian/${PACKAGE_NAME}/usr/lib/python${PYVER}/site-packages/${MODULE_NAME}.egg-info
+	$(CURRENT_PYTHON_VERSION) setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
+	mv ${site_packages_dir}/${upstream_basename}-py${CURRENT_PYTHON_VERSION_NUMBER}.egg-info \
+		${site_packages_dir}/${MODULE_NAME}.egg-info
 
 .PHONY: binary-indep
 binary-indep: build install
