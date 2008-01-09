@@ -11,3 +11,4 @@ PKG-INFO
 ./*-stamp
 ./doc/*.html
 ./doc/*.png
+./doc/*.[1-8]
