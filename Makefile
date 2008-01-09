@@ -3,14 +3,36 @@
 # Makefile
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
 # Makefile for Gracie project
 
+SHELL = /bin/bash
+PATH = /usr/bin:/bin
+
+# Directories with semantic meaning
 PREFIX ?= /usr/local
+CODE_PACKAGE_DIRS := gracie
+DOC_DIR := doc
+CODE_PROGRAM_DIR := bin
+TEST_DIR := test
+
+# Variables that will be extended by module include files
+GENERATED_FILES :=
+CODE_MODULES :=
+CODE_PROGRAMS :=
+DOCUMENT_TARGETS :=
+
+# List of modules (directories) that comprise our 'make' project
+MODULES := ${CODE_PACKAGE_DIRS}
+MODULES += ${CODE_PROGRAM_DIR}
+MODULES += ${DOC_DIR}
+MODULES += ${TEST_DIR}
+
+
 
 BIN_DEST = ${PREFIX}/bin
 
@@ -27,7 +49,6 @@ SETUP = $(PYTHON) ${SETUP_SCRIPT}
 BDIST_TARGETS = bdist_egg
 SETUP_TARGETS = test register sign install
 
-TEST_SUITE = ./test/suite.py
 CODE_MODULES = ./gracie/*.py ./bin/gracied
 
 GENERATED_FILES = *-stamp
@@ -36,12 +57,12 @@ GENERATED_FILES += MANIFEST MANIFEST.in
 GENERATED_FILES += *.egg-info/
 GENERATED_FILES += build/ dist/
 
-RM = rm
-PYFLAKES = pyflakes
-### COVERAGE = python-coverage
-COVERAGE = ./test/coverage.py
 
-VCS_INVENTORY = bzr inventory
+
+RM = rm
+
+# Include the make data for each module
+include $(patsubst %,%/module.mk,${MODULES})
 
 
 .PHONY: all
@@ -68,22 +89,6 @@ install-stamp: ${PYVERS:%=install-python%-stamp}
 install-python%-stamp:
 	python$* ${SETUP_SCRIPT} install --prefix=${PREFIX}
 	touch $@
-
-.PHONY: test
-test:
-	$(SETUP) test --quiet
-
-.PHONY: flakes
-flakes:
-	$(PYFLAKES) .
-
-.PHONY: coverage
-coverage:
-	$(COVERAGE) -x ${TEST_SUITE}
-	$(COVERAGE) -r -m ${CODE_MODULES}
-
-.PHONY: qa
-qa: flakes coverage
 
 .PHONY: clean
 clean:
@@ -131,3 +136,10 @@ MANIFEST.in:
 		| sed -e 's/^/include /' \
 	) > $@
 
+
+
+.PHONY: test
+test:
+
+.PHONY: qa
+qa:
