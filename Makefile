@@ -37,9 +37,6 @@ MODULES += ${TEST_DIR}
 BIN_DEST = ${PREFIX}/bin
 
 DOC_DIR = doc
-BIN_DIR = bin
-
-BIN_FILES = ${BIN_DIR}/gracied
 
 PYVERS = 2.4 2.5
 PYTHON = python
@@ -49,7 +46,7 @@ SETUP = $(PYTHON) ${SETUP_SCRIPT}
 BDIST_TARGETS = bdist_egg
 SETUP_TARGETS = test register sign install
 
-CODE_MODULES = ./gracie/*.py ./bin/gracied
+CODE_MODULES = ./gracie/*.py
 
 GENERATED_FILES = *-stamp
 GENERATED_FILES += ${BIN_DEST}
