@@ -14,29 +14,21 @@ SHELL = /bin/bash
 PATH = /usr/bin:/bin
 
 # Directories with semantic meaning
-PREFIX ?= /usr/local
 CODE_PACKAGE_DIRS := gracie
-DOC_DIR := doc
 CODE_PROGRAM_DIR := bin
+DOC_DIR := doc
 TEST_DIR := test
 
 # Variables that will be extended by module include files
 GENERATED_FILES :=
 CODE_MODULES :=
 CODE_PROGRAMS :=
-DOCUMENT_TARGETS :=
 
 # List of modules (directories) that comprise our 'make' project
 MODULES := ${CODE_PACKAGE_DIRS}
 MODULES += ${CODE_PROGRAM_DIR}
 MODULES += ${DOC_DIR}
 MODULES += ${TEST_DIR}
-
-
-
-DOC_DIR = doc
-
-
 
 RM = rm
 
@@ -51,7 +43,7 @@ all: build
 build:
 
 .PHONY: install
-install:
+install: build
 
 
 include setuptools.mk
@@ -64,11 +56,6 @@ bdist: setuptools-bdist
 
 .PHONY: sdist
 sdist: setuptools-sdist
-
-
-.PHONY: doc
-doc:
-	$(MAKE) --directory=${DOC_DIR} $@
 
 
 .PHONY: clean
