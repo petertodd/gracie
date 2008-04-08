@@ -352,7 +352,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_redirect_response(self, url):
         """ Construct a response for a redirect """
-        header = ResponseHeader(http_codes['found'])
+        header = ResponseHeader(http_codes["Found"])
         header.fields.append(("Location", url))
         data = ""
         response = Response(header, data)
@@ -375,7 +375,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_internal_error_response(self, message):
         """ Construct an Internal Error error response """
-        header = ResponseHeader(http_codes['internal_error'])
+        header = ResponseHeader(http_codes["Internal Server Error"])
         page = pagetemplate.internal_error_page(message)
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -383,7 +383,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_url_not_found_error_response(self):
         """ Construct a Not Found error response """
-        header = ResponseHeader(http_codes['not_found'])
+        header = ResponseHeader(http_codes["Not Found"])
         page = pagetemplate.url_not_found_page(self.path)
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -391,7 +391,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_protocol_error_response(self, message):
         """ Construct a Protocol Error error response """
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes["OK"])
         page = pagetemplate.protocol_error_page(message)
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -399,7 +399,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_about_site_view_response(self):
         """ Construct a response for the about-this-site view """
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes["OK"])
         page = pagetemplate.about_site_view_page()
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -414,10 +414,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             entry = None
 
         if entry is None:
-            header = ResponseHeader(http_codes['not_found'])
+            header = ResponseHeader(http_codes["Not Found"])
             page = pagetemplate.identity_user_not_found_page(name)
         else:
-            header = ResponseHeader(http_codes['ok'])
+            header = ResponseHeader(http_codes["OK"])
             identity_url = self._make_openid_url(name)
             page = pagetemplate.identity_view_user_page(
                 entry, identity_url
@@ -446,7 +446,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_login_view_response(self):
         """ Construct a response for a login view request """
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes["OK"])
         page = pagetemplate.login_view_page()
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -500,7 +500,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         """ Construct a response for a failed login request """
         name = self.query.get('username')
         message = "The login details were incorrect."
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes["OK"])
         page = pagetemplate.login_submit_failed_page(message, name)
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -532,7 +532,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _make_wrong_authentication_response(self, want_id):
         """ Make a response for action with wrong session auth """
         want_username = self._get_username_from_identity(want_id)
-        header = ResponseHeader(http_codes['ok'])
+        header = ResponseHeader(http_codes["OK"])
         page = pagetemplate.wrong_authentication_page(
             want_username = want_username,
             want_id_url = want_id

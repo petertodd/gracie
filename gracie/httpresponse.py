@@ -12,13 +12,13 @@
 """
 
 
-from BaseHTTPServer import BaseHTTPRequestHandler
-response_map = BaseHTTPRequestHandler.responses
-
-response_codes = dict()
-for code, (reason, explain) in response_map.items():
-    key = reason.lower().replace(" ", "_")
-    response_codes[key] = code
+# Map names to codes as per RFC2616
+response_codes = {
+    "OK": 200,
+    "Found": 302,
+    "Not Found": 404,
+    "Internal Server Error": 500,
+    }
 
 content_type_xhtml = "application/xhtml+xml"
 
