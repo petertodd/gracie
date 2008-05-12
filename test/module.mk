@@ -18,8 +18,7 @@ GENERATED_FILES += .coverage
 
 PYFLAKES = pyflakes
 PYLINT = pylint
-# TODO: Revert to Debian packaged version when it installs this version of the module
-COVERAGE = $(PYTHON) ${TEST_DIR}/coverage.py
+COVERAGE = python-coverage
 
 
 test:
