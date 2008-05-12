@@ -49,6 +49,11 @@ class Test_Gracie(scaffold.TestCase):
         self.stdout_test = StringIO()
         sys.stdout = self.stdout_test
 
+        self.parser_error_prev = gracied.OptionParser.error
+        gracied.OptionParser.error = Mock(
+            "OptionParser.error",
+            raises=SystemExit)
+
         self.stub_server_class = Stub_GracieServer
         self.mock_server_class = Mock('GracieServer_class')
         self.mock_server_class.mock_returns = Mock('GracieServer')
@@ -93,7 +98,7 @@ class Test_Gracie(scaffold.TestCase):
         }
 
         for key, params in self.valid_apps.items():
-            argv = []
+            argv = ["progname"]
             options = params.get('options', None)
             if options:
                 argv.extend(options)
@@ -113,6 +118,7 @@ class Test_Gracie(scaffold.TestCase):
         """ Tear down test fixtures """
         self.stdout_test.truncate(0)
         sys.stdout = self.stdout_prev
+        gracied.OptionParser.error = self.parser_error_prev
         gracied.GracieServer = self.server_class_prev
         gracied.default_port = self.default_port_prev
 
@@ -137,9 +143,27 @@ class Test_Gracie(scaffold.TestCase):
             expect_stdout, self.stdout_test.getvalue()
         )
 
+    def test_wrong_arguments_invokes_parser_error(self):
+        """ Wrong number of cmdline arguments should invoke parser error """
+        gracied.OptionParser.error = Mock(
+            "OptionParser.error",
+            )
+        invalid_argv_params = [
+            ["progname", "foo",]
+            ]
+        expect_stdout = """\
+            Called OptionParser.error("...")
+            """
+        for argv in invalid_argv_params:
+            args = dict(argv=argv)
+            instance = self.app_class(**args)
+            self.failUnlessOutputCheckerMatch(
+                expect_stdout, self.stdout_test.getvalue()
+                )
+
     def test_opts_version_performs_version_action(self):
         """ Gracie instance should perform version action """
-        argv = ["--version"]
+        argv = ["progname", "--version"]
         args = dict(argv=argv)
         version_prev = gracied.__version__
         version_test = "Foo.Boo"
@@ -157,10 +181,10 @@ class Test_Gracie(scaffold.TestCase):
 
     def test_opts_help_performs_help_action(self):
         """ Gracie instance should perform help action """
-        argv = ["--help"]
+        argv = ["progname", "--help"]
         args = dict(argv=argv)
         expect_stdout = """\
-            usage: ...
+            Usage: ...
             """
         gracied.GracieServer = self.mock_server_class
         self.failUnlessRaises(SystemExit,
@@ -173,7 +197,7 @@ class Test_Gracie(scaffold.TestCase):
     def test_opts_loglevel_accepts_specified_value(self):
         """ Gracie instance should accept log-level setting """
         want_loglevel = "DEBUG"
-        argv = ["--log-level", want_loglevel]
+        argv = ["progname", "--log-level", want_loglevel]
         args = dict(argv=argv)
         instance = self.app_class(**args)
         self.failUnlessEqual(want_loglevel, instance.opts.loglevel)
@@ -181,7 +205,7 @@ class Test_Gracie(scaffold.TestCase):
     def test_opts_datadir_accepts_specified_value(self):
         """ Gracie instance should accept data-dir setting """
         want_dir = "/foo/bar"
-        argv = ["--data-dir", want_dir]
+        argv = ["progname", "--data-dir", want_dir]
         args = dict(argv=argv)
         instance = self.app_class(**args)
         self.failUnlessEqual(want_dir, instance.opts.datadir)
@@ -189,7 +213,7 @@ class Test_Gracie(scaffold.TestCase):
     def test_opts_host_accepts_specified_value(self):
         """ Gracie instance should accept host setting """
         want_host = "frobnitz"
-        argv = ["--host", want_host]
+        argv = ["progname", "--host", want_host]
         args = dict(argv=argv)
         instance = self.app_class(**args)
         self.failUnlessEqual(want_host, instance.opts.host)
@@ -197,7 +221,7 @@ class Test_Gracie(scaffold.TestCase):
     def test_opts_port_accepts_specified_value(self):
         """ Gracie instance should accept port setting """
         want_port = 9779
-        argv = ["--port", want_port]
+        argv = ["progname", "--port", str(want_port)]
         args = dict(argv=argv)
         instance = self.app_class(**args)
         self.failUnlessEqual(want_port, instance.opts.port)
@@ -205,7 +229,7 @@ class Test_Gracie(scaffold.TestCase):
     def test_opts_root_url_accepts_specified_value(self):
         """ Gracie instance should accept root_url setting """
         want_url = "http://spudnik/spam"
-        argv = ["--root-url", want_url]
+        argv = ["progname", "--root-url", want_url]
         args = dict(argv=argv)
         instance = self.app_class(**args)
         self.failUnlessEqual(want_url, instance.opts.root_url)

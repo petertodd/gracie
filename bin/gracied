@@ -81,7 +81,16 @@ class Gracie(object):
     def _process_commandline(self, argv):
         """ Process command line to this application """
         option_parser = OptionParser()
-        (self.opts, self.args) = option_parser.parse_args(argv)
+        (opts, args) = option_parser.parse_args(argv[1:])
+        (min_args, max_args) = (0, 0)
+        len_args = len(args)
+        if not (min_args <= len_args <= max_args):
+            message = (
+                "Wrong number of arguments"
+                " (%(len_args)d): %(args)r"
+                ) % vars()
+            option_parser.error(message)
+        (self.opts, self.args) = (opts, args)
 
     def _init_logging(self):
         """ Initialise the logging system """
