@@ -15,6 +15,8 @@ import doctest
 import logging
 import os
 import sys
+import operator
+import re
 import textwrap
 from StringIO import StringIO
 from minimock import Mock
@@ -87,6 +89,49 @@ def make_params_iterator(default_params_dict):
     return iterate_params
 
 
+def normalise_function_parameters(text):
+    """ Return a version of ``text`` with function parameters normalised
+
+        The normalisations performed are:
+
+        * Remove any whitespace sequence between an opening
+          parenthesis '(' and a subsequent non-whitespace character.
+
+        * Remove any whitespace sequence between a non-whitespace
+          character and a closing parenthesis ')'.
+
+        * Ensure a comma ',' and a subsequent non-whitespace character
+          are separated by a single space ' '.
+
+        """
+    normalised_text = text
+    normalise_map = {
+        re.compile(r"\(\s+(\S)"): r"(\1",
+        re.compile(r"(\S)\s+\)"): r"\1)",
+        re.compile(r",\s*(\S)"): r", \1",
+        }
+    for search_pattern, replace_pattern in normalise_map.items():
+        normalised_text = re.sub(
+            search_pattern, replace_pattern, normalised_text)
+
+    return normalised_text
+
+doctest.NORMALIZE_FUNCTION_PARAMETERS = (
+    doctest.register_optionflag('NORMALIZE_FUNCTION_PARAMETERS'))
+
+class MinimockOutputChecker(doctest.OutputChecker, object):
+    """ Class for matching output of MiniMock objects against expectations """
+
+    def check_output(self, want, got, optionflags):
+        if (optionflags & doctest.NORMALIZE_FUNCTION_PARAMETERS):
+            want = normalise_function_parameters(want)
+            got = normalise_function_parameters(got)
+        output_match = super(MinimockOutputChecker, self).check_output(
+            want, got, optionflags)
+        return output_match
+    check_output.__doc__ = doctest.OutputChecker.check_output.__doc__
+
+
 class TestCase(unittest.TestCase):
     """ Test case behaviour """
 
@@ -146,17 +191,31 @@ class TestCase(unittest.TestCase):
     assertNotIn = failIfIn
 
     def failUnlessOutputCheckerMatch(self, want, got, msg=None):
-        """ Fail unless 'want' matches 'got' as determined by doctest
-            OutputChecker
-        """
-        checker = doctest.OutputChecker()
+        """ Fail unless the specified string matches the expected
+
+            Fail the test unless ``want`` matches ``got``, as
+            determined by a ``MinimockOutputChecker`` instance. This
+            is not an equality check, but a pattern match according to
+            the MinimockOutputChecker rules.
+
+            """
+        checker = MinimockOutputChecker()
         want = textwrap.dedent(want)
+        source = ""
+        example = doctest.Example(source, want)
         got = textwrap.dedent(got)
-        if not checker.check_output(want, got, doctest.ELLIPSIS):
+        checker_optionflags = reduce(operator.or_, [
+            doctest.ELLIPSIS,
+            doctest.NORMALIZE_FUNCTION_PARAMETERS,
+            ])
+        if not checker.check_output(want, got, checker_optionflags):
             if msg is None:
-                msg = ("Expected %(want)r, got %(got)r:"
-                       "\n--- want: ---\n%(want)s"
-                       "\n--- got: ---\n%(got)s") % locals()
+                diff = checker.output_difference(
+                    example, got, checker_optionflags)
+                msg = "\n".join([
+                    "Output received did not match expected output",
+                    "%(diff)s",
+                    ]) % vars()
             raise self.failureException(msg)
 
     assertOutputCheckerMatch = failUnlessOutputCheckerMatch
