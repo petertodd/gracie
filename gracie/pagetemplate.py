@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# pagetemplate.py
+# gracie/pagetemplate.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -144,7 +144,7 @@ class Page(object):
             server_url = None,
             login_url = None,
             logout_url = None,
-        )
+            )
 
     def _get_auth_section(self, auth_entry):
         """ Get the authentication info section """
@@ -154,8 +154,7 @@ class Page(object):
         logged_in_as = ""
         change_status = (
             """You may <a href="%(login_url)s">log in now</a>."""
-            % locals()
-        )
+            ) % vars()
         if auth_entry:
             fullname = auth_entry['fullname']
             openid_url = self.values['openid_url']
@@ -164,28 +163,26 @@ class Page(object):
             logged_in_as = ("""\
                 <a href="%(openid_url)s">%(openid_url)s</a>
                 (%(fullname)s)
-                """ % locals()
-            )
+                """ % vars())
             change_status = (
                 """You may <a href="%(logout_url)s">log out now</a>."""
-                % locals()
-            )
-        text = auth_section_template.substitute(locals())
+                ) % vars()
+        text = auth_section_template.substitute(vars())
         return text
 
     def _get_header(self):
         """ Get the page header """
         auth_section_text = self._get_auth_section(
             self.values['auth_entry'])
-        text = header_template.substitute(self.values,
+        text = header_template.substitute(
+            self.values,
             auth_section=auth_section_text,
-        )
+            )
         return text
 
     def _get_footer(self):
         """ Get the page footer """
-        text = footer_template.substitute(self.values,
-        )
+        text = footer_template.substitute(self.values)
         return text
 
     def serialise(self):
@@ -193,20 +190,21 @@ class Page(object):
         header_text = self._get_header()
         content_text = Template(self.content).substitute(self.values)
         footer_text = self._get_footer()
-        body_text = body_template.substitute(self.values,
+        body_text = body_template.substitute(
+            self.values,
             page_title=self.title,
             page_header=header_text, page_footer=footer_text,
             page_content=content_text,
-        )
+            )
         openid_metadata_text = Template(
             self.openid_metadata
-        ).substitute(self.values)
+            ).substitute(self.values)
         page_text = page_template.substitute(
             page_title=self.title, page_body=body_text,
             css_sheet=self.css_sheet,
             openid_metadata=openid_metadata_text,
             character_encoding=self.character_encoding,
-        )
+            )
         return page_text
 
 
@@ -218,10 +216,10 @@ def internal_error_page(message):
         The message was:</p>
 
         <pre>$message</pre>
-    """
+        """
     page.values.update(dict(
         message = message,
-    ))
+        ))
     return page
 
 def url_not_found_page(url):
@@ -229,10 +227,10 @@ def url_not_found_page(url):
     page = Page(title)
     page.content = """
         <p>The requested resource was not found: $want_url</p>
-    """
+        """
     page.values.update(dict(
         want_url = url,
-    ))
+        ))
     return page
 
 def protocol_error_page(message):
@@ -243,10 +241,10 @@ def protocol_error_page(message):
         The message was:</p>
 
         <pre>$message</pre>
-    """
+        """
     page.values.update(dict(
         message = message,
-    ))
+        ))
     return page
 
 def about_site_view_page():
@@ -259,7 +257,7 @@ def about_site_view_page():
 
         <p>It provides OpenID identities for local accounts,
         and allows authentication against the local PAM system.</p>
-    """ % locals()
+        """ % vars()
     return page
 
 def user_not_found_page(name):
@@ -267,10 +265,10 @@ def user_not_found_page(name):
     page = Page(title)
     page.content = """
         <p>The requested user name does not exist: $user_name</p>
-    """
+        """
     page.values.update(dict(
         user_name = name,
-    ))
+        ))
     return page
 
 def identity_user_not_found_page(name):
@@ -282,7 +280,7 @@ def identity_view_user_page(entry, identity_url):
     page = Page(title)
     page.openid_metadata = """
         <link rel="openid.server" href="$server_url" />
-    """
+        """
     page.content = """
         <div id="identity-info">
         <table>
@@ -293,7 +291,7 @@ def identity_view_user_page(entry, identity_url):
         <tr><th>Full name</th><td>$fullname</td></tr>
         </table>
         </div><!-- identity-info -->
-    """
+        """
     page.values.update(entry)
     page.values.update(dict(identity_url=identity_url))
     return page
@@ -319,7 +317,7 @@ def _login_form(message="", name=""):
         <input type="submit" name="cancel" value="Cancel" />
         </p>
         </form>
-    """
+        """
     values = dict(message=message, username=name)
     form_text = Template(form_text).substitute(values)
     return form_text
@@ -331,7 +329,7 @@ def login_view_page():
     page.values.update(dict(form=form_text))
     page.content = """
         $form
-    """
+        """
     return page
 
 def login_cancelled_page():
@@ -340,7 +338,7 @@ def login_cancelled_page():
     page.content = """
         <p>The login was cancelled.</p>
         <p>You can <a href="$login_url">log in now</a> if you want.</p>
-    """
+        """
     return page
 
 def login_submit_failed_page(message, name):
@@ -350,7 +348,7 @@ def login_submit_failed_page(message, name):
     page.values.update(dict(form=form_text))
     page.content = """
         $form
-    """
+        """
     return page
 
 def wrong_authentication_page(want_username, want_id_url):
@@ -359,16 +357,16 @@ def wrong_authentication_page(want_username, want_id_url):
     message_template = Template("""
         The requested action can only be performed if you log in
         as the identity <a href="$want_id">$want_id</a>
-    """)
+        """)
     message = message_template.substitute(dict(
         want_username = want_username,
         want_id = want_id_url,
-    ))
+        ))
     form_text = _login_form(message, want_username)
     page.values.update(dict(
         form = form_text,
-    ))
+        ))
     page.content = """
         $form
-    """
+        """
     return page

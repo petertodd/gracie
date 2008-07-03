@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# test_httpserver.py
+# test/test_httpserver.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -45,7 +45,7 @@ class Test_net_location(scaffold.TestCase):
             ("foo", self.default_port_test):
                 "foo:%s" % self.default_port_test,
             ("foo", 2468): "foo:2468",
-        }
+            }
 
         for (host, port), expect_location in locations.items():
             location = httpserver.net_location(host, port)
@@ -77,8 +77,8 @@ class Test_HTTPServer(scaffold.TestCase):
         self.valid_servers = {
             'simple': dict(
                 address = ('', 80),
-            ),
-        }
+                ),
+            }
 
         for key, params in self.valid_servers.items():
             args = params.get('args')
@@ -88,20 +88,20 @@ class Test_HTTPServer(scaffold.TestCase):
             opts = make_default_opts()
             gracie_server = params.setdefault(
                 'gracie_server', Stub_GracieServer(address, opts)
-            )
+                )
             if not args:
                 args = dict(
                     server_address = params['address'],
                     RequestHandlerClass = params['handler_class'],
-                    gracie_server = params['gracie_server']
-                )
+                    gracie_server = params['gracie_server'],
+                    )
             instance = self.server_class(**args)
             params['args'] = args
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
             default_params_dict = self.valid_servers
-        )
+            )
 
     def tearDown(self):
         """ Tear down test fixtures """
@@ -132,7 +132,7 @@ class Test_HTTPServer(scaffold.TestCase):
             handler_class = params['handler_class']
             self.failUnlessEqual(
                 handler_class, instance.RequestHandlerClass
-            )
+                )
 
     def test_gracie_server_as_specified(self):
         """ HTTPServer should have specified Gracie server instance """
@@ -141,7 +141,7 @@ class Test_HTTPServer(scaffold.TestCase):
             gracie_server = params['gracie_server']
             self.failUnlessEqual(
                 gracie_server, instance.gracie_server
-            )
+                )
 
     def test_serve_forever_is_callable(self):
         """ HTTPServer.serve_forever should be callable """

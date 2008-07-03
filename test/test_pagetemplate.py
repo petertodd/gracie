@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# test_pagetemplate.py
+# test/test_pagetemplate.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -28,28 +28,29 @@ class Mixin_PageTemplateFixture(object):
 
         pagetemplate.page_template = Template(
             textwrap.dedent("""\
-            Page {
-                Coding: $character_encoding
-                Title: $page_title
-                $page_body
-            }""")
-        )
+                Page {
+                    Coding: $character_encoding
+                    Title: $page_title
+                    $page_body
+                }""")
+            )
 
         pagetemplate.body_template = Template(
             textwrap.dedent("""\
-            Body {
-                Title: $page_title
-                Auth entry: $auth_entry
-                Content: $page_content
-            }""")
-        )
+                Body {
+                    Title: $page_title
+                    Auth entry: $auth_entry
+                    Content: $page_content
+                }""")
+            )
 
     def tearDown(self):
         """ Tear down test fixtures """
 
 
-class Test_Page(scaffold.TestCase,
-                Mixin_PageTemplateFixture):
+class Test_Page(
+    scaffold.TestCase,
+    Mixin_PageTemplateFixture):
     """ Test cases for Page class """
 
     def setUp(self):
@@ -61,18 +62,18 @@ class Test_Page(scaffold.TestCase,
 
         self.valid_pages = {
             'simple': dict(
-            ),
+                ),
             'welcome': dict(
                 title = "Welcome",
                 content = "Lorem ipsum dolor sic amet",
-            ),
+                ),
             'result': dict(
                 title = "Result",
                 content = "Here is your result: $result.",
                 values = dict(
                     result = "thribble",
+                    ),
                 ),
-            ),
             'authenticated': dict(
                 title = "Logged in",
                 content = "Lorem ipsum dolor sic amet",
@@ -80,9 +81,9 @@ class Test_Page(scaffold.TestCase,
                     id = 1010,
                     name = "fred",
                     fullname = "Fred Nurk",
+                    ),
                 ),
-            ),
-        }
+            }
 
         for key, params in self.valid_pages.items():
             args = params.get('args')
@@ -106,13 +107,13 @@ class Test_Page(scaffold.TestCase,
                 server_url = "/openidserver",
                 login_url = "/login",
                 logout_url = "/logout",
-            ))
+                ))
             instance.values.update(values)
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
             default_params_dict = self.valid_pages
-        )
+            )
 
     def test_instantiate(self):
         """ New Page instance should be created """
@@ -173,7 +174,7 @@ class Test_Page(scaffold.TestCase,
                 Auth entry: %(auth_entry)s
                 Content: %(expect_content)s
             }
-            }""" % locals()
+            }""" % vars()
         page_data = instance.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
@@ -187,14 +188,14 @@ class Test_PageTemplates(scaffold.TestCase):
         page = pagetemplate.internal_error_page(message)
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "Page {...%(message)s...}" % locals(), page_data
-        )
+            "Page {...%(message)s...}" % vars(), page_data
+            )
 
     def test_url_not_found_page_contains_url(self):
         """ Resulting page should contain the referent URL """
         url = "/flim/flam/flom"
         page = pagetemplate.url_not_found_page(url)
-        expect_data = "...%(url)s..." % locals()
+        expect_data = "...%(url)s..." % vars()
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
@@ -204,8 +205,8 @@ class Test_PageTemplates(scaffold.TestCase):
         page = pagetemplate.protocol_error_page(message)
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "Page {...%(message)s...}" % locals(), page_data
-        )
+            "Page {...%(message)s...}" % vars(), page_data
+            )
 
     def test_about_site_page_returns_page(self):
         """ About Site page should return page """
@@ -213,13 +214,13 @@ class Test_PageTemplates(scaffold.TestCase):
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
             "Page {...}", page_data
-        )
+            )
 
     def test_identity_user_not_found_page_contains_name(self):
         """ Resulting page should contain the referent user name """
         name = "fred"
         page = pagetemplate.identity_user_not_found_page(name)
-        expect_data = "...%(name)s..." % locals()
+        expect_data = "...%(name)s..." % vars()
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(expect_data, page_data)
 
@@ -229,26 +230,26 @@ class Test_PageTemplates(scaffold.TestCase):
             id = 9999,
             name = "fred",
             fullname = "Fred Nurk",
-        )
+            )
         identity_url = "http://example.org/id/%(name)s" % entry
         server_url = "http://example.org/openidserver"
         page = pagetemplate.identity_view_user_page(
             entry, identity_url
-        )
+            )
         page.values.update(dict(server_url=server_url))
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
             "...%(id)s..." % entry, page_data
-        )
+            )
         self.failUnlessOutputCheckerMatch(
             "...%(name)s..." % entry, page_data
-        )
+            )
         self.failUnlessOutputCheckerMatch(
             "...%(fullname)s..." % entry, page_data
-        )
+            )
         self.failUnlessOutputCheckerMatch(
-            "...%(identity_url)s..." % locals(), page_data
-        )
+            "...%(identity_url)s..." % vars(), page_data
+            )
 
     def test_login_user_not_found_page_contains_name(self):
         """ Resulting page should contain the referent user name """
@@ -256,8 +257,8 @@ class Test_PageTemplates(scaffold.TestCase):
         page = pagetemplate.login_user_not_found_page(name)
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "...%(name)s..." % locals(), page_data
-        )
+            "...%(name)s..." % vars(), page_data
+            )
 
     def test_login_view_page_returns_page(self):
         """ View login should return page """
@@ -265,7 +266,7 @@ class Test_PageTemplates(scaffold.TestCase):
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
             "Page {...}", page_data
-        )
+            )
 
     def test_login_cancel_returns_page(self):
         """ Cancel login should return page """
@@ -273,7 +274,7 @@ class Test_PageTemplates(scaffold.TestCase):
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
             "Page {...}", page_data
-        )
+            )
 
     def test_login_submit_failed_page_contains_details(self):
         """ Resulting page should contain specified details """
@@ -282,11 +283,11 @@ class Test_PageTemplates(scaffold.TestCase):
         page = pagetemplate.login_submit_failed_page(message, name)
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "...%(message)s..." % locals(), page_data
-        )
+            "...%(message)s..." % vars(), page_data
+            )
         self.failUnlessOutputCheckerMatch(
-            "...%(name)s..." % locals(), page_data
-        )
+            "...%(name)s..." % vars(), page_data
+            )
 
     def test_wrong_authentication_page_contains_url(self):
         """ Resulting page should contain the specified URLs """
@@ -295,11 +296,11 @@ class Test_PageTemplates(scaffold.TestCase):
         page = pagetemplate.wrong_authentication_page(
             want_username = want_username,
             want_id_url = want_id,
-        )
+            )
         page_data = page.serialise()
         self.failUnlessOutputCheckerMatch(
-            "...%(want_id)s..." % locals(), page_data
-        )
+            "...%(want_id)s..." % vars(), page_data
+            )
 
 
 suite = scaffold.suite(__name__)

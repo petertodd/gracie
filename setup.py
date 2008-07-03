@@ -4,7 +4,7 @@
 # setup.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -28,10 +28,10 @@ setup(
     version = main_module.__version__,
     packages = find_packages(
         exclude = ['test'],
-    ),
+        ),
     scripts = [
         "bin/gracied",
-    ],
+        ],
 
     # setuptools metadata
     zip_safe = True,
@@ -39,7 +39,7 @@ setup(
     install_requires = [
         "python-openid >= 1.2",
         "Routes >= 1.6.3",
-    ],
+        ],
 
     # PyPI metadata
     author = main_module.__author_name__,
@@ -57,5 +57,5 @@ setup(
         "Topic :: System",
         "Operating System :: POSIX",
         "Intended Audience :: System Administrators",
-    ],
-)
+        ],
+    )

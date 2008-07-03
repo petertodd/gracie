@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# test_server.py
+# test/test_server.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -78,7 +78,7 @@ class Test_become_daemon(scaffold.TestCase):
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_child_starts_new_process_group(self):
         """ become_daemon child should start new process group """
@@ -90,7 +90,7 @@ class Test_become_daemon(scaffold.TestCase):
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_child_forks_next_parent_exits(self):
         """ become_daemon should fork, then exit if parent """
@@ -107,7 +107,7 @@ class Test_become_daemon(scaffold.TestCase):
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_child_forks_next_child_continues(self):
         """ become_daemon should fork, then continue if child """
@@ -120,7 +120,7 @@ class Test_become_daemon(scaffold.TestCase):
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_removes_standard_files(self):
         """ become_daemon should request removal of standard files """
@@ -131,7 +131,7 @@ class Test_become_daemon(scaffold.TestCase):
         server.become_daemon()
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
 
 def stub_server_bind(server):
@@ -141,9 +141,10 @@ def stub_server_bind(server):
 
 class Stub_HTTPServer(object):
     """ Stub class for HTTPServer """
-    def __init__(self,
-            server_address, RequestHandlerClass, gracie_server
-    ):
+    def __init__(
+        self,
+        server_address, RequestHandlerClass, gracie_server
+        ):
         """ Set up a new instance """
 
     server_bind = stub_server_bind
@@ -237,7 +238,7 @@ class Stub_OpenIDRequest(object):
         self.mode = http_query.get('openid.mode')
         keys = [
             'identity', 'trust_root', 'immediate', 'return_to',
-        ]
+            ]
         if params is None:
             params = dict()
         for key in keys:
@@ -249,7 +250,7 @@ class Stub_OpenIDRequest(object):
         response = Stub_OpenIDResponse(dict(
             allow = allow,
             server_url = server_url,
-        ))
+            ))
         return response
 
 class Stub_OpenIDResponse(object):
@@ -259,9 +260,9 @@ class Stub_OpenIDResponse(object):
         self.params = params
 
     def encodeToURL(self):
-        url = "http://stub/openid_response/" + ";".join([
+        url = "http://stub/openid_response/" + ";".join(
             "%s=%s" % (key, val) for key, val in self.params.items()
-        ])
+            )
         return url
 
 class Stub_OpenIDWebResponse(object):
@@ -278,7 +279,7 @@ def make_default_opts():
     opts = optparse.Values(dict(
         datadir = "/tmp",
         host = "example.org", port = 9779,
-    ))
+        ))
     return opts
 
 
@@ -313,20 +314,20 @@ class Test_GracieServer(scaffold.TestCase):
 
         self.valid_servers = {
             'simple': dict(
-            ),
+                ),
             'with-opts': dict(
                 opts = dict(
                     foo="spam",
                     bar="eggs",
+                    ),
                 ),
-            ),
             'datadir': dict(
                 opts = dict(
                     datadir = "/foo/bar",
-                ),
+                    ),
                 datadir = "/foo/bar",
-            ),
-        }
+                ),
+            }
 
         for key, params in self.valid_servers.items():
             args = params.get('args')
@@ -338,14 +339,14 @@ class Test_GracieServer(scaffold.TestCase):
             args.update(dict(
                 socket_params=None,
                 opts=opts,
-            ))
+                ))
             instance = self.server_class(**args)
             params['args'] = args
             params['instance'] = instance
 
         self.iterate_params = scaffold.make_params_iterator(
             default_params_dict = self.valid_servers
-        )
+            )
 
     def tearDown(self):
         """ Tear down test fixtures """
@@ -387,11 +388,11 @@ class Test_GracieServer(scaffold.TestCase):
                 %(server_address)r,
                 <class '...HTTPRequestHandler'>,
                 <gracie.server.GracieServer object ...>)
-            """ % locals()
+            """ % vars()
         instance = self.server_class(**params['args'])
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_server_has_openid_server(self):
         """ GracieServer should have an openid_server attribute """
@@ -408,11 +409,11 @@ class Test_GracieServer(scaffold.TestCase):
             outfile=self.mock_outfile)
         expect_mock_output = """\
             Called server.OpenIDStore(%(datadir)r)
-            """ % locals()
+            """ % vars()
         instance = self.server_class(**params['args'])
         self.failUnlessOutputCheckerMatch(
             expect_mock_output, self.mock_outfile.getvalue()
-        )
+            )
 
     def test_server_has_auth_service(self):
         """ GracieServer should have an auth_service attribute """

@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# test_httpresponse.py
+# test/test_httpresponse.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -19,7 +19,7 @@ import scaffold
 from scaffold import Mock
 from test_server import (
     Stub_ResponseHeader,
-)
+    )
 
 from gracie import httpresponse
 
@@ -35,19 +35,19 @@ class Test_ResponseHeader(scaffold.TestCase):
         self.valid_headers = {
             'simple': dict(
                 code = 200,
-            ),
+                ),
             'ok': dict(
                 code = 200,
-            ),
+                ),
             'ok-protocol': dict(
                 code = 200,
                 protocol = "HTTP/1.1",
-            ),
+                ),
             'content-type-bogus': dict(
                 code = 200,
                 content_type = "BoGuS",
-            ),
-        }
+                ),
+            }
 
         for key, params in self.valid_headers.items():
             args = params.get('args', dict())
@@ -65,7 +65,7 @@ class Test_ResponseHeader(scaffold.TestCase):
 
         self.iterate_params = scaffold.make_params_iterator(
             default_params_dict = self.valid_headers
-        )
+            )
 
     def test_instantiate(self):
         """ New ResponseHeader instance should be created """
@@ -119,8 +119,10 @@ class Stub_RequestHandler(object):
 
     def __init__(self):
         self.wfile = StringIO("")
-    def send_response(self, code, message=None): pass
-    def end_headers(self): pass
+    def send_response(self, code, message=None):
+        pass
+    def end_headers(self):
+        pass
 
 class Test_Response(scaffold.TestCase):
     """ Test cases for Response class """
@@ -133,12 +135,12 @@ class Test_Response(scaffold.TestCase):
         self.valid_responses = {
             'simple': dict(
                 header = Stub_ResponseHeader(code = 200),
-            ),
+                ),
             'payload': dict(
                 header = Stub_ResponseHeader(code = 200),
                 data = object(),
-            ),
-        }
+                ),
+            }
 
         for key, params in self.valid_responses.items():
             args = params.get('args', dict())
@@ -153,7 +155,7 @@ class Test_Response(scaffold.TestCase):
 
         self.iterate_params = scaffold.make_params_iterator(
             default_params_dict = self.valid_responses
-        )
+            )
 
     def test_initialise(self):
         """ New Response instance should be created """
@@ -192,7 +194,7 @@ class Test_Response(scaffold.TestCase):
                 """
             self.failUnlessOutputCheckerMatch(
                 expect_stdout, self.stdout_test.getvalue()
-            )
+                )
         sys.stdout = stdout_prev
 
 

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# server.py
+# gracie/server.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -79,7 +79,7 @@ class GracieServer(object):
         server_address = (opts.host, opts.port)
         self.httpserver = HTTPServer(
             server_address, HTTPRequestHandler, self
-        )
+            )
         self._setup_openid()
         self.auth_service = AuthService()
         self.sess_manager = SessionManager()
@@ -98,8 +98,8 @@ class GracieServer(object):
         server_version = self.version
         _logger.info(
             "Starting Gracie server (version %(server_version)s)"
-            % locals()
-        )
+            % vars()
+            )
 
     def serve_forever(self):
         """ Begin serving requests indefinitely """

@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 # -*- coding: utf-8 -*-
 
-# test_session.py
+# test/test_session.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben+python@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -37,9 +37,10 @@ class Test_SessionManager(scaffold.TestCase):
         """ Getting an unknown session ID should raise KeyError """
         instance = self.manager_class()
         session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
+        self.failUnlessRaises(
+            KeyError,
             instance.get_session, session_id
-        )
+            )
 
     def test_get_session_returns_same_session(self):
         """ Getting a session by ID should return same username """
@@ -47,7 +48,7 @@ class Test_SessionManager(scaffold.TestCase):
         session = dict(
             username = "fred",
             foo = "spam",
-        )
+            )
         session_id = instance.create_session(session)
         session['session_id'] = session_id
         got_session = instance.get_session(session_id)
@@ -60,14 +61,11 @@ class Test_SessionManager(scaffold.TestCase):
         sessions = dict()
         for username in usernames:
             session_id = instance.create_session()
-            self.failIf(session_id in sessions,
-                "Session ID %(session_id)r already exists"
-                " in %(sessions)r" % locals()
-            )
+            self.failIfIn(sessions, session_id)
             sessions[session_id] = dict(
                 session_id = session_id,
                 username = username,
-            )
+                )
 
     def test_create_multiple_session_for_same_username(self):
         """ Creating multiple sessions for same username should succeed """
@@ -80,7 +78,7 @@ class Test_SessionManager(scaffold.TestCase):
                 session_id = instance.create_session(session)
                 session.update(dict(
                     session_id = session_id
-                ))
+                    ))
                 sessions[session_id] = session
         for session_id, session in sessions.items():
             got_session = instance.get_session(session_id)
@@ -90,9 +88,10 @@ class Test_SessionManager(scaffold.TestCase):
         """ Removing an unknown session ID should raise KeyError """
         instance = self.manager_class()
         session_id = "DECAFBAD"
-        self.failUnlessRaises(KeyError,
+        self.failUnlessRaises(
+            KeyError,
             instance.remove_session, session_id
-        )
+            )
 
     def test_remove_session_should_cause_get_session_failure(self):
         """ Removing a session should result in failure to get session """
@@ -100,9 +99,10 @@ class Test_SessionManager(scaffold.TestCase):
         identity_name = "fred"
         session_id = instance.create_session()
         instance.remove_session(session_id)
-        self.failUnlessRaises(KeyError,
+        self.failUnlessRaises(
+            KeyError,
             instance.get_session, session_id
-        )
+            )
 
 
 suite = scaffold.suite(__name__)

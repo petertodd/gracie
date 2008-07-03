@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# authservice.py
+# gracie/authservice.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -54,7 +54,7 @@ class PosixAuthService(BaseAuthService):
             id=uid,
             name=name,
             fullname=fullname,
-        )
+            )
         return entry
 
     def get_entry(self, value):
@@ -80,19 +80,19 @@ class _PamConversation(object):
             PAM.PAM_PROMPT_ECHO_OFF: (self.password, 0),
             PAM.PAM_ERROR_MSG: ('', 0),
             PAM.PAM_TEXT_INFO: ('', 0),
-        }
+            }
         pam_password_prompts = [
             PAM.PAM_PROMPT_ECHO_ON, PAM.PAM_PROMPT_ECHO_OFF,
-        ]
+            ]
 
         response_list = []
         for query, qtype in query_list:
             _logger.info(
-                "PAM query: type %(qtype)r, %(query)r" % locals())
+                "PAM query: type %(qtype)r, %(query)r" % vars())
             response = response_map.get(qtype)
             if response is None:
                 _logger.warn(
-                    "PAM: unknown query type %(qtype)r" % locals())
+                    "PAM: unknown query type %(qtype)r" % vars())
                 response_list = None
                 break
             else:
@@ -101,8 +101,8 @@ class _PamConversation(object):
                     sanitised_response = ("<password>", 0)
                 _logger.info(
                     "PAM response: sending %(sanitised_response)r"
-                    % locals()
-                )
+                    % vars()
+                    )
                 response_list.append(response)
         return response_list
 
@@ -135,9 +135,10 @@ class PamAuthService(PosixAuthService):
         """ Verify credentials against authentication service """
         username = credentials['username']
         password = credentials['password']
-        _logger.info("Attempting to authenticate credentials"
-            " for %(username)r" % locals()
-        )
+        _logger.info(
+            "Attempting to authenticate credentials"
+            " for %(username)r" % vars()
+            )
         try:
             got_username = self._authenticate_creds(username, password)
         except PAM.error, e:
@@ -147,8 +148,9 @@ class PamAuthService(PosixAuthService):
                 (reason, code) = e.args
             raise AuthenticationError(code, reason)
 
-        _logger.info("Successful authentication for %(username)r"
-            % locals()
-        )
+        _logger.info(
+            "Successful authentication for %(username)r"
+            % vars()
+            )
         return got_username
 

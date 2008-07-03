@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# session.py
+# gracie/session.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -35,7 +35,7 @@ class SessionManager(object):
     def _generate_session_id(self):
         """ Generate a unique session ID """
         randnum = self._rng.random()
-        message = "%(randnum)s" % locals()
+        message = "%(randnum)s" % vars()
         message_hash = sha.sha(message)
         session_id = message_hash.hexdigest()
         return session_id

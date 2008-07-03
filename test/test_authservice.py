@@ -1,10 +1,10 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# test_authservice.py
+# test/test_authservice.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -26,8 +26,8 @@ class Test_ModuleExceptions(scaffold.Test_Exception):
             authservice.AuthenticationError: dict(
                 min_args = 2,
                 types = [EnvironmentError],
-            ),
-        }
+                ),
+            }
 
         super(Test_ModuleExceptions, self).setUp()
 
@@ -38,11 +38,11 @@ class Test_ModuleExceptions(scaffold.Test_Exception):
         instance = authservice.AuthenticationError(code, reason)
         str(instance)
         self.failUnlessOutputCheckerMatch(
-            "...%(code)s..." % locals(), str(instance)
-        )
+            "...%(code)s..." % vars(), str(instance)
+            )
         self.failUnlessOutputCheckerMatch(
-            "...%(reason)s..." % locals(), str(instance)
-        )
+            "...%(reason)s..." % vars(), str(instance)
+            )
 
 
 class Test_BaseAuthService(scaffold.TestCase):
@@ -77,10 +77,11 @@ class Test_BaseAuthService(scaffold.TestCase):
         credentials = dict(
             username = "foo",
             password = "bar",
-        )
-        self.failUnlessRaises(NotImplementedError,
+            )
+        self.failUnlessRaises(
+            NotImplementedError,
             instance.authenticate, credentials
-        )
+            )
 
 
 stub_entries = [
@@ -88,7 +89,7 @@ stub_entries = [
          fullname="Fred Nurk", comment="Fred Nurk"),
     dict(id=1010, name="bill", password="secret1",
          fullname="William Fosdycke", comment="William Fosdycke,,,"),
-]
+    ]
 
 class Stub_AuthService(object):
     """ Stub class for AuthService classes """
@@ -96,7 +97,7 @@ class Stub_AuthService(object):
     def get_entry(self, value):
         match = [e for e in stub_entries if e['name'] == value]
         if not match:
-            raise KeyError("No entry for %(value)r" % locals())
+            raise KeyError("No entry for %(value)r" % vars())
         entry = match[0]
         return entry
 
@@ -116,9 +117,10 @@ class Stub_AuthService(object):
 class Stub_PwdModule(object):
     """ Stub class for a pwd module """
 
-    _entries = [(e['name'], "*", e['id'], 500, e['comment'],
-                 "/home/"+e['name'], "/bin/sh")
-                for e in stub_entries]
+    _entries = [
+        (e['name'], "*", e['id'], 500, e['comment'],
+         "/home/"+e['name'], "/bin/sh")
+        for e in stub_entries]
 
     _entries_by_name = dict([(e[0], e) for e in _entries])
     _entries_by_uid = dict([(e[2], e) for e in _entries])
@@ -128,7 +130,7 @@ class Stub_PwdModule(object):
         try:
             entry = self._entries_by_name[name]
         except KeyError:
-            raise KeyError("name not found: %(name)s" % locals())
+            raise KeyError("name not found: %(name)s" % vars())
         return entry
 
     def getpwuid(self, uid):
@@ -136,7 +138,7 @@ class Stub_PwdModule(object):
         try:
             entry = self._entries_by_uid[uid]
         except KeyError:
-            raise KeyError("uid not found: %(uid)s" % locals())
+            raise KeyError("uid not found: %(uid)s" % vars())
         return entry
 
 class Test_PosixAuthService(scaffold.TestCase):
@@ -164,9 +166,10 @@ class Test_PosixAuthService(scaffold.TestCase):
         """ get_entry for a bogus name should raise KeyError """
         instance = self.service_class()
         name = "nosuchuser"
-        self.failUnlessRaises(KeyError,
+        self.failUnlessRaises(
+            KeyError,
             instance.get_entry, name
-        )
+            )
 
     def test_get_entry_name_known_returns_entry(self):
         """ get_entry for a known name should return an auth entry """
@@ -177,7 +180,7 @@ class Test_PosixAuthService(scaffold.TestCase):
             id = uid,
             name = name,
             fullname = fullname,
-        )
+            )
         entry = instance.get_entry(name)
         self.failUnlessEqual(expect_entry, entry)
 
@@ -191,7 +194,7 @@ class Test_PosixAuthService(scaffold.TestCase):
             id = uid,
             name = name,
             fullname = fullname,
-        )
+            )
         entry = instance.get_entry(name)
         self.failUnlessEqual(expect_entry, entry)
 
@@ -203,7 +206,7 @@ class Stub_PamError(Exception):
 class Stub_PamAuth(object):
     """ Stub class for PAM authentication service """
 
-    _entries = dict([(e['name'], e) for e in stub_entries])
+    _entries = dict((e['name'], e) for e in stub_entries)
 
     def start(self, service):
         self._items = dict()
@@ -223,9 +226,10 @@ class Stub_PamAuth(object):
         try:
             entry = self._entries[username]
         except KeyError:
-            raise PAM.error(PAM.PAM_USER_UNKNOWN,
-                "User %(username)s not found" % locals()
-            )
+            raise PAM.error(
+                PAM.PAM_USER_UNKNOWN,
+                "User %(username)s not found" % vars()
+                )
         return entry
 
     def authenticate(self, flags=0):
@@ -246,7 +250,7 @@ class Stub_PamAuth(object):
             if password == entry['password']:
                 query_list = [
                     ("Login successful", PAM.PAM_SUCCESS)
-                ]
+                    ]
                 self._converse(query_list)
                 auth_success = True
 
@@ -261,24 +265,24 @@ class Stub_PamModule(object):
     error = Stub_PamError
 
     [
-    PAM_USER,
-    PAM_CONV,
-    PAM_SILENT,
-    PAM_DISALLOW_NULL_AUTHTOK,
-    PAM_PROMPT_ECHO_ON,
-    PAM_PROMPT_ECHO_OFF,
-    PAM_ERROR_MSG,
-    PAM_TEXT_INFO,
+        PAM_USER,
+        PAM_CONV,
+        PAM_SILENT,
+        PAM_DISALLOW_NULL_AUTHTOK,
+        PAM_PROMPT_ECHO_ON,
+        PAM_PROMPT_ECHO_OFF,
+        PAM_ERROR_MSG,
+        PAM_TEXT_INFO,
 
-    PAM_ABORT,
-    PAM_AUTH_ERR,
-    PAM_CRED_INSUFFICIENT,
-    PAM_AUTHINFO_UNVAIL,
-    PAM_MAXTRIES,
-    PAM_USER_UNKNOWN,
+        PAM_ABORT,
+        PAM_AUTH_ERR,
+        PAM_CRED_INSUFFICIENT,
+        PAM_AUTHINFO_UNVAIL,
+        PAM_MAXTRIES,
+        PAM_USER_UNKNOWN,
 
-    PAM_SUCCESS,
-    ] = range(15)
+        PAM_SUCCESS,
+        ] = range(15)
 
     def pam(self):
         """ Return a handle to the authentication system """
@@ -319,10 +323,11 @@ class Test_PamAuthService(scaffold.TestCase):
         credentials = dict(
             username = "bogus",
             password = "bogus",
-        )
-        self.failUnlessRaises(authservice.AuthenticationError,
+            )
+        self.failUnlessRaises(
+            authservice.AuthenticationError,
             instance.authenticate, credentials
-        )
+            )
 
     def test_authenticate_bad_creds_returns_false(self):
         """ Auth for bad credentials should raise AuthenticationError """
@@ -330,10 +335,11 @@ class Test_PamAuthService(scaffold.TestCase):
         credentials = dict(
             username = "fred",
             password = "bogus",
-        )
-        self.failUnlessRaises(authservice.AuthenticationError,
+            )
+        self.failUnlessRaises(
+            authservice.AuthenticationError,
             instance.authenticate, credentials
-        )
+            )
 
     def test_authenticate_good_creds_returns_username(self):
         """ Authentication for good credentials should return username """
@@ -341,7 +347,7 @@ class Test_PamAuthService(scaffold.TestCase):
         credentials = dict(
             username = "fred",
             password = "password1",
-        )
+            )
         username = credentials['username']
         result = instance.authenticate(credentials)
         self.failUnlessEqual(username, result)

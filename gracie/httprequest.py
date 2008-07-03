@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# httprequest.py
+# gracie/httprequest.py
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007-2008 Ben Finney <ben+python@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -30,8 +30,9 @@ session_cookie_name = "gracie_session"
 _logger = logging.getLogger("gracie.httprequest")
 
 
-class BaseHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler,
-                             object):
+class BaseHTTPRequestHandler(
+    BaseHTTPServer.BaseHTTPRequestHandler,
+    object):
     """ Shim to insert base object type into hierarchy """
 
 
@@ -52,12 +53,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         self._setup_version()
         super(HTTPRequestHandler, self).__init__(
             request, client_address, server
-        )
+            )
 
     def _setup_version(self):
         """ Set up the version string """
         version = self.gracie_server.version
-        self.server_version = "Gracie/%(version)s" % locals()
+        self.server_version = "Gracie/%(version)s" % vars()
 
     def log_message(self, format, *args, **kwargs):
         """ Log a message via the server's logger """
@@ -85,10 +86,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             self.session.update(dict(
                 username = username,
                 auth_entry = auth_entry,
-            ))
+                ))
             _logger.info(
-                "Session authenticated as %(username)r" % locals()
-            )
+                "Session authenticated as %(username)r" % vars()
+                )
         else:
             _logger.info("Session not authenticated")
 
@@ -131,10 +132,10 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def _set_cookie(self, response, name, value, expire=None):
         """ Set a cookie in the response header """
         field_name = "Set-Cookie"
-        field_value = "%(name)s=%(value)s" % locals()
+        field_value = "%(name)s=%(value)s" % vars()
         if expire:
             field_value = (
-                "%(field_value)s;Expires=%(expire)s" % locals())
+                "%(field_value)s;Expires=%(expire)s" % vars())
         field = (field_name, field_value)
         response.header.fields.append(field)
 
@@ -160,7 +161,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
 
     def _make_openid_url(self, username):
         """ Generate the OpenID URL for a username """
-        path = "id/%(username)s" % locals()
+        path = "id/%(username)s" % vars()
         url = self._make_server_url(path)
         return url
 
@@ -188,15 +189,15 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             'identity': self._make_identity_view_response,
             'logout': self._make_logout_response,
             'login': self._make_login_response,
-        }
+            }
         controller_name = None
         if self.route_map:
             controller_name = self.route_map['controller']
         controller = controller_map[controller_name]
 
         _logger.info(
-            "Dispatching to controller %(controller_name)r" % locals()
-        )
+            "Dispatching to controller %(controller_name)r" % vars()
+            )
 
         response = controller()
         self._set_auth_cookie(response)
@@ -263,14 +264,14 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             if openid_request.mode in BROWSER_REQUEST_MODES:
                 response = self._handle_openid_browser_request(
                     openid_request
-                )
+                    )
             else:
                 openid_response = openid_server.handleRequest(
                     openid_request
-                )
+                    )
                 response = self._make_response_from_openid_response(
                     openid_response
-                )
+                    )
 
         return response
 
@@ -288,34 +289,38 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         dispatch_map = {
             'checkid_immediate': self._make_checkid_immediate_response,
             'checkid_setup': self._make_checkid_setup_response,
-        }
-        response = dispatch_map[openid_request.mode](openid_request,
-            is_session_identity = is_session_identity,
-        )
+            }
+        response = dispatch_map[openid_request.mode](
+            openid_request,
+            is_session_identity=is_session_identity,
+            )
 
         return response
 
-    def _make_checkid_immediate_response(self, request,
-        is_session_identity
-    ):
+    def _make_checkid_immediate_response(
+        self, request,
+        is_session_identity,
+        ):
         """ Make a response for an OpenID checkid_immediate request """
         response = None
 
         if is_session_identity:
             openid_response = request.answer(True)
         else:
-            openid_response = request.answer(False,
+            openid_response = request.answer(
+                False,
                 self._make_server_url("openidserver")
-            )
+                )
         response = self._make_response_from_openid_response(
             openid_response
-        )
+            )
 
         return response
 
-    def _make_checkid_setup_response(self, request,
-        is_session_identity
-    ):
+    def _make_checkid_setup_response(
+        self, request,
+        is_session_identity,
+        ):
         """ Make a response for an OpenID checkid_setup request """
         response = None
 
@@ -323,11 +328,11 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             openid_response = request.answer(True)
             response = self._make_response_from_openid_response(
                 openid_response
-            )
+                )
         else:
             response = self._make_wrong_authentication_response(
                 request.identity
-            )
+                )
 
         return response
 
@@ -356,7 +361,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         header.fields.append(("Location", url))
         data = ""
         response = Response(header, data)
-        _logger.info("Redirecting to %(url)r" % locals())
+        _logger.info("Redirecting to %(url)r" % vars())
         return response
 
     def _get_page_data(self, page):
@@ -370,7 +375,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             server_url = self._make_server_url("openidserver"),
             login_url = self._make_server_url("login"),
             logout_url = self._make_server_url("logout"),
-        ))
+            ))
         return page.serialise()
 
     def _make_internal_error_response(self, message):
@@ -421,7 +426,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             identity_url = self._make_openid_url(name)
             page = pagetemplate.identity_view_user_page(
                 entry, identity_url
-            )
+                )
 
         data = self._get_page_data(page)
         response = Response(header, data)
@@ -440,7 +445,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         controller = {
             'GET': self._make_login_view_response,
             'POST': self._make_login_submit_response,
-        }[self.command]
+            }[self.command]
         response = controller()
         return response
 
@@ -469,7 +474,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         if openid_request:
             return_url = self._make_url_from_openid_response(
                 openid_request.answer(False)
-            )
+                )
         else:
             return_url = root_url
         response = self._make_redirect_response(return_url)
@@ -482,7 +487,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         credentials = dict(
             username=want_username,
             password=password
-        )
+            )
         auth_service = self.gracie_server.auth_service
         try:
             username = auth_service.authenticate(credentials)
@@ -516,15 +521,15 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 openid_server = self.server.gracie_server.openid_server
                 openid_response = openid_server.signatory.sign(
                     openid_request.answer(True)
-                )
+                    )
                 return_url = self._make_url_from_openid_response(
                     openid_response
-                )
+                    )
                 response = self._make_redirect_response(return_url)
             else:
                 response = self._make_wrong_authentication_response(
                     openid_request.identity
-                )
+                    )
         else:
             response = self._make_redirect_response(root_url)
         return response
@@ -536,7 +541,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         page = pagetemplate.wrong_authentication_page(
             want_username = want_username,
             want_id_url = want_id
-        )
+            )
         data = self._get_page_data(page)
         response = Response(header, data)
 
