@@ -23,7 +23,7 @@ from authservice import PamAuthService as AuthService
 from authorisation import ConsumerAuthStore
 from session import SessionManager
 
-__version__ = "0.2.6"
+__version__ = "0.2.7"
 
 # Get the Python logging instance for this module
 _logger = logging.getLogger("gracie.server")

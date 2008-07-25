@@ -12,6 +12,8 @@
 """ Package setup script
 """
 
+import textwrap
+
 import ez_setup
 ez_setup.use_setuptools()
 
@@ -20,12 +22,15 @@ from setuptools import setup, find_packages
 main_module_name = 'gracie'
 main_module = __import__(main_module_name)
 
-description = main_module.__doc__.split('\n\n', 1)
+short_description, long_description = (
+    textwrap.dedent(d).strip()
+    for d in main_module.__doc__.split('\n\n', 1)
+    )
 
 
 setup(
     name = main_module_name,
-    version = main_module.__version__,
+    version = main_module._version,
     packages = find_packages(
         exclude = ['test'],
         ),
@@ -34,7 +39,7 @@ setup(
         ],
 
     # setuptools metadata
-    zip_safe = True,
+    zip_safe = False,
     test_suite = "test.suite.suite",
     install_requires = [
         "python-openid >= 1.2",
@@ -42,13 +47,13 @@ setup(
         ],
 
     # PyPI metadata
-    author = main_module.__author_name__,
-    author_email = main_module.__author_email__,
-    description = description[0].strip(),
-    license = main_module.__license__,
+    author = main_module._author_name,
+    author_email = main_module._author_email,
+    description = short_description,
+    license = main_module._license,
     keywords = "gracie openid identity authentication provider",
-    url = main_module.__url__,
-    long_description = description[1],
+    url = main_module._url,
+    long_description = long_description,
     classifiers = [
         "Development Status :: 3 - Alpha",
         "License :: OSI Approved :: GNU General Public License (GPL)",
