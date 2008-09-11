@@ -1,5 +1,8 @@
 gracie (0.2.6-2) unstable; urgency=high
 
+  * First release post-ITP. Thanks, Leonardo Serra, for the help and
+    inspiration!
+    (closes: bug#498563)
   * debian/rules:
     + Fix debhelper configuration, to allow package to install.
     + Re-work for debhelper 7.
