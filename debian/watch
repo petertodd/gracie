@@ -1,0 +1,10 @@
+# debian/watch
+# Debian uscan file for gracie package
+# Manpage: uscan(1)
+
+# Compulsory line, this is a version 3 file
+version=3
+
+# Current version from Python Package Index site
+http://pypi.python.org/pypi/gracie/ \
+    http://pypi.python.org/packages/source/g/gracie/gracie-(.*).tar.gz#.*
