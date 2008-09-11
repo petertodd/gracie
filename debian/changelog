@@ -1,11 +1,17 @@
 gracie (0.2.6-2) unstable; urgency=high
 
-  * Fix debhelper configuration, to allow package to install.
-  * Re-work for debhelper 7.
-  * Update Standards-Version.
-  * Add watch file.
+  * debian/rules:
+    + Fix debhelper configuration, to allow package to install.
+    + Re-work for debhelper 7.
+  * debian/control:
+    + Update Standards-Version.
+    + Update dependencies for new packaging.
+  * debian/watch:
+    + Add watch file.
+  * debian/copyright:
+    + Re-work for machine-parseable format.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 11 Sep 2008 17:59:15 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 11 Sep 2008 18:19:45 +1000
 
 gracie (0.2.6-1) unstable; urgency=low
 

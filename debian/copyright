@@ -1,41 +1,45 @@
-This package was debianized by Ben Finney <ben+debian@benfinney.id.au>
-on 2007-03-20.
+Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=226
+Upstream-Name: gracie
+Upstream-Maintainer: Ben Finney <ben+python@benfinney.id.au>
+Upstream-Source: http://pypi.python.org/pypi/gracie/
 
-Upstream Author: Ben Finney <ben+python@benfinney.id.au>
-
+Files: *
 Copyright: © 2007 Ben Finney
+License: GPL-2+
 
-License:
+Files: test/minimock.py
+Copyright: © 2006 Ian Bicking and contributors
+License: Expat
+    # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
 
+Files: debian/*
+Copyright: © 2007..2008, Ben Finney <ben+debian@benfinney.id.au>
+License: GPL-2+
     This package is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
+    .
     This package is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
+    .
     You should have received a copy of the GNU General Public License
     along with this package; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+    .
+    On Debian systems, the complete text of the GNU General
+    Public License can be found in `/usr/share/common-licenses/GPL'.
 
-On Debian systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
-
-The file 'minimock.py' was received under the following license:
-
-    # (c) 2006 Ian Bicking and contributors
-    # Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
-
-At the time of downloading the work, the referenced page contained the
-following license terms:
-
+License: Expat
+    At the time of downloading the work, the referenced page contained the
+    following license terms:
+    .
     The MIT License
-    
+    .
     Copyright (c) <year> <copyright holders>
-    
+    .
     Permission is hereby granted, free of charge, to any person obtaining
     a copy of this software and associated documentation files (the
     "Software"), to deal in the Software without restriction, including
@@ -43,10 +47,10 @@ following license terms:
     distribute, sublicense, and/or sell copies of the Software, and to
     permit persons to whom the Software is furnished to do so, subject to
     the following conditions:
-    
+    .
     The above copyright notice and this permission notice shall be
     included in all copies or substantial portions of the Software.
-    
+    .
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
     MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
@@ -54,8 +58,3 @@ following license terms:
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-
-The Debian packaging is © 2007, Ben Finney <ben+debian@benfinney.id.au>
-and is licensed under the GPL; see above regarding that license.
-
