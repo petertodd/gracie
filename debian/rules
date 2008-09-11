@@ -1,10 +1,10 @@
 #! /usr/bin/make -f
-# -*- makefile -*-
+# -*- makefile; coding: utf-8 -*-
 #
 # debian/rules
 # Part of Gracie, an OpenID provider
 #
-# Copyright © 2007 Ben Finney <ben@benfinney.id.au>
+# Copyright © 2007..2008 Ben Finney <ben+debian@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
@@ -13,72 +13,31 @@
 ### export DH_VERBOSE=1
 
 PACKAGE_NAME = gracie
-MODULE_NAME = ${PACKAGE_NAME}
 
-PYTHON_VERSIONS = $(shell pyversions -r debian/control)
 CURRENT_PYTHON_VERSION = $(shell pyversions -d)
-CURRENT_PYTHON_VERSION_NUMBER = $(shell pyversions -dv)
-
-site_packages_dir = $(CURDIR)/debian/${PACKAGE_NAME}/usr/lib/${CURRENT_PYTHON_VERSION}/site-packages
-upstream_basename = ${MODULE_NAME}-${DEB_UPSTREAM_VERSION}
-
-DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog \
-	| grep '^Version:' | cut -d ' ' -f 2 \
-	| cut -d '-' -f 1)
-DEB_PYTHON_INSTALL_ARGS_ALL += --single-version-externally-managed
 DEB_PYTHON_INSTALL_ARGS_ALL += --root $(CURDIR)/debian/${PACKAGE_NAME}
 
+
 .PHONY: build
-build: build-stamp
-
-build-stamp:
-	dh_testdir
-	$(MAKE) build
-	touch $@
+build:
+	dh build
 
 .PHONY: clean
 clean:
-	dh_testdir
-	dh_testroot
-	rm -f *-stamp
-	$(MAKE) clean
-	dh_clean
+	dh clean
 
 .PHONY: install
 install: build
-	dh_testdir
-	dh_testroot
-	dh_installdirs
-
+	dh --with python_central install --until installdirs
 	$(CURRENT_PYTHON_VERSION) setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
-	mv ${site_packages_dir}/${upstream_basename}-py${CURRENT_PYTHON_VERSION_NUMBER}.egg-info \
-		${site_packages_dir}/${MODULE_NAME}.egg-info
+	dh --with python_central install --remain
 
 .PHONY: binary-indep
 binary-indep: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs
-	dh_installdocs
-	dh_installexamples
-	dh_installman
-	dh_pycentral
-	dh_installinit
-	dh_installpam
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
+	dh --with python_central binary-indep
 
 .PHONY: binary-arch
 binary-arch: build install
 
 .PHONY: binary
-binary: binary-indep binary-arch
-	dh_clean -k
-
+binary: build binary-indep binary-arch
