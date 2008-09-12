@@ -19,10 +19,13 @@ version_info_module = ${MODULE_DIR}/version/version_info.py
 VCS_VERSION_INFO ?= bzr version-info --format=python
 
 
+.PHONY: version-info
+version-info: ${version_info_module}
+
 ${version_info_module}:
 	$(VCS_VERSION_INFO) > $@
 
 
-setuptools-build: ${version_info_module}
-setuptools-install: ${version_info_module}
-setuptools-clean: ${version_info_module}
+setuptools-build: version-info
+setuptools-install: version-info
+setuptools-clean: version-info
