@@ -13,3 +13,16 @@
 MODULE_DIR := gracie
 
 CODE_MODULES += $(shell find ${MODULE_DIR} -name '*.py')
+
+version_info_module = ${MODULE_DIR}/version/version_info.py
+
+VCS_VERSION_INFO ?= bzr version-info --format=python
+
+
+${version_info_module}:
+	$(VCS_VERSION_INFO) > $@
+
+
+setuptools-build: ${version_info_module}
+setuptools-install: ${version_info_module}
+setuptools-clean: ${version_info_module}
