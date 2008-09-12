@@ -12,6 +12,7 @@ Build-Depends: debhelper (>= 7.0.14),
 Standards-Version: 3.8.0
 XS-Python-Version: all
 Vcs-Bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
+Homepage: http://trac.whitetree.org/gracie/
 
 Package: gracie
 Architecture: all
