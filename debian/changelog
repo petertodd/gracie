@@ -3,8 +3,9 @@ gracie (0.2.6-3) unstable; urgency=medium
   * debian/control:
     + Fix a FTBFS bug: Build-Depends on a version of debhelper that allows
       python-central to correctly manipulate the 'dh' sequences.
+    + Add Vcs-Bzr field.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 12 Sep 2008 13:29:13 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 12 Sep 2008 13:04:15 +1000
 
 gracie (0.2.6-2) unstable; urgency=high
 
