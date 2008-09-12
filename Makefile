@@ -32,11 +32,15 @@ MODULES += ${TEST_DIR}
 
 RM = rm
 
+
+# Establish default goal
+.PHONY: all
+all:
+
 # Include the make data for each module
 include $(patsubst %,%/module.mk,${MODULES})
 
 
-.PHONY: all
 all: build
 
 .PHONY: build
