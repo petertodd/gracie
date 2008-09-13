@@ -14,7 +14,9 @@ from version_info import version_info
 
 version_info['version_string'] = "0.2.7"
 
-version = "%(version_string)s.r%(revno)s" % version_info
+version_short = "%(version_string)s" % version_info
+version_full = "%(version_string)s.r%(revno)s" % version_info
+version = version_short
 
 author_name = "Ben Finney"
 author_email = "ben+python@benfinney.id.au"

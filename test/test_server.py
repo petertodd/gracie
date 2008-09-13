@@ -364,7 +364,7 @@ class Test_GracieServer(scaffold.TestCase):
         scaffold.mock(
             "server.version", outfile=self.mock_outfile)
         version_test = "1.414.test"
-        server.version.version = version_test
+        server.version.version_full = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
 

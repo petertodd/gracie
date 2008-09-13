@@ -171,7 +171,7 @@ class Test_Gracie(scaffold.TestCase):
         scaffold.mock(
             "gracied.version", outfile=self.mock_outfile)
         version_test = "Foo.Boo"
-        gracied.version.version = version_test
+        gracied.version.version_full = version_test
         expect_stdout = """\
             ...%(version_test)s...
             """ % vars()

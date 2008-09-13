@@ -72,7 +72,7 @@ class GracieServer(object):
 
     def __init__(self, socket_params, opts):
         """ Set up a new instance """
-        self.version = version.version
+        self.version = version.version_full
         self.opts = opts
         self._setup_logging()
         server_address = (opts.host, opts.port)

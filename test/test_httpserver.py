@@ -124,7 +124,7 @@ class Test_HTTPServer(scaffold.TestCase):
         scaffold.mock(
             "server_module.version", outfile=self.mock_outfile)
         version_test = Stub_GracieServer.version
-        server_module.version.version = version_test
+        server_module.version.version_full = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
 

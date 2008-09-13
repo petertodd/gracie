@@ -28,7 +28,7 @@ class OptionParser(optparse.OptionParser):
         """ Set up a new instance """
         optparse.OptionParser.__init__(self)
 
-        self.version = version.version
+        self.version = version.version_full
         self.init_options()
 
     def init_options(self):
