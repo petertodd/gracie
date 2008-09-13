@@ -1,4 +1,4 @@
-# :vim: filetype=make : -*- makefile; coding: utf-8; -*-
+# :vim: filetype=make : -*- mode: makefile; coding: utf-8; -*-
 
 # setuptools.mk
 #
@@ -60,7 +60,7 @@ setuptools-install:
 install: setuptools-install
 
 
-.PHONY: setuptools-dist
+.PHONY: setuptools-dist-upload
 setuptools-dist: setuptools-register setuptools-sdist ${PYTHON_BDIST_TARGETS}
 	$(PYTHON_SETUP) sdist ${PYTHON_BDIST_TARGETS} upload
 

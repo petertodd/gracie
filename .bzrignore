@@ -11,3 +11,4 @@ PKG-INFO
 ./doc/*.html
 ./doc/*.png
 ./doc/*.[1-8]
+./gracie/version/version_info.py
