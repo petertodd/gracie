@@ -16,7 +16,7 @@ import optparse
 import logging
 
 from gracie.server import become_daemon
-from gracie.server import __version__
+from gracie import version
 from gracie.server import GracieServer
 from gracie.httpserver import default_host, default_port, default_root_url
 
@@ -28,7 +28,7 @@ class OptionParser(optparse.OptionParser):
         """ Set up a new instance """
         optparse.OptionParser.__init__(self)
 
-        self.version = __version__
+        self.version = version.version
         self.init_options()
 
     def init_options(self):

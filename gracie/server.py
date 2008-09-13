@@ -22,8 +22,7 @@ from httpserver import HTTPServer
 from authservice import PamAuthService as AuthService
 from authorisation import ConsumerAuthStore
 from session import SessionManager
-
-__version__ = "0.2.7"
+import version
 
 # Get the Python logging instance for this module
 _logger = logging.getLogger("gracie.server")
@@ -73,7 +72,7 @@ class GracieServer(object):
 
     def __init__(self, socket_params, opts):
         """ Set up a new instance """
-        self.version = __version__
+        self.version = version.version
         self.opts = opts
         self._setup_logging()
         server_address = (opts.host, opts.port)

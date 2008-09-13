@@ -45,6 +45,8 @@ class Test_Gracie(scaffold.TestCase):
 
         self.app_class = gracied.Gracie
 
+        self.mock_outfile = StringIO()
+
         self.stdout_prev = sys.stdout
         self.stdout_test = StringIO()
         sys.stdout = self.stdout_test
@@ -121,6 +123,7 @@ class Test_Gracie(scaffold.TestCase):
         gracied.OptionParser.error = self.parser_error_prev
         gracied.GracieServer = self.server_class_prev
         gracied.default_port = self.default_port_prev
+        scaffold.mock_restore()
 
     def test_instantiate(self):
         """ New Gracie instance should be created """
@@ -165,9 +168,10 @@ class Test_Gracie(scaffold.TestCase):
         """ Gracie instance should perform version action """
         argv = ["progname", "--version"]
         args = dict(argv=argv)
-        version_prev = gracied.__version__
+        scaffold.mock(
+            "gracied.version", outfile=self.mock_outfile)
         version_test = "Foo.Boo"
-        gracied.__version__ = version_test
+        gracied.version.version = version_test
         expect_stdout = """\
             ...%(version_test)s...
             """ % vars()
@@ -178,7 +182,6 @@ class Test_Gracie(scaffold.TestCase):
         self.failUnlessOutputCheckerMatch(
             expect_stdout, self.stdout_test.getvalue()
             )
-        gracied.__version__ = version_prev
 
     def test_opts_help_performs_help_action(self):
         """ Gracie instance should perform help action """

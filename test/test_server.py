@@ -361,12 +361,12 @@ class Test_GracieServer(scaffold.TestCase):
     def test_version_as_specified(self):
         """ GracieServer should have specified version string """
         params = self.valid_servers['simple']
-        version_prev = server.__version__
+        scaffold.mock(
+            "server.version", outfile=self.mock_outfile)
         version_test = "1.414.test"
-        server.__version__ = version_test
+        server.version.version = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
-        server.__version__ = version_prev
 
     def test_opts_as_specified(self):
         """ GracieServer should have specified opts mapping """

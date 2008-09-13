@@ -62,6 +62,8 @@ class Test_HTTPServer(scaffold.TestCase):
     def setUp(self):
         """ Set up test fixtures """
 
+        self.mock_outfile = StringIO()
+
         self.server_class = httpserver.HTTPServer
 
         self.stub_handler_class = Stub_HTTPRequestHandler
@@ -107,6 +109,7 @@ class Test_HTTPServer(scaffold.TestCase):
         """ Tear down test fixtures """
         sys.stdout = self.stdout_prev
         httpserver.BaseHTTPServer.server_bind = self.server_bind_prev
+        scaffold.mock_restore()
 
     def test_instantiate(self):
         """ New HTTPServer instance should be created """
@@ -118,12 +121,12 @@ class Test_HTTPServer(scaffold.TestCase):
         """ HTTPServer should have specified version string """
         params = self.valid_servers['simple']
         server_module = sys.modules['gracie.server']
-        version_prev = server_module.__version__
+        scaffold.mock(
+            "server_module.version", outfile=self.mock_outfile)
         version_test = Stub_GracieServer.version
-        server_module.__version__ = version_test
+        server_module.version.version = version_test
         instance = self.server_class(**params['args'])
         self.failUnlessEqual(version_test, instance.version)
-        server_module.__version__ = version_prev
 
     def test_request_handler_class_as_specified(self):
         """ HTTPServer should have specified RequestHandlerClass """

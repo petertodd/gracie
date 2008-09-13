@@ -20,7 +20,8 @@ ez_setup.use_setuptools()
 from setuptools import setup, find_packages
 
 main_module_name = 'gracie'
-main_module = __import__(main_module_name)
+main_module = __import__(main_module_name, fromlist=['version'])
+version = main_module.version
 
 short_description, long_description = (
     textwrap.dedent(d).strip()
@@ -30,7 +31,7 @@ short_description, long_description = (
 
 setup(
     name = main_module_name,
-    version = main_module._version,
+    version = version.version,
     packages = find_packages(
         exclude = ['test'],
         ),
@@ -47,10 +48,10 @@ setup(
         ],
 
     # PyPI metadata
-    author = main_module._author_name,
-    author_email = main_module._author_email,
+    author = version.author_name,
+    author_email = version.author_email,
     description = short_description,
-    license = main_module._license,
+    license = version.license,
     keywords = "gracie openid identity authentication provider",
     url = main_module._url,
     long_description = long_description,
