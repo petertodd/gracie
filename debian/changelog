@@ -1,5 +1,9 @@
-gracie (0.2.7.r114-1) unstable; urgency=medium
+gracie (0.2.7-1) unstable; urgency=medium
 
+  * New upstream version.
+    + Now declares version information as generated from VCS.
+    + Distutils config doesn't require application to load, only version
+      information.
   * debian/control:
     + Fix a FTBFS bug: Build-Depends on a version of debhelper that allows
       python-central to correctly manipulate the 'dh' sequences.
