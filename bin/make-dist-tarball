@@ -46,6 +46,6 @@ $CP "${version_info_module_source}" "${version_info_module_export}"
 TARBALL_SUFFIX=".tar.gz"
 tarball="${package_dir}/../${package_dist_name}${TARBALL_SUFFIX}"
 tarball_dir="${package_dist_name}"
-$TAR -cf "${tarball}" -C "${export_base_dir}" "${tarball_dir}"
+$TAR -czf "${tarball}" -C "${export_base_dir}" "${tarball_dir}"
 
 $RM -rf "${export_base_dir}"
