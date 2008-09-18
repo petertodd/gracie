@@ -12,8 +12,10 @@ gracie (0.2.7-1) unstable; urgency=medium
     + Add all runtime libraries needed for test suite as Build-Depends.
   * debian/rules:
     + Simplify 'install' target by using default actions.
+  * debian/dirs:
+    + Latest 'python-central' no longer needs empty 'usr/bin/'.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 18 Sep 2008 17:03:40 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 18 Sep 2008 17:09:19 +1000
 
 gracie (0.2.6-2) unstable; urgency=high
 
