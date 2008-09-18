@@ -11,11 +11,6 @@
 # Uncomment this to turn on verbose mode.
 ### export DH_VERBOSE=1
 
-PACKAGE_NAME = gracie
-
-CURRENT_PYTHON_VERSION = $(shell pyversions -d)
-DEB_PYTHON_INSTALL_ARGS_ALL += --root $(CURDIR)/debian/${PACKAGE_NAME}
-
 
 .PHONY: build
 build:
@@ -27,9 +22,7 @@ clean:
 
 .PHONY: install
 install: build
-	dh --with python_central install --until installdirs
-	$(CURRENT_PYTHON_VERSION) setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
-	dh --with python_central install --remain
+	dh --with python_central install
 
 .PHONY: binary-indep
 binary-indep: build install
