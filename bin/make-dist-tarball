@@ -1,0 +1,51 @@
+#! /bin/bash
+#
+# bin/make-dist-tarball
+# Part of Gracie, an OpenID provider
+#
+# Copyright © 2008 Ben Finney <ben+python@benfinney.id.au>
+# This is free software; you may copy, modify and/or distribute this work
+# under the terms of the GNU General Public License, version 2 or later.
+# No warranty expressed or implied. See the file LICENSE for details.
+
+# Create the distribution tarball from VCS
+
+set -o errexit
+
+program_dir=$(dirname $(readlink --canonicalize $0))
+program_name=$(basename $0)
+package_dir=$(readlink --canonicalize "${program_dir}/..")
+
+RM=${RM:-rm}
+CP=${CP:-cp}
+BZR=${BZR:-bzr}
+MAKE=${MAKE:-make}
+PYTHON=${PYTHON:-python}
+TAR=${TAR:-tar}
+
+package_name="gracie"
+package_version=$($PYTHON <<"_EOT_"
+import sys
+import gracie.version
+sys.stdout.write(gracie.version.version_short)
+_EOT_
+)
+package_dist_name="${package_name}-${package_version}"
+
+export_base_dir=$(mktemp -t -d "${program_name}.XXXXXX")
+export_dir="${export_base_dir}/${package_dist_name}"
+$BZR export --format=dir "${export_dir}"
+
+version_dir="gracie/version"
+version_info_module="version_info.py"
+version_info_module_source="${package_dir}/${version_dir}/${version_info_module}"
+version_info_module_export="${export_dir}/${version_dir}/${version_info_module}"
+$BZR version-info --format=python > "${version_info_module_source}"
+$CP "${version_info_module_source}" "${version_info_module_export}"
+
+TARBALL_SUFFIX=".tar.gz"
+tarball="${package_dir}/../${package_dist_name}${TARBALL_SUFFIX}"
+tarball_dir="${package_dist_name}"
+$TAR -cf "${tarball}" -C "${export_base_dir}" "${tarball_dir}"
+
+$RM -rf "${export_base_dir}"

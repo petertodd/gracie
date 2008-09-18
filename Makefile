@@ -31,6 +31,7 @@ MODULES += ${DOC_DIR}
 MODULES += ${TEST_DIR}
 
 RM = rm
+MAKE_DIST_TARBALL=${CODE_PROGRAM_DIR}/make-dist-tarball
 
 
 # Establish default goal
@@ -53,7 +54,8 @@ install: build
 include setuptools.mk
 
 .PHONY: dist
-dist: sdist bdist
+dist:
+	$(MAKE_DIST_TARBALL)
 
 .PHONY: bdist
 bdist: setuptools-bdist

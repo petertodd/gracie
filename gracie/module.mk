@@ -12,22 +12,6 @@ MODULE_DIR := gracie
 
 CODE_MODULES += $(shell find ${MODULE_DIR} -name '*.py')
 
-version_info_module := ${MODULE_DIR}/version/version_info.py
-
-VCS_VERSION_INFO_PYTHON ?= bzr version-info --format=python
-
-
-.PHONY: version-info
-version-info:
-	$(VCS_VERSION_INFO_PYTHON) > ${version_info_module}
-
-
-setuptools-build: version-info
-setuptools-install: version-info
-setuptools-clean: version-info
-setuptools-sdist: version-info
-setuptools-bdist: version-info
-
 
 # Local Variables:
 # mode: makefile
