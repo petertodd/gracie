@@ -87,4 +87,4 @@ qa: setuptools-test
 # mode: makefile
 # coding: utf-8
 # End:
-# vim: filetype=make fileencoding: utf-8 :
+# vim: filetype=make fileencoding=utf-8 :

@@ -80,3 +80,10 @@ MANIFEST.in:
 .PHONY: setuptools-clean
 setuptools-clean:
 	$(PYTHON_SETUP) clean
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding=utf-8 :
