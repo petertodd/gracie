@@ -1,5 +1,4 @@
 #! /usr/bin/make -f
-# -*- makefile; coding: utf-8 -*-
 #
 # debian/rules
 # Part of Gracie, an OpenID provider
@@ -41,3 +40,10 @@ binary-arch: build install
 
 .PHONY: binary
 binary: build binary-indep binary-arch
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding=utf-8 :
