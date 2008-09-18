@@ -1,5 +1,3 @@
-# :vim: filetype=make : -*- makefile; coding: utf-8; -*-
-
 # doc/module.mk
 # Part of Gracie, an OpenID provider
 #
@@ -95,3 +93,10 @@ logo: ${logo_files}
 
 %.120${PNG_SUFFIX}: %${SVG_SUFFIX}
 	$(CONVERT) "$<" -geometry 120x120 "$@"
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding: utf-8 :

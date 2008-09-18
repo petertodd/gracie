@@ -1,5 +1,3 @@
-# :vim: filetype=make : -*- makefile; coding: utf-8; -*-
-
 # gracie/module.mk
 # Part of Gracie, an OpenID provider
 #
@@ -29,3 +27,10 @@ setuptools-install: version-info
 setuptools-clean: version-info
 setuptools-sdist: version-info
 setuptools-bdist: version-info
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding: utf-8 :

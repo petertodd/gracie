@@ -1,5 +1,3 @@
-# :vim: filetype=make : -*- makefile; coding: utf-8; -*-
-
 # test/module.mk
 # Part of Gracie, an OpenID provider
 #
@@ -73,3 +71,10 @@ coverage:
 	$(COVERAGE) -r -m ${CODE_MODULES} ${CODE_PROGRAMS}
 
 qa: pyflakes coverage
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding: utf-8 :

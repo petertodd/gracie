@@ -1,5 +1,3 @@
-# :vim: filetype=make : -*- makefile; coding: utf-8; -*-
-
 # bin/module.mk
 # Part of Gracie, an OpenID provider
 #
@@ -16,3 +14,10 @@ PROGRAM_NAMES :=
 PROGRAM_NAMES += gracied
 
 CODE_PROGRAMS += $(addprefix ${CODE_PROGRAM_DIR}/,${PROGRAM_NAMES})
+
+
+# Local Variables:
+# mode: makefile
+# coding: utf-8
+# End:
+# vim: filetype=make fileencoding: utf-8 :
