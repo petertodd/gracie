@@ -44,20 +44,14 @@ setuptools-upload:
 setuptools-test:
 	$(PYTHON_SETUP) test
 
-qa: setuptools-test
-
 
 .PHONY: setuptools-build
 setuptools-build:
 	$(PYTHON_SETUP) build
 
-build: setuptools-build
-
 .PHONY: setuptools-install
 setuptools-install:
 	$(PYTHON_SETUP) install --prefix=${PREFIX}
-
-install: setuptools-install
 
 
 .PHONY: setuptools-dist-upload
@@ -86,5 +80,3 @@ MANIFEST.in:
 .PHONY: setuptools-clean
 setuptools-clean:
 	$(PYTHON_SETUP) clean
-
-clean: setuptools-clean

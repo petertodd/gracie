@@ -47,15 +47,17 @@ all: build
 .PHONY: build
 build:
 
+.PHONY: dist
+dist:
+	$(MAKE_DIST_TARBALL)
+
 .PHONY: install
 install: build
 
 
 include setuptools.mk
 
-.PHONY: dist
-dist:
-	$(MAKE_DIST_TARBALL)
+build: setuptools-build
 
 .PHONY: bdist
 bdist: setuptools-bdist
@@ -69,12 +71,16 @@ clean:
 	$(RM) -rf ${GENERATED_FILES}
 	find $(CURDIR) -name '*.pyc' -exec $(RM) {} +
 
+clean: setuptools-clean
+
 
 .PHONY: test
 test:
 
 .PHONY: qa
 qa:
+
+qa: setuptools-test
 
 
 # Local Variables:
