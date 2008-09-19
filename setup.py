@@ -12,79 +12,13 @@
 """ Package setup script
 """
 
-import os
 import textwrap
-import subprocess
-import tempfile
 
 import ez_setup
 ez_setup.use_setuptools()
 
-from setuptools import (
-    setup,
-    find_packages,
-    )
+from setuptools import setup, find_packages
 
-
-version_info_module_file_name = "gracie/version/version_info.py"
-
-def update_version_info_module():
-    """ Update the version-info module file from VCS """
-
-    def get_module_content(module_file_name):
-        """ Return the content of the current module file """
-        module_content = None
-        try:
-            module_file = open(module_file_name, 'r')
-            module_content = module_file.read()
-        except IOError:
-            pass
-
-        return module_content
-
-    def get_updated_content():
-        """ Return updated content (or None) for version-info module """
-        content = None
-        
-        bzr_version_info_commandline = [
-            "bzr", "version-info", "--format=python"
-            ]
-        module_file = tempfile.NamedTemporaryFile('w+')
-        try:
-            exit_status = subprocess.Popen(
-                bzr_version_info_commandline,
-                stdout=module_file,
-                ).wait()
-            if exit_status:
-                raise OSError(
-                    "Command failed: %(bzr_version_info_commandline)r" % vars())
-            module_file.seek(0)
-            content = module_file.read()
-        except OSError:
-            pass
-        finally:
-            module_file.close()
-
-        return content
-
-    update_required = False
-    module_content = get_module_content(version_info_module_file_name)
-    updated_module_content = get_updated_content()
-    if updated_module_content is not None:
-        if module_content is None:
-            update_required = True
-        else:
-            if module_content != updated_module_content:
-                update_required = True
-
-    if update_required:
-        module_file = open(version_info_module_file_name, 'w')
-        module_file.write(updated_module_content)
-        module_file.close()
-
-update_version_info_module()
-
-
 main_module_name = 'gracie'
 main_module = __import__(main_module_name, fromlist=['version'])
 version = main_module.version
