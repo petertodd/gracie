@@ -35,6 +35,8 @@ revision_tree = branch.basis_tree()
 
 
 def get_generated_version_info_content():
+    """ Return the generated version-info module, or None """
+
     content = None
 
     module_temp = tempfile.NamedTemporaryFile()
@@ -49,6 +51,8 @@ def get_generated_version_info_content():
     return content
 
 def get_existing_version_info_content(module_path):
+    """ Return the content of the existing version-info module, or None """
+
     content = None
 
     try:
@@ -60,6 +64,8 @@ def get_existing_version_info_content(module_path):
     return content
 
 def update_version_info_module_if_needed(module_path):
+    """ Update the version-info module iff it is out of date """
+
     generated_content = get_generated_version_info_content()
     existing_content = get_existing_version_info_content(module_path)
 
@@ -88,6 +94,8 @@ shutil.copy(version_info_module_path, version_info_module_export)
 
 
 def make_dist_tarball(tarball_path, tree_root):
+    """ Create a named tarball from the specified directory tree """
+
     save_curdir = os.path.abspath(os.path.curdir)
 
     tarball = tarfile.TarFile.gzopen(tarball_path, 'w')
