@@ -6,5 +6,4 @@
 version=3
 
 # Current version from Python Package Index site
-http://pypi.python.org/pypi/gracie/ \
-    http://pypi.python.org/packages/source/g/gracie/gracie-(.*).tar.gz#.*
+http://pypi.python.org/packages/source/g/gracie/gracie-(.*).tar.gz

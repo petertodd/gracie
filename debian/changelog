@@ -3,8 +3,10 @@ gracie (0.2.8-1) unstable; urgency=low
   * The "Cursed conflicting package management systems" release.
   * New upstream version.
     + Allow build outside context of VCS repository.
+  * debian/watch:
+    + Download upstream tarball without trailing garbage in filename.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 19 Sep 2008 16:47:05 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 19 Sep 2008 22:34:14 +1000
 
 gracie (0.2.7-1) unstable; urgency=medium
 
