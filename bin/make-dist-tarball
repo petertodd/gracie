@@ -1,4 +1,5 @@
-#! /bin/bash
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # bin/make-dist-tarball
 # Part of Gracie, an OpenID provider
@@ -8,44 +9,99 @@
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied. See the file LICENSE for details.
 
-# Create the distribution tarball from VCS
+""" Create the distribution tarball from VCS """
 
-set -o errexit
-
-program_dir=$(dirname $(readlink --canonicalize $0))
-program_name=$(basename $0)
-package_dir=$(readlink --canonicalize "${program_dir}/..")
-
-RM=${RM:-rm}
-CP=${CP:-cp}
-BZR=${BZR:-bzr}
-MAKE=${MAKE:-make}
-PYTHON=${PYTHON:-python}
-TAR=${TAR:-tar}
-
-package_name="gracie"
-package_version=$($PYTHON <<"_EOT_"
+import os
 import sys
-import gracie.version
-sys.stdout.write(gracie.version.version_short)
-_EOT_
-)
-package_dist_name="${package_name}-${package_version}"
+import tempfile
+import shutil
+import tarfile
 
-export_base_dir=$(mktemp -t -d "${program_name}.XXXXXX")
-export_dir="${export_base_dir}/${package_dist_name}"
-$BZR export --format=dir "${export_dir}"
+import bzrlib
+import bzrlib.workingtree
+import bzrlib.export
+from bzrlib import version_info_formats
 
-version_dir="gracie/version"
-version_info_module="version_info.py"
-version_info_module_source="${package_dir}/${version_dir}/${version_info_module}"
-version_info_module_export="${export_dir}/${version_dir}/${version_info_module}"
-$BZR version-info --format=python > "${version_info_module_source}"
-$CP "${version_info_module_source}" "${version_info_module_export}"
+workingtree = bzrlib.workingtree.WorkingTree.open_containing()[0]
+sys.path.insert(1, workingtree.basedir)
 
-TARBALL_SUFFIX=".tar.gz"
-tarball="${package_dir}/../${package_dist_name}${TARBALL_SUFFIX}"
-tarball_dir="${package_dist_name}"
-$TAR -czf "${tarball}" -C "${export_base_dir}" "${tarball_dir}"
+dist_name = "gracie"
+package_name = dist_name
+from gracie.version import version
 
-$RM -rf "${export_base_dir}"
+
+branch = workingtree.branch
+revision_tree = branch.basis_tree()
+
+
+def get_generated_version_info_content():
+    content = None
+
+    module_temp = tempfile.NamedTemporaryFile()
+    info_format = version_info_formats.format_registry.get("python")
+    info_builder = info_format(workingtree.branch)
+    info_builder.generate(module_temp)
+
+    module_temp.seek(0)
+    content = module_temp.read()
+    module_temp.close()
+
+    return content
+
+def get_existing_version_info_content(module_path):
+    content = None
+
+    try:
+        module_file = open(module_path, 'r')
+        content = module_file.read()
+    except IOError:
+        pass
+
+    return content
+
+def update_version_info_module_if_needed(module_path):
+    generated_content = get_generated_version_info_content()
+    existing_content = get_existing_version_info_content(module_path)
+
+    if generated_content is not None:
+        if generated_content != existing_content:
+            module_file = open(module_path, 'w+')
+            module_file.write(generated_content)
+            module_file.close()
+
+version_info_module_relpath = os.path.join(
+    package_name, "version", "version_info.py")
+version_info_module_path = os.path.join(
+    workingtree.basedir, version_info_module_relpath)
+
+update_version_info_module_if_needed(version_info_module_path)
+
+
+export_dir_name = "%(dist_name)s-%(version)s" % vars()
+export_root_dir = tempfile.mkdtemp()
+export_dir_path = os.path.join(export_root_dir, export_dir_name)
+bzrlib.export.export(revision_tree, export_dir_path, format="dir")
+
+version_info_module_export = os.path.join(
+    export_dir_path, version_info_module_relpath)
+shutil.copy(version_info_module_path, version_info_module_export)
+
+
+def make_dist_tarball(tarball_path, tree_root):
+    save_curdir = os.path.abspath(os.path.curdir)
+
+    tarball = tarfile.TarFile.gzopen(tarball_path, 'w')
+    os.chdir(tree_root)
+    tarball.add(export_dir_name)
+    tarball.close()
+
+    os.chdir(save_curdir)
+
+tarball_suffix = ".tar.gz"
+tarball_name = "%(export_dir_name)s%(tarball_suffix)s" % vars()
+parent_dir = os.path.dirname(os.path.abspath(os.path.curdir))
+tarball_path = os.path.join(parent_dir, tarball_name)
+make_dist_tarball(tarball_path, export_root_dir)
+
+
+shutil.rmtree(export_root_dir)
