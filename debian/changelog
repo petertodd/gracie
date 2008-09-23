@@ -1,3 +1,10 @@
+gracie (0.2.8-2) unstable; urgency=low
+
+  * debian/gracie.default, debian/gracie.init:
+    + Configure daemon start-up options discretely.
+
+ -- Ben Finney <ben+debian@benfinney.id.au>  Wed, 24 Sep 2008 09:06:20 +1000
+
 gracie (0.2.8-1) unstable; urgency=low
 
   * The "Cursed conflicting package management systems" release.

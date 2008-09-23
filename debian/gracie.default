@@ -2,5 +2,8 @@
 # sourced by /etc/init.d/gracie
 # installed at /etc/default/gracie by the maintainer scripts
 
-# Additional options that are passed to the daemon.
-DAEMON_OPTS="--data-dir /var/lib/gracie --port 8000"
+# Host (name or IP address) on which the daemon will listen.
+#HOST=localhost
+
+# TCP port number on which the daemon will listen.
+#PORT=8000

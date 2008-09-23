@@ -2,8 +2,6 @@
 #
 # gracie        Startup script for the Gracie OpenID provider.
 #
-# Version:      $Id$
-#
 ### BEGIN INIT INFO
 # Provides:          gracie
 # Required-Start:    $syslog $network
@@ -22,11 +20,19 @@ DESC='Gracie OpenID provider'
 BINFILE=gracied
 EXECUTABLE=/usr/bin/$BINFILE
 PIDFILE=/var/run/gracie/server.pid
+HOST="localhost"
+PORT="8000"
+ROOT_URL=
 
 DEFAULTS_FILE=/etc/default/gracie
 if test -f $DEFAULTS_FILE; then
     . $DEFAULTS_FILE
 fi
+
+DAEMON_OPTS="--data-dir /var/lib/gracie"
+DAEMON_OPTS="${DAEMON_OPTS} --port ${HOST}"
+DAEMON_OPTS="${DAEMON_OPTS} --port ${PORT}"
+DAEMON_OPTS="${DAEMON_OPTS} --root-url ${ROOT_URL}"
 
 test -x $EXECUTABLE || exit 0
 
