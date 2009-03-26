@@ -6,6 +6,8 @@ gracie (0.2.8-2) UNRELEASED; urgency=low
     + Use nicer override handling from later ‘debhelper’ version.
   * debian/copyright:
     + Update for new copyright status and license grant.
+  * debian/control:
+    + Refine Python build dependency.
 
  --
 

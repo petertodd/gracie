@@ -7,11 +7,11 @@ Build-Depends: debhelper (>= 7.0.50),
     python-central (>= 0.6.8),
     graphicsmagick-imagemagick-compat | imagemagick,
     python-docutils (>= 0.3.9),
-    python-dev (>= 2.4),
     python-setuptools (>= 0.6b3),
     python-openid (>= 1.2),
     python-routes,
-    python-pam
+    python-pam,
+    python
 Standards-Version: 3.8.0
 XS-Python-Version: all
 Vcs-Bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
@@ -25,7 +25,7 @@ Depends: ${python:Depends}, ${misc:Depends},
     python-pam
 XB-Python-Version: ${python:Versions}
 Description: OpenID server for local PAM accounts
- Gracie is an OpenID server (a "provider" in OpenID terminology) that
+ Gracie is an OpenID server (a “provider” in OpenID terminology) that
  serves identities for the local system PAM accounts. It uses OpenID
  protocol version 1.1, and authenticates using a username/password
  challenge.
