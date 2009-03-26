@@ -6,7 +6,8 @@
 # Copyright © 2007–2009 Ben Finney <ben+debian@benfinney.id.au>
 # This is free software; you may copy, modify and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
-# No warranty expressed or implied. See the file LICENSE for details.
+# No warranty expressed or implied.
+# See the file ‘/usr/share/common-licenses/GPL-2’ for details.
 
 # Uncomment this to turn on verbose mode.
 ### export DH_VERBOSE=1
