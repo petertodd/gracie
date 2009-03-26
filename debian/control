@@ -2,7 +2,7 @@ Source: gracie
 Section: web
 Priority: extra
 Maintainer: Ben Finney <ben+debian@benfinney.id.au>
-Build-Depends: debhelper (>= 7.0.14),
+Build-Depends: debhelper (>= 7.0.50),
     docbook-to-man,
     python-central (>= 0.6.8),
     graphicsmagick-imagemagick-compat | imagemagick,

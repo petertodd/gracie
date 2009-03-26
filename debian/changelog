@@ -1,9 +1,11 @@
-gracie (0.2.8-2) unstable; urgency=low
+gracie (0.2.8-2) UNRELEASED; urgency=low
 
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
+  * debian/rules, debian/control:
+    + Use nicer override handling from later ‘debhelper’ version.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Wed, 24 Sep 2008 09:06:20 +1000
+ --
 
 gracie (0.2.8-1) unstable; urgency=low
 
