@@ -1,9 +1,10 @@
-gracie (0.2.8-2) UNRELEASED; urgency=low
+gracie (0.2.8-2) unstable; urgency=low
 
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
   * debian/rules, debian/control:
     + Use nicer override handling from later ‘debhelper’ version.
+    + Switch to ‘python-support’ for Python package management.
   * debian/copyright:
     + Update for new copyright status and license grant.
   * debian/control:
