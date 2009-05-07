@@ -9,8 +9,9 @@ gracie (0.2.8-2) unstable; urgency=low
     + Update for new copyright status and license grant.
   * debian/control:
     + Refine Python build dependency.
+    + Update to ‘Standards-Version: 3.8.1’ (no changes required).
 
- --
+ -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 07 May 2009 20:26:16 +1000
 
 gracie (0.2.8-1) unstable; urgency=low
 
