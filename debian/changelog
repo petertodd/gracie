@@ -7,6 +7,7 @@ gracie (0.2.8-2) unstable; urgency=low
     + Switch to ‘python-support’ for Python package management.
   * debian/copyright:
     + Update for new copyright status and license grant.
+    + Refer to specific license version in ‘/usr/share/common-licenses/’.
   * debian/control:
     + Refine Python build dependency.
     + Update to ‘Standards-Version: 3.8.1’ (no changes required).
