@@ -29,10 +29,14 @@ if test -f $DEFAULTS_FILE; then
     . $DEFAULTS_FILE
 fi
 
+if test -z "${ROOT_URL}" ; then
+    ROOT_URL="http://${HOST}:${PORT}/"
+fi
+
 DAEMON_OPTS="--data-dir /var/lib/gracie"
-DAEMON_OPTS="${DAEMON_OPTS} --port ${HOST}"
+DAEMON_OPTS="${DAEMON_OPTS} --host ${HOST}"
 DAEMON_OPTS="${DAEMON_OPTS} --port ${PORT}"
-DAEMON_OPTS="${DAEMON_OPTS} --root-url ${ROOT_URL}"
+DAEMON_OPTS="${DAEMON_OPTS} --root-url \"${ROOT_URL}\""
 
 test -x $EXECUTABLE || exit 0
 
