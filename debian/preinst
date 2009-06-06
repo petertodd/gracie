@@ -1,0 +1,19 @@
+#! /bin/sh
+
+set -e
+
+# Clean up mess left behind by python-central.
+# Not needed in any release post-‘squeeze’.
+threshold_version="0.2.8-2"
+package_name="gracie"
+module_name="gracie"
+if [ "$1" = upgrade ] && dpkg --compare-versions "$2" lt ${threshold_version}
+then
+    pycentral pkgremove ${package_name}
+    # if pycentral doesn't remove all files, use below lines
+    for pyver in 2.4 2.5 ; do
+        rm -rf /usr/lib/python${pyver}/site-packages/${module_name}/
+    done
+fi
+
+#DEBHELPER#

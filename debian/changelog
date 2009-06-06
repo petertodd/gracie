@@ -2,7 +2,7 @@ gracie (0.2.8-2) unstable; urgency=low
 
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
-  * debian/rules, debian/control:
+  * debian/rules, debian/control, debian/preinst:
     + Use nicer override handling from later ‘debhelper’ version.
     + Switch to ‘python-support’ for Python package management.
   * debian/copyright:
@@ -13,7 +13,7 @@ gracie (0.2.8-2) unstable; urgency=low
     + Update to ‘Standards-Version: 3.8.1’ (no changes required).
     + Add ‘Vcs-Browser’ field.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Thu, 07 May 2009 20:26:16 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 05 Jun 2009 22:37:37 +1000
 
 gracie (0.2.8-1) unstable; urgency=low
 
