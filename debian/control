@@ -13,7 +13,7 @@ Build-Depends: debhelper (>= 7.0.50),
     python-routes,
     python-pam,
     python
-Standards-Version: 3.8.1
+Standards-Version: 3.8.2
 Vcs-Bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
 Vcs-Browser: http://bzr.debian.org/loggerhead/collab-maint/gracie/gracie.debian/
 Homepage: http://trac.whitetree.org/gracie/
