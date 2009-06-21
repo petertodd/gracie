@@ -9,6 +9,7 @@ Build-Depends: debhelper (>= 7.0.50),
     python-docutils (>= 0.3.9),
     python-setuptools (>= 0.6b3),
     python-openid (>= 1.2),
+    python-daemon,
     python-routes,
     python-pam,
     python

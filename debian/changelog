@@ -1,5 +1,7 @@
-gracie (0.2.8-2) unstable; urgency=low
+gracie (0.2.9-1) unstable; urgency=low
 
+  * New upstream version.
+    + Uses ‘python-debian’ library for well-behaved daemon implementation.
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
   * debian/rules, debian/control, debian/preinst:
@@ -12,8 +14,9 @@ gracie (0.2.8-2) unstable; urgency=low
     + Refine Python build dependency.
     + Update to ‘Standards-Version: 3.8.1’ (no changes required).
     + Add ‘Vcs-Browser’ field.
+    + Add dependency on ‘python-daemon’.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Fri, 05 Jun 2009 22:37:37 +1000
+ -- Ben Finney <ben+debian@benfinney.id.au>  Sun, 21 Jun 2009 22:51:27 +1000
 
 gracie (0.2.8-1) unstable; urgency=low
 
