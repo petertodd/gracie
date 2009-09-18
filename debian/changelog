@@ -4,7 +4,7 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
-  * debian/rules, debian/control, debian/preinst:
+  * debian/rules, debian/control, debian/pyversions, debian/preinst:
     + Switch to ‘python-support’ for Python package management.
       (Closes: Bug#519623)
   * debian/copyright:
