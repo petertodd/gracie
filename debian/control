@@ -2,7 +2,8 @@ Source: gracie
 Section: web
 Priority: extra
 Maintainer: Ben Finney <ben+debian@benfinney.id.au>
-Build-Depends: debhelper (>= 7.0.50),
+Build-Depends:
+    debhelper (>= 7.0.50),
     docbook-to-man,
     python-support (>= 0.90),
     graphicsmagick-imagemagick-compat | imagemagick,
@@ -20,10 +21,12 @@ Homepage: http://trac.whitetree.org/gracie/
 
 Package: gracie
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends},
+Depends:
     python-openid (>= 1.2),
+    python-daemon,
     python-routes,
-    python-pam
+    python-pam,
+    ${python:Depends}, ${misc:Depends}
 Provides: ${python:Provides}
 Description: OpenID server for local PAM accounts
  Gracie is an OpenID server (a “provider” in OpenID terminology) that
