@@ -16,6 +16,8 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Add ‘Vcs-Browser’ field.
     + Add dependency on ‘python-daemon’.
     + Update to ‘Standards-Version: 3.8.3’ (no additional changes needed).
+  * debian/watch:
+    + Tighten pattern for upstream source release URLs.
 
  --
 
