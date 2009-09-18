@@ -13,7 +13,7 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Refer to specific license version in ‘/usr/share/common-licenses/’.
   * debian/control:
     + Refine Python build dependency.
-    + Add ‘Vcs-Browser’ field.
+    + Add ‘VCS-Browser’ field.
     + Add dependency on ‘python-daemon’.
     + Update to ‘Standards-Version: 3.8.3’ (no additional changes needed).
     + Switch dependency from ‘docbook-to-man’ to ‘rst2man’.

@@ -15,8 +15,8 @@ Build-Depends:
     python-pam,
     python
 Standards-Version: 3.8.3
-Vcs-Bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
-Vcs-Browser: http://bzr.debian.org/loggerhead/collab-maint/gracie/gracie.debian/
+VCS-bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
+VCS-Browser: http://bzr.debian.org/loggerhead/collab-maint/gracie/gracie.debian/
 Homepage: http://trac.whitetree.org/gracie/
 
 Package: gracie
