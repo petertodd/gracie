@@ -36,7 +36,7 @@ fi
 DAEMON_OPTS="--data-dir /var/lib/gracie"
 DAEMON_OPTS="${DAEMON_OPTS} --host ${HOST}"
 DAEMON_OPTS="${DAEMON_OPTS} --port ${PORT}"
-DAEMON_OPTS="${DAEMON_OPTS} --root-url \"${ROOT_URL}\""
+DAEMON_OPTS="${DAEMON_OPTS} --root-url ${ROOT_URL}"
 
 test -x $EXECUTABLE || exit 0
 
