@@ -1,21 +1,14 @@
 #! /usr/bin/make -f
 #
 # debian/rules
-# Part of Gracie, an OpenID provider
 #
 # Copyright © 2007–2009 Ben Finney <ben+debian@benfinney.id.au>
-# This is free software; you may copy, modify and/or distribute this work
+# This is free software; you may copy, modify, and/or distribute this work
 # under the terms of the GNU General Public License, version 2 or later.
 # No warranty expressed or implied.
 # See the file ‘/usr/share/common-licenses/GPL-2’ for details.
 
-# Uncomment this to turn on verbose mode.
 ### export DH_VERBOSE=1
-
-PACKAGE_NAME = gracie
-
-CURRENT_PYTHON_VERSION = $(shell pyversions -d)
-DEB_PYTHON_INSTALL_ARGS_ALL += --root $(CURDIR)/debian/${PACKAGE_NAME}
 
 
 .PHONY: build
@@ -27,7 +20,7 @@ clean:
 	dh clean
 
 .PHONY: install
-install: build
+install:
 	dh install
 
 .PHONY: binary-indep
@@ -38,12 +31,7 @@ binary-indep: build install
 binary-arch: build install
 
 .PHONY: binary
-binary: build binary-indep binary-arch
-
-.PHONY: override_dh_installdirs
-override_dh_installdirs:
-	$(CURRENT_PYTHON_VERSION) setup.py install ${DEB_PYTHON_INSTALL_ARGS_ALL}
-	dh_installdirs
+binary: binary-indep binary-arch
 
 
 # Local Variables:
