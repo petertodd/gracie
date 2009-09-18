@@ -4,9 +4,9 @@ Priority: extra
 Maintainer: Ben Finney <ben+debian@benfinney.id.au>
 Build-Depends:
     debhelper (>= 7.0.50),
-    docbook-to-man,
     python-support (>= 0.90),
     graphicsmagick-imagemagick-compat | imagemagick,
+    rst2man,
     python-docutils (>= 0.3.9),
     python-setuptools (>= 0.6b3),
     python-openid (>= 1.2),
