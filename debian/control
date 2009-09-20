@@ -9,8 +9,10 @@ Build-Depends:
     rst2man,
     python-docutils (>= 0.3.9),
     python-setuptools (>= 0.6b3),
+    python-minimock (>= 1.2.2),
     python-openid (>= 1.2),
     python-daemon,
+    python-lockfile,
     python-routes,
     python-pam,
     python

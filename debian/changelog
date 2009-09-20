@@ -14,6 +14,7 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Refine Python build dependency.
     + Add ‘VCS-Browser’ field.
     + Add dependency on ‘python-daemon’.
+    + Add ‘Build-Depends’ for all packages required during build and test.
     + Update to ‘Standards-Version: 3.8.3’ (no additional changes needed).
     + Switch dependency from ‘docbook-to-man’ to ‘rst2man’.
   * debian/watch:
