@@ -19,6 +19,8 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
     + Add ‘Build-Depends’ for all packages required during build and test.
     + ‘Build-Depends: debhelper (>= 7.4.2)’ to avoid Bug#546293.
       (Closes: Bug#519623)
+    + ‘Build-Depends: docutils-writer-manpage’ as the Distutils build now
+      invokes the writer directly.
   * debian/watch:
     + Tighten pattern for upstream source release URLs.
 
