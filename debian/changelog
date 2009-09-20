@@ -6,7 +6,6 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Configure daemon start-up options discretely.
   * debian/rules, debian/control, debian/pyversions, debian/preinst:
     + Switch to ‘python-support’ for Python package management.
-      (Closes: Bug#519623)
   * debian/copyright:
     + Update for new copyright status and license grant.
     + Refer to specific license version in ‘/usr/share/common-licenses/’.
@@ -14,9 +13,11 @@ gracie (0.2.9-1) UNRELEASED; urgency=low
     + Refine Python build dependency.
     + Add ‘VCS-Browser’ field.
     + Add dependency on ‘python-daemon’.
-    + Add ‘Build-Depends’ for all packages required during build and test.
     + Update to ‘Standards-Version: 3.8.3’ (no additional changes needed).
     + Switch dependency from ‘docbook-to-man’ to ‘rst2man’.
+    + Add ‘Build-Depends’ for all packages required during build and test.
+    + ‘Build-Depends: debhelper (>= 7.4.2)’ to avoid Bug#546293.
+      (Closes: Bug#519623)
   * debian/watch:
     + Tighten pattern for upstream source release URLs.
 
