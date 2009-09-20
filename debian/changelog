@@ -1,7 +1,8 @@
-gracie (0.2.9-1) UNRELEASED; urgency=low
+gracie (0.2.10-1) UNRELEASED; urgency=low
 
   * New upstream version.
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
+    + Not so zealous with cleaning built files.
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
   * debian/rules, debian/control, debian/pyversions, debian/preinst:
