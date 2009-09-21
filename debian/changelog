@@ -3,6 +3,7 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
   * New upstream version.
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
     + Not so zealous with cleaning built files.
+    + Builds documentation and logo from Distutils commands.
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
   * debian/rules, debian/control, debian/pyversions, debian/preinst:
@@ -21,8 +22,12 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
       (Closes: Bug#519623)
     + ‘Build-Depends: docutils-writer-manpage’ as the Distutils build now
       invokes the writer directly.
+    + ‘Build-Depends: graphicsmagick’ as the Distutils build now uses
+      those utilities explicitly.
   * debian/watch:
     + Tighten pattern for upstream source release URLs.
+  * debian/docs, debian/gracie.manpages:
+    + Include logo in docs installation.
 
  --
 
