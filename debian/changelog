@@ -1,4 +1,4 @@
-gracie (0.2.10-1) unstable; urgency=low
+gracie (0.2.10-1) UNRELEASED; urgency=low
 
   * New upstream version.
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
@@ -6,8 +6,8 @@ gracie (0.2.10-1) unstable; urgency=low
     + Builds documentation and logo from Distutils commands.
   * debian/gracie.default, debian/gracie.init:
     + Configure daemon start-up options discretely.
-  * debian/dirs, debian/gracie.init:
-    + Manage PID file in directory specific to this package.
+  * debian/gracie.init:
+    + Specify PID file path for server.
   * debian/rules, debian/control, debian/pyversions, debian/preinst:
     + Switch to ‘python-support’ for Python package management.
   * debian/copyright:
@@ -33,7 +33,7 @@ gracie (0.2.10-1) unstable; urgency=low
   * debian/gracied.8.sgml, debian/pycompat:
     + Remove unused files.
 
- -- Ben Finney <ben+debian@benfinney.id.au>  Mon, 21 Sep 2009 20:19:17 +1000
+ --
 
 gracie (0.2.8-1) unstable; urgency=low
 

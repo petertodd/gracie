@@ -19,7 +19,7 @@ DESC='Gracie OpenID provider'
 
 BINFILE=gracied
 EXECUTABLE=/usr/bin/$BINFILE
-PIDFILE=/var/run/gracie/server.pid
+PIDFILE=/var/run/gracied.pid
 HOST="localhost"
 PORT="8000"
 ROOT_URL=
