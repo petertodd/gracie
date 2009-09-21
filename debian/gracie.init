@@ -33,7 +33,9 @@ if test -z "${ROOT_URL}" ; then
     ROOT_URL="http://${HOST}:${PORT}/"
 fi
 
-DAEMON_OPTS="--data-dir /var/lib/gracie"
+DAEMON_OPTS=""
+DAEMON_OPTS="${DAEMON_OPTS} --pidfile ${PIDFILE}"
+DAEMON_OPTS="${DAEMON_OPTS} --data-dir /var/lib/gracie"
 DAEMON_OPTS="${DAEMON_OPTS} --host ${HOST}"
 DAEMON_OPTS="${DAEMON_OPTS} --port ${PORT}"
 DAEMON_OPTS="${DAEMON_OPTS} --root-url ${ROOT_URL}"
