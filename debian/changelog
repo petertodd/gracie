@@ -1,4 +1,4 @@
-gracie (0.2.10-1) UNRELEASED; urgency=low
+gracie (0.2.10-1) unstable; urgency=low
 
   * New upstream version.
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
@@ -18,7 +18,7 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
     + Add ‘VCS-Browser’ field.
     + Add dependency on ‘python-daemon’.
     + Update to ‘Standards-Version: 3.8.3’ (no additional changes needed).
-    + Switch dependency from ‘docbook-to-man’ to ‘rst2man’.
+    + Switch dependency from ‘docbook-to-man’ to ‘docutils-writer-manpage’.
     + Add ‘Build-Depends’ for all packages required during build and test.
     + ‘Build-Depends: debhelper (>= 7.4.2)’ to avoid Bug#546293.
       (Closes: Bug#519623)
@@ -30,8 +30,10 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
     + Tighten pattern for upstream source release URLs.
   * debian/docs, debian/gracie.manpages:
     + Include logo in docs installation.
+  * debian/gracied.8.sgml, debian/pycompat:
+    + Remove unused files.
 
- --
+ -- Ben Finney <ben+debian@benfinney.id.au>  Mon, 21 Sep 2009 20:19:17 +1000
 
 gracie (0.2.8-1) unstable; urgency=low
 
