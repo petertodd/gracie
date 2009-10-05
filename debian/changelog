@@ -1,4 +1,4 @@
-gracie (0.2.10-1) UNRELEASED; urgency=low
+gracie (0.2.10-1) unstable; urgency=low
 
   * New upstream version.
     + Uses ‘python-daemon’ library for well-behaved daemon implementation.
@@ -34,7 +34,7 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
   * debian/gracied.8.sgml, debian/pycompat:
     + Remove unused files.
 
- --
+ -- Ben Finney <ben+debian@benfinney.id.au>  Mon, 05 Oct 2009 18:38:56 +1100
 
 gracie (0.2.8-1) unstable; urgency=low
 
