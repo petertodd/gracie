@@ -1,0 +1,12 @@
+Document: gracie
+Title: Project documentation for Gracie
+Author: Ben Finney <ben+python@benfinney.id.au>
+Abstract: This is the project documentation for the Gracie OpenID provider.
+Section: System/Administration
+
+Format: Text
+Files: /usr/share/doc/gracie/README.txt
+
+Format: HTML
+Index: /usr/share/doc/gracie/README.html
+Files:
