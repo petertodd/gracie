@@ -28,8 +28,8 @@ gracie (0.2.10-1) UNRELEASED; urgency=low
       those utilities explicitly.
   * debian/watch:
     + Tighten pattern for upstream source release URLs.
-  * debian/docs, debian/gracie.manpages:
-    + Include logo in docs installation.
+  * debian/docs:
+    + Include logo and HTML documents in docs installation.
   * debian/gracied.8.sgml, debian/pycompat:
     + Remove unused files.
 
