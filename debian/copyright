@@ -1,14 +1,14 @@
-Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat?action=recall&rev=226
-Upstream-Name: gracie
-Upstream-Maintainer: Ben Finney <ben+python@benfinney.id.au>
-Upstream-Source: http://pypi.python.org/pypi/gracie/
+Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file;rev=135
+Name: gracie
+Maintainer: Ben Finney <ben+python@benfinney.id.au>
+Source: http://pypi.python.org/pypi/gracie/
 
 Files: *
 Copyright: © 2007–2009 Ben Finney <ben+python@benfinney.id.au>
 License: GPL-2+
 
 Files: debian/*
-Copyright: © 2007–2009 Ben Finney <ben+debian@benfinney.id.au>
+Copyright: © 2007–2010 Ben Finney <ben+debian@benfinney.id.au>
 License: GPL-2+
 
 License: GPL-2+
