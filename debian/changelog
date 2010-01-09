@@ -1,3 +1,11 @@
+gracie (0.2.10-2) UNRELEASED; urgency=low
+
+  * debian/control:
+    + Switch ‘Homepage’ field to PyPI URL.
+      (Closes: Bug#557089)
+
+ --
+
 gracie (0.2.10-1) unstable; urgency=low
 
   * New upstream version.
