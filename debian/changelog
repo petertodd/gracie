@@ -1,4 +1,4 @@
-gracie (0.2.10-2) UNRELEASED; urgency=low
+gracie (0.2.10-2) unstable; urgency=low
 
   * debian/control:
     + Switch ‘Homepage’ field to PyPI URL.
@@ -8,7 +8,7 @@ gracie (0.2.10-2) UNRELEASED; urgency=low
   * debian/copyright:
     + Conform to current draft DEP-5 format.
 
- --
+ -- Ben Finney <ben+debian@benfinney.id.au>  Tue, 12 Jan 2010 12:06:38 +1100
 
 gracie (0.2.10-1) unstable; urgency=low
 
