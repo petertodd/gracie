@@ -1,3 +1,10 @@
+gracie (0.2.10-3) UNRELEASED; urgency=low
+
+  * debian/gracie.init:
+    + Require ‘$remote_fs’ during start and stop, for ‘/usr’ filesystem.
+
+ --
+
 gracie (0.2.10-2) unstable; urgency=low
 
   * debian/control:
