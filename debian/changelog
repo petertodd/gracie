@@ -1,3 +1,11 @@
+gracie (0.2.11-1) UNRELEASED; urgency=low
+
+  * New upstream version.
+    + Keep the network socket open when becoming a daemon.
+      (Closes: Bug#568385)
+
+ --
+
 gracie (0.2.10-3) unstable; urgency=low
 
   * debian/gracie.init:
