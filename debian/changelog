@@ -4,6 +4,7 @@ gracie (0.2.11-1) UNRELEASED; urgency=high
   * New upstream version.
     + Keep the network socket open when becoming a daemon.
       (Closes: Bug#568385)
+  * Conform to ‘Standards-Version: 3.8.4’. No additional changes needed.
 
  --
 

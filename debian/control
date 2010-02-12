@@ -16,7 +16,7 @@ Build-Depends:
     python-routes,
     python-pam,
     python
-Standards-Version: 3.8.3
+Standards-Version: 3.8.4
 VCS-bzr: http://bzr.debian.org/bzr/collab-maint/gracie/gracie.debian/
 VCS-Browser: http://bzr.debian.org/loggerhead/collab-maint/gracie/gracie.debian/
 Homepage: http://pypi.python.org/pypi/gracie/
