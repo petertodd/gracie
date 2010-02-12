@@ -1,5 +1,6 @@
-gracie (0.2.11-1) UNRELEASED; urgency=low
+gracie (0.2.11-1) UNRELEASED; urgency=high
 
+  * Urgency ‘high’ to address reported bug of ‘grave’ severity.
   * New upstream version.
     + Keep the network socket open when becoming a daemon.
       (Closes: Bug#568385)
