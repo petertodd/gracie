@@ -29,7 +29,6 @@ Depends:
     python-routes,
     python-pam,
     ${python:Depends}, ${misc:Depends}
-Provides: ${python:Provides}
 Description: OpenID server for local PAM accounts
  Gracie is an OpenID server (a “provider” in OpenID terminology) that
  serves identities for the local system PAM accounts. It uses OpenID
