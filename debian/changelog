@@ -1,4 +1,4 @@
-gracie (0.2.11-1) UNRELEASED; urgency=high
+gracie (0.2.11-1) unstable; urgency=high
 
   * Urgency ‘high’ to address reported bug of ‘grave’ severity.
   * New upstream version.
@@ -9,7 +9,7 @@ gracie (0.2.11-1) UNRELEASED; urgency=high
     * Drop ‘Provides’ field, since a Python-versioned dependency should
       not be necessary (ref. ‘python-support’ documentation).
 
- --
+ -- Ben Finney <ben+debian@benfinney.id.au>  Sat, 20 Feb 2010 11:53:29 +1100
 
 gracie (0.2.10-3) unstable; urgency=low
 
